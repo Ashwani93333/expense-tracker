@@ -1,0 +1,100 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: expense-tracker-backend
+  profiles:
+    active: dev
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/expense-tracker}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    protocol: ${MAIL_PROTOCOL:smtp}
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${MAIL_STARTTLS_ENABLE:true}
+          connectiontimeout: ${MAIL_SMTP_CONNECTION_TIMEOUT:10000}
+          timeout: ${MAIL_SMTP_TIMEOUT:10000}
+          writetimeout: ${MAIL_SMTP_WRITE_TIMEOUT:10000}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    defer-datasource-initialization: true
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+
+jwt:
+  secret: ${JWT_SECRET:}
+  expiration-ms: 86400000 # 24 hours
+
+gemini:
+  api:
+    key: ${GEMINI_API_KEY:}
+  model: gemini-3.1-flash-lite
+
+app:
+  cors:
+    allowed-origins: "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173"
+  frontend:
+    # Base URL used to build invite links rendered inside emails.
+    base-url: ${APP_FRONTEND_BASE_URL:http://localhost:5173}
+  mail:
+    from: ${MAIL_FROM:no-reply@expense-tracker.local}
+    from-name: ${MAIL_FROM_NAME:Expense Tracker}
+  scheduler:
+    # First day of each month at 02:00 (server local time).
+    monthly-summary-cron: ${MONTHLY_SUMMARY_CRON:0 0 2 1 * *}
+  classification:
+    auto-assign-threshold: ${CLASSIFICATION_AUTO_ASSIGN_THRESHOLD:0.75}
+    warn-threshold: ${CLASSIFICATION_WARN_THRESHOLD:0.50}
+    fallback-category: ${CLASSIFICATION_FALLBACK_CATEGORY:Uncategorized}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: h2
+
+  datasource:
+    url: jdbc:h2:mem:expensetrackerdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: true
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
