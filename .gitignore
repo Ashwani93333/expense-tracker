@@ -3,12 +3,9 @@ node_modules/
 .pnp
 .pnp.js
 
-# ─── Environment Files ─────────────────────────────────────────────────────────
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# ─── Backend ───────────────────────────────────────────────────────────────────
+# Dev profile with real credentials
+backend/src/main/resources/application-dev.yml
 
 # ─── Build Output ──────────────────────────────────────────────────────────────
 frontend/dist/
