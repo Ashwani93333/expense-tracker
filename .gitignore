@@ -3,6 +3,21 @@ node_modules/
 .pnp
 .pnp.js
 
+
+.env
+.env.*
+!.env.example
+
+# Frontend environment files
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# Backend environment files
+backend/.env
+backend/.env.*
+!backend/.env.example
+
 # ─── Backend ───────────────────────────────────────────────────────────────────
 # Dev profile with real credentials
 backend/src/main/resources/application-dev.yml
