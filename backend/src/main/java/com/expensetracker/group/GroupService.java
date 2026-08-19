@@ -65,6 +65,9 @@ public class GroupService {
         group.setCreatedBy(creator);
         group.setInviteCode(inviteCode);
         group.setIsActive(true);
+        if (req.getExpiresAt() != null) {
+            group.setExpiresAt(req.getExpiresAt());
+        }
         ExpenseGroup saved = groupRepository.save(group);
 
         // Creator becomes ADMIN
@@ -114,6 +117,7 @@ public class GroupService {
                 .orElseThrow(() -> new ResourceNotFoundException("Group not found: " + groupId));
         if (req.getName() != null) group.setName(req.getName().trim());
         if (req.getDescription() != null) group.setDescription(req.getDescription());
+        if (req.getExpiresAt() != null) group.setExpiresAt(req.getExpiresAt());
         ExpenseGroup saved = groupRepository.save(group);
         long count = memberRepository.countByGroupIdAndStatus(groupId, "ACTIVE");
         return GroupDto.fromEntity(saved, count, "ADMIN");
@@ -259,6 +263,9 @@ public class GroupService {
         if (!Boolean.TRUE.equals(group.getIsActive())) {
             throw new BadRequestException("This group is no longer active");
         }
+        if (isGroupExpired(group)) {
+            throw new BadRequestException("This group has expired and is no longer accepting new members");
+        }
 
         // Check if already a member
         Optional<GroupMember> existing = memberRepository.findByGroupIdAndUserId(group.getId(), user.getId());
@@ -339,6 +346,11 @@ public class GroupService {
     }
 
     // --- helpers ---
+
+    private boolean isGroupExpired(ExpenseGroup group) {
+        return group.getExpiresAt() != null && group.getExpiresAt().isBefore(OffsetDateTime.now());
+    }
+
     private boolean sendInviteEmail(String to, User invitedBy, ExpenseGroup group,
                                     OffsetDateTime expiresAt, String rawToken) {
         String inviteUrl = frontendBaseUrl + "/groups/join?token=" + rawToken;

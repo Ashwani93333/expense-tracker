@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, X, Loader2, Globe } from 'lucide-react';
+import { Users, X, Loader2, Globe, CalendarClock } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 
 export const CreateGroupModal = ({ isOpen, onClose }) => {
@@ -7,6 +7,7 @@ export const CreateGroupModal = ({ isOpen, onClose }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [currencyCode, setCurrencyCode] = useState('INR');
+  const [expiresAt, setExpiresAt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -14,8 +15,12 @@ export const CreateGroupModal = ({ isOpen, onClose }) => {
     if (!name.trim()) return;
     setIsLoading(true);
     try {
-      await createGroup({ name: name.trim(), description: description.trim(), currencyCode });
-      setName(''); setDescription(''); setCurrencyCode('INR');
+      const payload = { name: name.trim(), description: description.trim(), currencyCode };
+      if (expiresAt) {
+        payload.expiresAt = new Date(expiresAt).toISOString();
+      }
+      await createGroup(payload);
+      setName(''); setDescription(''); setCurrencyCode('INR'); setExpiresAt('');
       onClose();
     } catch {}
     finally { setIsLoading(false); }
@@ -71,6 +76,20 @@ export const CreateGroupModal = ({ isOpen, onClose }) => {
               <option value="EUR">EUR — Euro €</option>
               <option value="GBP">GBP — British Pound £</option>
             </select>
+          </div>
+          <div className="input-group" style={{ margin: 0 }}>
+            <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <CalendarClock size={13} /> Expiry Date <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(optional)</span>
+            </label>
+            <input
+              type="datetime-local"
+              value={expiresAt} onChange={e => setExpiresAt(e.target.value)}
+              className="input-field"
+              min={new Date().toISOString().slice(0, 16)}
+            />
+            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
+              Group will be locked after this date. No new expenses or joins allowed.
+            </p>
           </div>
 
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '6px', paddingTop: '14px', borderTop: '1px solid var(--border)' }}>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft, Share2, Users, Plus, Target, PieChart, CreditCard,
   LogOut, Key, CheckCircle2, DollarSign, AlertTriangle, TrendingUp,
-  RefreshCw, Loader2
+  RefreshCw, Loader2, Clock, CalendarClock, Ban
 } from 'lucide-react';
 import { useExpense } from '../context/ExpenseContext';
 import { useAuth } from '../context/AuthContext';
@@ -52,6 +52,8 @@ export const GroupDetailPage = () => {
   const [budgetInput, setBudgetInput]   = useState('');
   const [memberCaps, setMemberCaps]     = useState({});
   const [savingCap, setSavingCap]       = useState('');
+  const [expiryInput, setExpiryInput]   = useState('');
+  const [savingExpiry, setSavingExpiry] = useState(false);
 
   const grp = groups.find(g => g.id === activeGroupId) || groups[0];
 
@@ -88,6 +90,10 @@ export const GroupDetailPage = () => {
   const userRole = userMember?.role || 'MEMBER';
   const isAdmin = userRole === 'ADMIN';
   const totalSpent = report?.totalSpent ?? groupExpenses.reduce((s, e) => s + (e.amount || 0), 0);
+
+  const isExpired = grp.expiresAt && new Date(grp.expiresAt) < new Date();
+  const daysUntilExpiry = grp.expiresAt ? Math.ceil((new Date(grp.expiresAt) - new Date()) / (1000 * 60 * 60 * 24)) : null;
+  const isExpiringSoon = !isExpired && daysUntilExpiry !== null && daysUntilExpiry <= 7;
 
   const SUB_TABS = [
     { id: 'overview',    label: 'Overview',    icon: PieChart },
@@ -153,12 +159,21 @@ export const GroupDetailPage = () => {
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '14px', flexWrap: 'wrap' }}>
           <Key size={13} color="var(--text-muted)" />
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Invite Code:</span>
           <code style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent)', background: 'var(--accent-light)', padding: '2px 8px', borderRadius: '6px', border: '1px solid var(--border-accent)' }}>
             {grp.inviteCode}
           </code>
+          {grp.expiresAt && (
+            <>
+              <span style={{ margin: '0 4px', color: 'var(--border)' }}>·</span>
+              <CalendarClock size={13} color={isExpired ? '#dc2626' : isExpiringSoon ? '#d97706' : 'var(--text-muted)'} />
+              <span style={{ fontSize: '0.75rem', color: isExpired ? '#dc2626' : isExpiringSoon ? '#d97706' : 'var(--text-muted)', fontWeight: 600 }}>
+                {isExpired ? 'Expired' : `${daysUntilExpiry}d left`} — {new Date(grp.expiresAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </span>
+            </>
+          )}
         </div>
       </div>
 
@@ -177,6 +192,44 @@ export const GroupDetailPage = () => {
             </p>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
               ₹{budgetStatus.totalSpent?.toFixed(2)} of ₹{budgetStatus.totalBudget?.toFixed(2)} used
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Group Expiry Alert */}
+      {isExpired && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 18px',
+          borderRadius: 'var(--r-lg)',
+          background: '#fef2f2', border: '1px solid #fecaca',
+        }}>
+          <Ban size={18} color="#dc2626" />
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: '0.875rem', fontWeight: 700, color: '#dc2626', margin: 0 }}>
+              This group has expired
+            </p>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
+              No new expenses or joins allowed. Expired on {new Date(grp.expiresAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}.
+              {isAdmin && ' You can extend the expiry date below.'}
+            </p>
+          </div>
+        </div>
+      )}
+      {!isExpired && isExpiringSoon && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 18px',
+          borderRadius: 'var(--r-lg)',
+          background: '#fffbeb', border: '1px solid #fde68a',
+        }}>
+          <Clock size={18} color="#d97706" />
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+              This group expires in {daysUntilExpiry} day{daysUntilExpiry !== 1 ? 's' : ''}
+            </p>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
+              Expires on {new Date(grp.expiresAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              {isAdmin && '. You can extend the expiry date below.'}
             </p>
           </div>
         </div>
@@ -261,6 +314,57 @@ export const GroupDetailPage = () => {
                   <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#dc2626' }}>₹{item.total.toLocaleString('en-IN')}</span>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Admin Expiry Settings */}
+          {isAdmin && (
+            <div className="card" style={{ padding: '22px' }}>
+              <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CalendarClock size={16} /> Group Expiry
+              </h3>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '14px' }}>
+                Set when this group stops accepting new expenses and joins.
+              </p>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="datetime-local"
+                  value={expiryInput}
+                  onChange={e => setExpiryInput(e.target.value)}
+                  className="input-field"
+                  style={{ flex: 1, fontSize: '0.875rem' }}
+                  min={new Date().toISOString().slice(0, 16)}
+                />
+                <button
+                  className="btn btn-primary btn-sm"
+                  disabled={savingExpiry}
+                  onClick={async () => {
+                    if (!expiryInput) return;
+                    setSavingExpiry(true);
+                    try {
+                      await groupsApi.update(grp.id, { expiresAt: new Date(expiryInput).toISOString() });
+                      await fetchGroupData();
+                      setExpiryInput('');
+                      showToast('Expiry date updated');
+                    } catch (err) {
+                      showToast(err.message || 'Failed to update expiry', 'error');
+                    }
+                    setSavingExpiry(false);
+                  }}
+                >
+                  {savingExpiry ? <Loader2 size={14} style={{ animation: 'spin 0.7s linear infinite' }} /> : <CalendarClock size={14} />}
+                  Set Expiry
+                </button>
+              </div>
+              {grp.expiresAt && (
+                <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                    Current expiry: {new Date(grp.expiresAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    {isExpired && ' (expired)'}
+                    {isExpiringSoon && ` (${daysUntilExpiry}d left)`}
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>

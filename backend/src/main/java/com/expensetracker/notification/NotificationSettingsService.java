@@ -54,17 +54,26 @@ public class NotificationSettingsService {
         if (req.getOverallBudgetThresholds() != null) {
             settings.setOverallBudgetThresholds(normalizeThresholds(req.getOverallBudgetThresholds()));
         }
+        if (req.getOverallBudgetThresholdType() != null) {
+            settings.setOverallBudgetThresholdType(validateThresholdType(req.getOverallBudgetThresholdType()));
+        }
         if (req.getCategoryBudgetEnabled() != null) {
             settings.setCategoryBudgetEnabled(req.getCategoryBudgetEnabled());
         }
         if (req.getCategoryBudgetThresholds() != null) {
             settings.setCategoryBudgetThresholds(normalizeThresholds(req.getCategoryBudgetThresholds()));
         }
+        if (req.getCategoryBudgetThresholdType() != null) {
+            settings.setCategoryBudgetThresholdType(validateThresholdType(req.getCategoryBudgetThresholdType()));
+        }
         if (req.getTotalExpenditureEnabled() != null) {
             settings.setTotalExpenditureEnabled(req.getTotalExpenditureEnabled());
         }
         if (req.getTotalExpenditureThresholds() != null) {
             settings.setTotalExpenditureThresholds(normalizeAmountThresholds(req.getTotalExpenditureThresholds()));
+        }
+        if (req.getTotalExpenditureThresholdType() != null) {
+            settings.setTotalExpenditureThresholdType(validateThresholdType(req.getTotalExpenditureThresholdType()));
         }
         if (req.getMonthlySummaryEnabled() != null) {
             settings.setMonthlySummaryEnabled(req.getMonthlySummaryEnabled());
@@ -112,5 +121,12 @@ public class NotificationSettingsService {
                 .distinct()
                 .sorted()
                 .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
+    }
+
+    private static String validateThresholdType(String type) {
+        if (type == null || (!type.equals("PERCENTAGE") && !type.equals("AMOUNT"))) {
+            throw new BadRequestException("Threshold type must be PERCENTAGE or AMOUNT");
+        }
+        return type;
     }
 }

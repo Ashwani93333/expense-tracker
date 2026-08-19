@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS groups (
     currency_code   VARCHAR(3) DEFAULT 'INR',
     invite_code     VARCHAR(12) UNIQUE NOT NULL,
     invite_expires_at TIMESTAMP WITH TIME ZONE,
+    expires_at      TIMESTAMP WITH TIME ZONE,
     is_active       BOOLEAN DEFAULT TRUE,
     created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -140,20 +141,35 @@ CREATE TABLE IF NOT EXISTS group_monthly_reports (
 -- ================= USER NOTIFICATION SETTINGS =================
 -- Exactly one settings row per user.
 CREATE TABLE IF NOT EXISTS user_notification_settings (
-    id                          UUID PRIMARY KEY,
-    user_id                     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    in_app_notifications        BOOLEAN DEFAULT TRUE,
-    email_notifications         BOOLEAN DEFAULT TRUE,
-    overall_budget_enabled      BOOLEAN DEFAULT TRUE,
-    overall_budget_thresholds   TEXT,
-    category_budget_enabled     BOOLEAN DEFAULT TRUE,
-    category_budget_thresholds  TEXT,
-    total_expenditure_enabled   BOOLEAN DEFAULT FALSE,
-    total_expenditure_thresholds TEXT,
-    monthly_summary_enabled     BOOLEAN DEFAULT FALSE,
-    created_at                  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at                  TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    id                              UUID PRIMARY KEY,
+    user_id                         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    in_app_notifications            BOOLEAN DEFAULT TRUE,
+    email_notifications             BOOLEAN DEFAULT TRUE,
+    overall_budget_enabled          BOOLEAN DEFAULT TRUE,
+    overall_budget_thresholds       TEXT,
+    overall_budget_threshold_type   VARCHAR(10) DEFAULT 'PERCENTAGE',
+    category_budget_enabled         BOOLEAN DEFAULT TRUE,
+    category_budget_thresholds      TEXT,
+    category_budget_threshold_type  VARCHAR(10) DEFAULT 'PERCENTAGE',
+    total_expenditure_enabled       BOOLEAN DEFAULT FALSE,
+    total_expenditure_thresholds    TEXT,
+    total_expenditure_threshold_type VARCHAR(10) DEFAULT 'AMOUNT',
+    monthly_summary_enabled         BOOLEAN DEFAULT FALSE,
+    created_at                      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at                      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uk_user_notification_settings_user UNIQUE (user_id)
+);
+
+-- ================= CATEGORY EXPENSE LIMITS =================
+-- Per-user, per-category monthly spending notification limits.
+CREATE TABLE IF NOT EXISTS category_expense_limits (
+    id              UUID PRIMARY KEY,
+    user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    category_id     UUID NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+    limit_amount    NUMERIC(12,2) NOT NULL,
+    created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, category_id)
 );
 
 -- ================= BUDGET NOTIFICATION EVENTS =================
@@ -217,6 +233,14 @@ ALTER TABLE group_invites ADD COLUMN IF NOT EXISTS email_status VARCHAR(20);
 ALTER TABLE group_invites ADD COLUMN IF NOT EXISTS email_sent_at TIMESTAMP WITH TIME ZONE;
 ALTER TABLE group_invites ADD COLUMN IF NOT EXISTS email_failure_reason TEXT;
 
+-- Group expiry date.
+ALTER TABLE groups ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP WITH TIME ZONE;
+
+-- Notification threshold type fields.
+ALTER TABLE user_notification_settings ADD COLUMN IF NOT EXISTS overall_budget_threshold_type VARCHAR(10) DEFAULT 'PERCENTAGE';
+ALTER TABLE user_notification_settings ADD COLUMN IF NOT EXISTS category_budget_threshold_type VARCHAR(10) DEFAULT 'PERCENTAGE';
+ALTER TABLE user_notification_settings ADD COLUMN IF NOT EXISTS total_expenditure_threshold_type VARCHAR(10) DEFAULT 'AMOUNT';
+
 -- ================= BACKWARD-COMPATIBLE BUDGET EVENT MIGRATION =================
 -- Upgrade pre-existing budget_notification_events tables (created by an older
 -- schema revision) to the dedup_key-based idempotency design. The table is empty
@@ -241,3 +265,4 @@ CREATE INDEX IF NOT EXISTS idx_user_budgets_lookup ON user_budgets(user_id, "mon
 CREATE INDEX IF NOT EXISTS idx_group_invites_token ON group_invites(token);
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_categories_created_by ON categories(created_by);
+CREATE INDEX IF NOT EXISTS idx_category_expense_limits_user ON category_expense_limits(user_id);

@@ -69,6 +69,9 @@ public class ExpenseService {
         if (req.getGroupId() != null) {
             ExpenseGroup group = groupRepository.findById(req.getGroupId())
                     .orElseThrow(() -> new ResourceNotFoundException("Group not found: " + req.getGroupId()));
+            if (group.getExpiresAt() != null && group.getExpiresAt().isBefore(java.time.OffsetDateTime.now())) {
+                throw new BadRequestException("This group has expired and no longer accepts expenses");
+            }
             boolean isMember = groupMemberRepository.existsByGroupIdAndUserIdAndStatus(
                     group.getId(), currentUser.getId(), "ACTIVE");
             if (!isMember) {

@@ -131,6 +131,13 @@ export const budgetsApi = {
   getStatus: (month) => request('GET', '/api/users/me/budget/status', null, { month }),
 };
 
+// ─── Category Expense Limits API ──────────────────────────────────────────────
+export const categoryLimitsApi = {
+  list: () => request('GET', '/api/users/me/category-limits'),
+  set: (categoryId, limitAmount) => request('PUT', `/api/users/me/category-limits/${categoryId}`, { limitAmount }),
+  remove: (categoryId) => request('DELETE', `/api/users/me/category-limits/${categoryId}`),
+};
+
 // ─── Notifications API ────────────────────────────────────────────────────────
 export const notificationsApi = {
   list: () => request('GET', '/api/notifications'),

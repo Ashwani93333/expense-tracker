@@ -48,6 +48,7 @@ public class BudgetThresholdEvaluator {
     public static final String GROUP_BUDGET_THRESHOLD_REACHED = "GROUP_BUDGET_THRESHOLD_REACHED";
     public static final String TOTAL_EXPENDITURE_EXCEEDED = "TOTAL_EXPENDITURE_EXCEEDED";
     public static final String TOTAL_EXPENDITURE_THRESHOLD_REACHED = "TOTAL_EXPENDITURE_THRESHOLD_REACHED";
+    public static final String CATEGORY_LIMIT_EXCEEDED = "CATEGORY_LIMIT_EXCEEDED";
 
     private static final DateTimeFormatter MONTH_LABEL = DateTimeFormatter.ofPattern("MMMM yyyy");
 
@@ -58,6 +59,7 @@ public class BudgetThresholdEvaluator {
     private final ExpenseRepository expenseRepository;
     private final ExpenseSplitRepository splitRepository;
     private final UserNotificationSettingsRepository settingsRepository;
+    private final CategoryExpenseLimitRepository categoryLimitRepository;
     private final BudgetNotificationEventRecorder eventRecorder;
     private final NotificationService notificationService;
 
@@ -72,6 +74,7 @@ public class BudgetThresholdEvaluator {
             ExpenseRepository expenseRepository,
             ExpenseSplitRepository splitRepository,
             UserNotificationSettingsRepository settingsRepository,
+            CategoryExpenseLimitRepository categoryLimitRepository,
             BudgetNotificationEventRecorder eventRecorder,
             NotificationService notificationService) {
         this.userBudgetRepository = userBudgetRepository;
@@ -81,6 +84,7 @@ public class BudgetThresholdEvaluator {
         this.expenseRepository = expenseRepository;
         this.splitRepository = splitRepository;
         this.settingsRepository = settingsRepository;
+        this.categoryLimitRepository = categoryLimitRepository;
         this.eventRecorder = eventRecorder;
         this.notificationService = notificationService;
     }
@@ -114,6 +118,8 @@ public class BudgetThresholdEvaluator {
         if (settings.isTotalExpenditureEnabled()) {
             evaluateTotalExpenditure(user, settings, start, end);
         }
+
+        evaluateCategoryLimits(user, start, end);
     }
 
     /** Evaluates the group budget and each member's cap for the month. */
@@ -177,10 +183,19 @@ public class BudgetThresholdEvaluator {
     private void evaluateOverallBudget(User user, UserNotificationSettings settings,
                                        UserBudget budget, LocalDate start, LocalDate end) {
         BigDecimal spent = expenseRepository.sumPersonalExpensesForMonth(user.getId(), start, end);
-        double pct = percent(spent, budget.getBudgetLimit());
+        boolean isAmountType = "AMOUNT".equals(settings.getOverallBudgetThresholdType());
         for (int threshold : settings.getOverallBudgetThresholds()) {
-            if (pct < threshold) continue;
-            boolean exceeded = threshold >= 100;
+            boolean triggered;
+            double pct;
+            if (isAmountType) {
+                triggered = spent.doubleValue() >= threshold;
+                pct = percent(spent, BigDecimal.valueOf(threshold));
+            } else {
+                pct = percent(spent, budget.getBudgetLimit());
+                triggered = pct >= threshold;
+            }
+            if (!triggered) continue;
+            boolean exceeded = isAmountType ? spent.doubleValue() >= threshold : threshold >= 100;
             String type = exceeded ? BUDGET_EXCEEDED : BUDGET_THRESHOLD_REACHED;
             String title = exceeded
                     ? "Personal budget exceeded!"
@@ -197,10 +212,19 @@ public class BudgetThresholdEvaluator {
                                         UserBudget budget, LocalDate start, LocalDate end) {
         BigDecimal spent = expenseRepository.sumPersonalExpensesByCategoryForMonth(
                 user.getId(), budget.getCategory().getId(), start, end);
-        double pct = percent(spent, budget.getBudgetLimit());
+        boolean isAmountType = "AMOUNT".equals(settings.getCategoryBudgetThresholdType());
         for (int threshold : settings.getCategoryBudgetThresholds()) {
-            if (pct < threshold) continue;
-            boolean exceeded = threshold >= 100;
+            boolean triggered;
+            double pct;
+            if (isAmountType) {
+                triggered = spent.doubleValue() >= threshold;
+                pct = percent(spent, BigDecimal.valueOf(threshold));
+            } else {
+                pct = percent(spent, budget.getBudgetLimit());
+                triggered = pct >= threshold;
+            }
+            if (!triggered) continue;
+            boolean exceeded = isAmountType ? spent.doubleValue() >= threshold : threshold >= 100;
             String type = exceeded ? CATEGORY_BUDGET_EXCEEDED : CATEGORY_BUDGET_THRESHOLD_REACHED;
             String title = exceeded
                     ? "Category budget exceeded: " + budget.getCategory().getName()
@@ -225,19 +249,64 @@ public class BudgetThresholdEvaluator {
                     user.getId(), gm.getGroup().getId(), start, end));
         }
         BigDecimal total = personal.add(groupShares);
-        // Total-expenditure thresholds are absolute monthly amounts (whole rupees).
+        boolean isPercentageType = "PERCENTAGE".equals(settings.getTotalExpenditureThresholdType());
+        // When PERCENTAGE type, thresholds are interpreted as percentage of total budget (if set).
+        // When AMOUNT type (default), thresholds are absolute monthly amounts.
         for (int threshold : settings.getTotalExpenditureThresholds()) {
-            if (total.doubleValue() < threshold) continue;
-            boolean exceeded = total.doubleValue() >= threshold;
-            String type = TOTAL_EXPENDITURE_THRESHOLD_REACHED;
-            String title = "Total expenditure above " + threshold;
-            String message = "Your total expenditure this month is " + MoneyFormatter.format(total)
-                    + " (threshold " + MoneyFormatter.format(BigDecimal.valueOf(threshold)) + ").";
-            EmailNotificationService.BudgetAlertEmail email = new EmailNotificationService.BudgetAlertEmail(
-                    "Total expenditure", total, BigDecimal.valueOf(threshold), 0,
-                    BigDecimal.ZERO, exceeded, start.format(MONTH_LABEL), dashboardUrl());
-            dispatchIfNotSent(user, settings, type, title, message, null, null, null,
-                    start, threshold, exceeded, email, "TOTAL_EXPENDITURE");
+            boolean triggered;
+            if (isPercentageType) {
+                // Find the user's overall budget for this month to compute percentage
+                var overallBudget = userBudgetRepository.findByUserIdAndCategoryIdIsNullAndMonth(user.getId(), start);
+                if (overallBudget.isEmpty()) continue;
+                BigDecimal budgetLimit = overallBudget.get().getBudgetLimit();
+                double pct = percent(total, budgetLimit);
+                triggered = pct >= threshold;
+                if (!triggered) continue;
+                boolean exceeded = threshold >= 100;
+                String type = TOTAL_EXPENDITURE_THRESHOLD_REACHED;
+                String title = "Total expenditure at " + Math.round(pct) + "% of budget";
+                String message = "Your total expenditure this month is " + MoneyFormatter.format(total)
+                        + " (" + Math.round(pct) + "% of your ₹" + budgetLimit + " budget).";
+                EmailNotificationService.BudgetAlertEmail email = new EmailNotificationService.BudgetAlertEmail(
+                        "Total expenditure", total, budgetLimit, pct,
+                        budgetLimit.subtract(total), exceeded, start.format(MONTH_LABEL), dashboardUrl());
+                dispatchIfNotSent(user, settings, type, title, message, null, null, null,
+                        start, threshold, exceeded, email, "TOTAL_EXPENDITURE");
+            } else {
+                triggered = total.doubleValue() >= threshold;
+                if (!triggered) continue;
+                boolean exceeded = true;
+                String type = TOTAL_EXPENDITURE_THRESHOLD_REACHED;
+                String title = "Total expenditure above " + threshold;
+                String message = "Your total expenditure this month is " + MoneyFormatter.format(total)
+                        + " (threshold " + MoneyFormatter.format(BigDecimal.valueOf(threshold)) + ").";
+                EmailNotificationService.BudgetAlertEmail email = new EmailNotificationService.BudgetAlertEmail(
+                        "Total expenditure", total, BigDecimal.valueOf(threshold), 0,
+                        BigDecimal.ZERO, exceeded, start.format(MONTH_LABEL), dashboardUrl());
+                dispatchIfNotSent(user, settings, type, title, message, null, null, null,
+                        start, threshold, exceeded, email, "TOTAL_EXPENDITURE");
+            }
+        }
+    }
+
+    private void evaluateCategoryLimits(User user, LocalDate start, LocalDate end) {
+        List<com.expensetracker.model.CategoryExpenseLimit> limits =
+                categoryLimitRepository.findByUserId(user.getId());
+        for (com.expensetracker.model.CategoryExpenseLimit limit : limits) {
+            BigDecimal spent = expenseRepository.sumPersonalExpensesByCategoryForMonth(
+                    user.getId(), limit.getCategory().getId(), start, end);
+            if (spent.compareTo(limit.getLimitAmount()) < 0) continue;
+            String type = CATEGORY_LIMIT_EXCEEDED;
+            String catName = limit.getCategory().getName();
+            String title = "Category limit exceeded: " + catName;
+            String message = "You've spent " + MoneyFormatter.format(spent)
+                    + " on " + catName + " this month, exceeding your limit of "
+                    + MoneyFormatter.format(limit.getLimitAmount()) + ".";
+            UserNotificationSettings settings = settingsRepository.findByUserId(user.getId()).orElse(null);
+            dispatchIfNotSent(user, settings, type, title, message, limit.getId(), limit.getCategory().getId(),
+                    null, start, limit.getLimitAmount().intValue(), true,
+                    catName, limit.getLimitAmount(), spent,
+                    percent(spent, limit.getLimitAmount()), "CATEGORY_LIMIT");
         }
     }
 

@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Loader2, RefreshCw, Save, AlertTriangle, Wallet, Target, BarChart3, Mail, Inbox } from 'lucide-react';
+import { Bell, Loader2, RefreshCw, Save, AlertTriangle, Wallet, Target, BarChart3, Mail, Inbox, Tag, X, Plus } from 'lucide-react';
 import { useExpense } from '../context/ExpenseContext';
-import { usersApi } from '../services/api';
+import { usersApi, categoryLimitsApi, categoriesApi } from '../services/api';
 
 const DEFAULT_SETTINGS = {
   inAppNotifications: true,
   emailNotifications: false,
   overallBudgetEnabled: true,
   overallBudgetThresholds: [80, 100],
+  overallBudgetThresholdType: 'PERCENTAGE',
   categoryBudgetEnabled: true,
   categoryBudgetThresholds: [80, 100],
+  categoryBudgetThresholdType: 'PERCENTAGE',
   totalExpenditureEnabled: true,
   totalExpenditureThresholds: [],
+  totalExpenditureThresholdType: 'AMOUNT',
   monthlySummaryEnabled: true,
 };
 
@@ -36,12 +39,23 @@ export const NotificationSettingsPage = () => {
     categoryBudgetThresholds: '',
     totalExpenditureThresholds: '',
   });
+  const [categoryLimits, setCategoryLimits] = useState([]);
+  const [allCategories, setAllCategories] = useState([]);
+  const [newLimitCategory, setNewLimitCategory] = useState('');
+  const [newLimitAmount, setNewLimitAmount] = useState('');
+  const [savingLimit, setSavingLimit] = useState(false);
 
   const fetchSettings = async () => {
     setLoading(true);
     try {
-      const data = await usersApi.getNotificationSettings();
-      setSettings({ ...DEFAULT_SETTINGS, ...data });
+      const [data, limits, cats] = await Promise.allSettled([
+        usersApi.getNotificationSettings(),
+        categoryLimitsApi.list(),
+        categoriesApi.list(),
+      ]);
+      if (data.status === 'fulfilled') setSettings({ ...DEFAULT_SETTINGS, ...data.value });
+      if (limits.status === 'fulfilled') setCategoryLimits(limits.value || []);
+      if (cats.status === 'fulfilled') setAllCategories(cats.value || []);
     } catch { setSettings(null); }
     finally { setLoading(false); }
   };
@@ -66,6 +80,11 @@ export const NotificationSettingsPage = () => {
       payload.totalExpenditureThresholds = parseList(drafts.totalExpenditureThresholds);
     }
 
+    // Include threshold type changes from edits
+    if (edits.overallBudgetThresholdType) payload.overallBudgetThresholdType = edits.overallBudgetThresholdType;
+    if (edits.categoryBudgetThresholdType) payload.categoryBudgetThresholdType = edits.categoryBudgetThresholdType;
+    if (edits.totalExpenditureThresholdType) payload.totalExpenditureThresholdType = edits.totalExpenditureThresholdType;
+
     try {
       const updated = await usersApi.updateNotificationSettings(payload);
       setSettings({ ...DEFAULT_SETTINGS, ...updated });
@@ -86,7 +105,37 @@ export const NotificationSettingsPage = () => {
   const boolVal = (key) => edits[key] ?? settings?.[key] ?? DEFAULT_SETTINGS[key];
   const listVal = (key) => settings?.[key] ?? DEFAULT_SETTINGS[key];
 
-  const ThresholdEditor = ({ title, desc, prefix, enabledKey, listKey, draftKey, unit }) => (
+  const addCategoryLimit = async () => {
+    if (!newLimitCategory || !newLimitAmount) return;
+    setSavingLimit(true);
+    try {
+      await categoryLimitsApi.set(newLimitCategory, parseFloat(newLimitAmount));
+      const limits = await categoryLimitsApi.list();
+      setCategoryLimits(limits || []);
+      setNewLimitCategory('');
+      setNewLimitAmount('');
+      showToast('Category limit saved');
+    } catch (err) {
+      showToast(err.message || 'Failed to save limit', 'error');
+    }
+    setSavingLimit(false);
+  };
+
+  const removeCategoryLimit = async (categoryId) => {
+    try {
+      await categoryLimitsApi.remove(categoryId);
+      setCategoryLimits(prev => prev.filter(l => l.categoryId !== categoryId));
+      showToast('Category limit removed');
+    } catch (err) {
+      showToast(err.message || 'Failed to remove limit', 'error');
+    }
+  };
+
+  const ThresholdEditor = ({ title, desc, enabledKey, listKey, draftKey, typeKey, unit }) => {
+    const currentType = edits[typeKey] ?? settings?.[typeKey] ?? DEFAULT_SETTINGS[typeKey];
+    const isAmount = currentType === 'AMOUNT';
+
+    return (
     <div style={{
       padding: '18px 20px', borderRadius: 'var(--r-lg)',
       background: 'var(--bg-surface)', border: '1px solid var(--border)',
@@ -95,7 +144,7 @@ export const NotificationSettingsPage = () => {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
           <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            {unit === '%' ? <Target size={16} color="#2563eb" /> : <BarChart3 size={16} color="#2563eb" />}
+            {isAmount ? <BarChart3 size={16} color="#2563eb" /> : <Target size={16} color="#2563eb" />}
           </div>
           <div>
             <h4 style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 700, margin: 0 }}>{title}</h4>
@@ -112,6 +161,28 @@ export const NotificationSettingsPage = () => {
         </label>
       </div>
 
+      {/* Percentage / Amount toggle */}
+      <div style={{ display: 'flex', gap: '4px', padding: '3px', background: 'var(--bg-muted)', borderRadius: 'var(--r-sm)', width: 'fit-content' }}>
+        {['PERCENTAGE', 'AMOUNT'].map(t => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setEdits(prev => ({ ...prev, [typeKey]: t }))}
+            style={{
+              padding: '5px 14px', border: 'none', borderRadius: 'var(--r-sm)',
+              background: currentType === t ? '#fff' : 'transparent',
+              color: currentType === t ? 'var(--text-primary)' : 'var(--text-muted)',
+              fontWeight: currentType === t ? 700 : 500, fontSize: '0.75rem',
+              cursor: 'pointer', fontFamily: 'var(--font)',
+              boxShadow: currentType === t ? 'var(--shadow-sm)' : 'none',
+              transition: 'var(--t-fast)',
+            }}
+          >
+            {t === 'PERCENTAGE' ? '% Percentage' : '₹ Amount'}
+          </button>
+        ))}
+      </div>
+
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
           Current:
@@ -122,7 +193,7 @@ export const NotificationSettingsPage = () => {
               fontSize: '0.74rem', fontWeight: 700, padding: '2px 9px', borderRadius: '99px',
               background: '#eff6ff', color: '#2563eb', border: '1px solid #dbeafe',
             }}>
-              {t}{unit}
+              {isAmount ? `₹${t.toLocaleString('en-IN')}` : `${t}%`}
             </span>
           ))
         ) : (
@@ -132,14 +203,14 @@ export const NotificationSettingsPage = () => {
 
       <div style={{ display: 'flex', gap: '8px' }}>
         <div style={{ position: 'relative', flex: 1 }}>
-          {prefix && (
-            <span style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)', fontSize: '0.8rem', fontWeight: 700 }}>{prefix}</span>
-          )}
+          <span style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)', fontSize: '0.8rem', fontWeight: 700 }}>
+            {isAmount ? '₹' : '%'}
+          </span>
           <input
             type="text"
             className="input-field"
-            style={{ ...(prefix ? { paddingLeft: '26px' } : {}), fontSize: '0.82rem' }}
-            placeholder={unit === '%' ? 'e.g. 80, 100' : 'e.g. 1000, 5000'}
+            style={{ paddingLeft: '26px', fontSize: '0.82rem' }}
+            placeholder={isAmount ? 'e.g. 1000, 5000' : 'e.g. 80, 100'}
             value={drafts[draftKey]}
             onChange={e => setDrafts(p => ({ ...p, [draftKey]: e.target.value }))}
           />
@@ -155,7 +226,8 @@ export const NotificationSettingsPage = () => {
         )}
       </div>
     </div>
-  );
+    );
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -235,7 +307,7 @@ export const NotificationSettingsPage = () => {
           <div className="card" style={{ padding: '24px' }}>
             <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700, marginBottom: '6px' }}>Alert Thresholds</h3>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '18px' }}>
-              You'll be notified when spending crosses each threshold. Budget thresholds are percentages; total-spend thresholds are amounts.
+              You'll be notified when spending crosses each threshold. Choose percentage or absolute amount for each type.
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -245,7 +317,7 @@ export const NotificationSettingsPage = () => {
                 enabledKey="overallBudgetEnabled"
                 listKey="overallBudgetThresholds"
                 draftKey="overallBudgetThresholds"
-                unit="%"
+                typeKey="overallBudgetThresholdType"
               />
               <ThresholdEditor
                 title="Category Budget"
@@ -253,16 +325,15 @@ export const NotificationSettingsPage = () => {
                 enabledKey="categoryBudgetEnabled"
                 listKey="categoryBudgetThresholds"
                 draftKey="categoryBudgetThresholds"
-                unit="%"
+                typeKey="categoryBudgetThresholdType"
               />
               <ThresholdEditor
                 title="Total Expenditure"
-                desc="Absolute total-spend alerts (per month)"
+                desc="Total monthly spend alerts"
                 enabledKey="totalExpenditureEnabled"
                 listKey="totalExpenditureThresholds"
                 draftKey="totalExpenditureThresholds"
-                prefix="₹"
-                unit=""
+                typeKey="totalExpenditureThresholdType"
               />
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
@@ -290,9 +361,86 @@ export const NotificationSettingsPage = () => {
             </div>
           </div>
 
+          {/* Category Expense Limits */}
+          <div className="card" style={{ padding: '24px' }}>
+            <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700, marginBottom: '6px' }}>Category Expense Limits</h3>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '18px' }}>
+              Set a monthly spending limit per category. You'll be notified when it's exceeded.
+            </p>
+
+            {categoryLimits.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                {categoryLimits.map(limit => (
+                  <div key={limit.categoryId} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '10px 14px', borderRadius: 'var(--r-md)',
+                    background: 'var(--bg-surface)', border: '1px solid var(--border)',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Tag size={14} color="#2563eb" />
+                      <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{limit.categoryName}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#dc2626' }}>
+                        ₹{limit.limitAmount.toLocaleString('en-IN')}
+                      </span>
+                      <button
+                        className="btn btn-ghost btn-icon"
+                        onClick={() => removeCategoryLimit(limit.categoryId)}
+                        title="Remove limit"
+                        style={{ padding: '4px' }}
+                      >
+                        <X size={14} color="#dc2626" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+              <div className="input-group" style={{ margin: 0, flex: 1 }}>
+                <label className="input-label">Category</label>
+                <select
+                  value={newLimitCategory}
+                  onChange={e => setNewLimitCategory(e.target.value)}
+                  className="input-field"
+                  style={{ fontSize: '0.83rem' }}
+                >
+                  <option value="">Select category...</option>
+                  {allCategories
+                    .filter(c => !categoryLimits.some(l => l.categoryId === c.id))
+                    .map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                </select>
+              </div>
+              <div className="input-group" style={{ margin: 0, flex: 1 }}>
+                <label className="input-label">Monthly Limit (₹)</label>
+                <input
+                  type="number" min="1" step="100"
+                  placeholder="e.g. 5000"
+                  value={newLimitAmount}
+                  onChange={e => setNewLimitAmount(e.target.value)}
+                  className="input-field"
+                  style={{ fontSize: '0.83rem' }}
+                />
+              </div>
+              <button
+                className="btn btn-primary btn-sm"
+                disabled={savingLimit || !newLimitCategory || !newLimitAmount}
+                onClick={addCategoryLimit}
+                style={{ flexShrink: 0, height: '36px' }}
+              >
+                {savingLimit ? <Loader2 size={14} style={{ animation: 'spin 0.7s linear infinite' }} /> : <Plus size={14} />}
+                Add
+              </button>
+            </div>
+          </div>
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
             <AlertTriangle size={14} color="#d97706" />
-            Threshold values are applied on save. Budget thresholds must be percentages between 1 and 100.
+            Threshold values are applied on save. Choose between percentage (%) or absolute amount (₹) for each alert type.
           </div>
         </>
       )}

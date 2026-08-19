@@ -55,6 +55,15 @@ public class UserNotificationSettings {
     @Column(name = "total_expenditure_thresholds", columnDefinition = "TEXT")
     private List<Integer> totalExpenditureThresholds = new ArrayList<>();
 
+    @Column(name = "overall_budget_threshold_type", length = 10)
+    private String overallBudgetThresholdType = "PERCENTAGE";
+
+    @Column(name = "category_budget_threshold_type", length = 10)
+    private String categoryBudgetThresholdType = "PERCENTAGE";
+
+    @Column(name = "total_expenditure_threshold_type", length = 10)
+    private String totalExpenditureThresholdType = "AMOUNT";
+
     @Column(name = "monthly_summary_enabled")
     private Boolean monthlySummaryEnabled = false;
 
@@ -92,6 +101,12 @@ public class UserNotificationSettings {
     public void setTotalExpenditureEnabled(Boolean totalExpenditureEnabled) { this.totalExpenditureEnabled = totalExpenditureEnabled; }
     public List<Integer> getTotalExpenditureThresholds() { return totalExpenditureThresholds; }
     public void setTotalExpenditureThresholds(List<Integer> totalExpenditureThresholds) { this.totalExpenditureThresholds = totalExpenditureThresholds; }
+    public String getOverallBudgetThresholdType() { return overallBudgetThresholdType; }
+    public void setOverallBudgetThresholdType(String overallBudgetThresholdType) { this.overallBudgetThresholdType = overallBudgetThresholdType; }
+    public String getCategoryBudgetThresholdType() { return categoryBudgetThresholdType; }
+    public void setCategoryBudgetThresholdType(String categoryBudgetThresholdType) { this.categoryBudgetThresholdType = categoryBudgetThresholdType; }
+    public String getTotalExpenditureThresholdType() { return totalExpenditureThresholdType; }
+    public void setTotalExpenditureThresholdType(String totalExpenditureThresholdType) { this.totalExpenditureThresholdType = totalExpenditureThresholdType; }
     public Boolean getMonthlySummaryEnabled() { return monthlySummaryEnabled; }
     public void setMonthlySummaryEnabled(Boolean monthlySummaryEnabled) { this.monthlySummaryEnabled = monthlySummaryEnabled; }
     public OffsetDateTime getCreatedAt() { return createdAt; }

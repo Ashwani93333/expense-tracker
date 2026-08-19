@@ -6,8 +6,8 @@ server:
 spring:
   application:
     name: expense-tracker-backend
-#  profiles:
-#    active: dev
+  profiles:
+    active: dev
 
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/expense-tracker}

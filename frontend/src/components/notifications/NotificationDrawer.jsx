@@ -7,9 +7,13 @@ const notifIconMap = {
   GROUP_JOIN_REQUEST:               { icon: Users,         bg: '#ede9fe', color: '#7c3aed' },
   GROUP_BUDGET_SET:                 { icon: TrendingUp,    bg: '#d1fae5', color: '#059669' },
   BUDGET_THRESHOLD_REACHED:         { icon: AlertTriangle, bg: '#fef3c7', color: '#d97706' },
+  BUDGET_EXCEEDED:                  { icon: AlertTriangle, bg: '#fee2e2', color: '#dc2626' },
   CATEGORY_BUDGET_THRESHOLD_REACHED:{ icon: AlertTriangle, bg: '#fef3c7', color: '#d97706' },
+  CATEGORY_BUDGET_EXCEEDED:         { icon: AlertTriangle, bg: '#fee2e2', color: '#dc2626' },
+  CATEGORY_LIMIT_EXCEEDED:          { icon: AlertTriangle, bg: '#fee2e2', color: '#dc2626' },
   TOTAL_EXPENDITURE_THRESHOLD_REACHED: { icon: AlertTriangle, bg: '#fee2e2', color: '#dc2626' },
   GROUP_BUDGET_THRESHOLD_REACHED:   { icon: AlertTriangle, bg: '#fef3c7', color: '#d97706' },
+  GROUP_BUDGET_EXCEEDED:            { icon: AlertTriangle, bg: '#fee2e2', color: '#dc2626' },
   MONTHLY_SUMMARY:                  { icon: TrendingUp,    bg: '#e0e7ff', color: '#4f46e5' },
 };
 

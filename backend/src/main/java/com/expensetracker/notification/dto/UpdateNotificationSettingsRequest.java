@@ -20,15 +20,21 @@ public class UpdateNotificationSettingsRequest {
     @Size(max = 20, message = "Too many overall budget thresholds")
     private List<@Min(value = 1, message = "Threshold must be between 1 and 100") @Max(value = 100, message = "Threshold must be between 1 and 100") Integer> overallBudgetThresholds;
 
+    private String overallBudgetThresholdType;
+
     private Boolean categoryBudgetEnabled;
 
     @Size(max = 20, message = "Too many category budget thresholds")
     private List<@Min(value = 1, message = "Threshold must be between 1 and 100") @Max(value = 100, message = "Threshold must be between 1 and 100") Integer> categoryBudgetThresholds;
 
+    private String categoryBudgetThresholdType;
+
     private Boolean totalExpenditureEnabled;
 
     @Size(max = 20, message = "Too many total expenditure thresholds")
     private List<@Min(value = 1, message = "Threshold must be a positive amount") Integer> totalExpenditureThresholds;
+
+    private String totalExpenditureThresholdType;
 
     private Boolean monthlySummaryEnabled;
 
@@ -40,14 +46,20 @@ public class UpdateNotificationSettingsRequest {
     public void setOverallBudgetEnabled(Boolean overallBudgetEnabled) { this.overallBudgetEnabled = overallBudgetEnabled; }
     public List<Integer> getOverallBudgetThresholds() { return overallBudgetThresholds; }
     public void setOverallBudgetThresholds(List<Integer> overallBudgetThresholds) { this.overallBudgetThresholds = overallBudgetThresholds; }
+    public String getOverallBudgetThresholdType() { return overallBudgetThresholdType; }
+    public void setOverallBudgetThresholdType(String overallBudgetThresholdType) { this.overallBudgetThresholdType = overallBudgetThresholdType; }
     public Boolean getCategoryBudgetEnabled() { return categoryBudgetEnabled; }
     public void setCategoryBudgetEnabled(Boolean categoryBudgetEnabled) { this.categoryBudgetEnabled = categoryBudgetEnabled; }
     public List<Integer> getCategoryBudgetThresholds() { return categoryBudgetThresholds; }
     public void setCategoryBudgetThresholds(List<Integer> categoryBudgetThresholds) { this.categoryBudgetThresholds = categoryBudgetThresholds; }
+    public String getCategoryBudgetThresholdType() { return categoryBudgetThresholdType; }
+    public void setCategoryBudgetThresholdType(String categoryBudgetThresholdType) { this.categoryBudgetThresholdType = categoryBudgetThresholdType; }
     public Boolean getTotalExpenditureEnabled() { return totalExpenditureEnabled; }
     public void setTotalExpenditureEnabled(Boolean totalExpenditureEnabled) { this.totalExpenditureEnabled = totalExpenditureEnabled; }
     public List<Integer> getTotalExpenditureThresholds() { return totalExpenditureThresholds; }
     public void setTotalExpenditureThresholds(List<Integer> totalExpenditureThresholds) { this.totalExpenditureThresholds = totalExpenditureThresholds; }
+    public String getTotalExpenditureThresholdType() { return totalExpenditureThresholdType; }
+    public void setTotalExpenditureThresholdType(String totalExpenditureThresholdType) { this.totalExpenditureThresholdType = totalExpenditureThresholdType; }
     public Boolean getMonthlySummaryEnabled() { return monthlySummaryEnabled; }
     public void setMonthlySummaryEnabled(Boolean monthlySummaryEnabled) { this.monthlySummaryEnabled = monthlySummaryEnabled; }
 }

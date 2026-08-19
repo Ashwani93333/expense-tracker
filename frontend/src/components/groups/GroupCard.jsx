@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Key, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Users, Key, ArrowRight, ShieldCheck, Clock, AlertTriangle } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 import { useAuth } from '../../context/AuthContext';
 
@@ -10,12 +10,17 @@ export const GroupCard = ({ group, onSelect }) => {
   const userRole = group.currentUserRole || 'MEMBER';
   const memberCount = group.memberCount ?? (group.members?.length ?? 0);
 
+  const isExpired = group.expiresAt && new Date(group.expiresAt) < new Date();
+  const daysUntilExpiry = group.expiresAt ? Math.ceil((new Date(group.expiresAt) - new Date()) / (1000 * 60 * 60 * 24)) : null;
+  const isExpiringSoon = !isExpired && daysUntilExpiry !== null && daysUntilExpiry <= 7;
+
   return (
     <div
       className="card card-interactive"
       onClick={() => onSelect(group.id)}
       style={{
         padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px',
+        opacity: isExpired ? 0.7 : 1,
       }}
     >
       {/* Group Header */}
@@ -23,20 +28,32 @@ export const GroupCard = ({ group, onSelect }) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
           <div style={{
             width: '38px', height: '38px', borderRadius: '10px', flexShrink: 0,
-            background: 'var(--accent-light)', border: '1px solid var(--border-accent)',
+            background: isExpired ? '#fef2f2' : 'var(--accent-light)',
+            border: `1px solid ${isExpired ? '#fecaca' : 'var(--border-accent)'}`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '1.1rem', fontWeight: 800, color: 'var(--accent)',
+            fontSize: '1.1rem', fontWeight: 800,
+            color: isExpired ? '#dc2626' : 'var(--accent)',
           }}>
             {group.name?.charAt(0).toUpperCase()}
           </div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px', flexWrap: 'wrap' }}>
               <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', margin: 0, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {group.name}
               </h3>
               {userRole === 'ADMIN' && (
                 <span className="badge badge-violet" style={{ fontSize: '0.63rem', flexShrink: 0 }}>
                   <ShieldCheck size={10} /> Admin
+                </span>
+              )}
+              {isExpired && (
+                <span className="badge" style={{ fontSize: '0.63rem', flexShrink: 0, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>
+                  <AlertTriangle size={10} /> Expired
+                </span>
+              )}
+              {isExpiringSoon && (
+                <span className="badge badge-amber" style={{ fontSize: '0.63rem', flexShrink: 0 }}>
+                  <Clock size={10} /> {daysUntilExpiry}d left
                 </span>
               )}
             </div>
@@ -83,7 +100,7 @@ export const GroupCard = ({ group, onSelect }) => {
           {memberCount} member{memberCount !== 1 ? 's' : ''}
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--accent)', fontSize: '0.8rem', fontWeight: 700 }}>
-          <span>Open</span>
+          <span>{isExpired ? 'View' : 'Open'}</span>
           <ArrowRight size={13} />
         </div>
       </div>
