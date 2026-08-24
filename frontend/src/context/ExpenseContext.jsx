@@ -145,11 +145,23 @@ export const ExpenseProvider = ({ children }) => {
         newExpense = await expensesApi.create(payload);
       }
 
-      setExpenses(prev => [newExpense, ...prev]);
+      // Only prepend optimistically if it belongs to the month being viewed,
+      // otherwise the refetch below would silently remove it again.
+      const savedDate = newExpense?.expenseDate || formData.expenseDate || '';
+      const inCurrentMonth = savedDate.startsWith(currentMonth);
+      if (inCurrentMonth) {
+        setExpenses(prev => [newExpense, ...prev]);
+      }
       // Instantly refresh all data to update charts, budgets, and dashboard
       fetchAll();
       bumpDataVersion();
-      showToast(`Expense "₹${parseFloat(formData.amount).toFixed(2)}" added successfully!`);
+      let msg = `Expense "₹${parseFloat(formData.amount).toFixed(2)}" added successfully!`;
+      if (savedDate && !inCurrentMonth) {
+        const [y, m] = savedDate.split('-').map(Number);
+        const label = new Date(y, m - 1, 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+        msg = `Added ₹${parseFloat(formData.amount).toFixed(2)} under ${label} (receipt date) — switch months to view it.`;
+      }
+      showToast(msg);
       return newExpense;
     } catch (err) {
       showToast(err.message || 'Failed to add expense', 'error');
@@ -185,7 +197,7 @@ export const ExpenseProvider = ({ children }) => {
         return e;
       }));
       bumpDataVersion();
-      showToast('Split share marked as settled! ✅');
+      showToast('Split share marked as settled!');
     } catch (err) {
       showToast(err.message || 'Failed to settle split', 'error');
     }
@@ -336,7 +348,7 @@ export const ExpenseProvider = ({ children }) => {
     try {
       const newCat = await categoriesApi.create({
         name: categoryData.name,
-        icon: categoryData.icon || '📁',
+        icon: categoryData.icon || 'folder',
         color: categoryData.color || '#6366f1',
       });
       setCategories(prev => [...prev, newCat]);

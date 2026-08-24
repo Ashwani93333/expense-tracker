@@ -49,7 +49,7 @@ export const InviteMemberModal = ({ groupId, inviteCode, groupName }) => {
 
   const inviteLink = generated?.inviteLink || `${window.location.origin}/join?code=${inviteCode || ''}`;
   const displayCode = generated?.inviteCode || inviteCode || 'N/A';
-  const inviteText = `Join my "${groupName || 'expense'}" group on ExpenseTracker! 🧾 Use invite code ${displayCode} or open this link: ${inviteLink}`;
+  const inviteText = `Join my "${groupName || 'expense'}" group on ExpenseTracker! Use invite code ${displayCode} or open this link: ${inviteLink}`;
 
   const copy = async (text, key) => {
     try {
@@ -88,7 +88,7 @@ export const InviteMemberModal = ({ groupId, inviteCode, groupName }) => {
       await groupsApi.invite(groupId, { email });
       setInvited(true);
       setEmail('');
-      showToast(`Invite sent to ${email}! ✉️`);
+      showToast(`Invite sent to ${email}!`);
       setTimeout(() => setInvited(false), 3000);
     } catch (err) {
       showToast(err.message || 'Failed to send invite', 'error');

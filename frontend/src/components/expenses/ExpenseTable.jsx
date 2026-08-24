@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Trash2, Search, Users, Check, Plus, FileText, Calendar, ScanLine } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 import { useAuth } from '../../context/AuthContext';
+import { CategoryIcon } from '../categories/categoryIcons';
 
 export const ExpenseTable = () => {
   const { expenses, deleteExpense, categories, settleSplitShare, isLoading, setIsAddModalOpen, setActiveTab } = useExpense();
@@ -101,9 +102,10 @@ export const ExpenseTable = () => {
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
               className={`btn btn-xs ${selectedCategory === cat.id ? 'btn-primary' : 'btn-ghost'}`}
-              style={{ borderRadius: 'var(--r-full)', whiteSpace: 'nowrap', flexShrink: 0 }}
+              style={{ borderRadius: 'var(--r-full)', whiteSpace: 'nowrap', flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: '5px' }}
             >
-              {cat.icon ? `${cat.icon} ` : ''}{cat.name}
+              <CategoryIcon icon={cat.icon} size={12} />
+              {cat.name}
             </button>
           ))}
         </div>
@@ -182,9 +184,8 @@ export const ExpenseTable = () => {
                           width: '38px', height: '38px', borderRadius: '9px', flexShrink: 0,
                           background: '#eff6ff', border: '1px solid #dbeafe',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: '1.1rem',
                         }}>
-                          {catIcon && catIcon.length <= 2 ? catIcon : '💳'}
+                          <CategoryIcon icon={catIcon} size={17} color="#2563eb" />
                         </div>
 
                         {/* Info */}

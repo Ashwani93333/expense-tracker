@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Target, Plus, Trash2, ChevronDown, Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Target, Plus, Trash2, ChevronDown, Loader2, RefreshCw, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useExpense } from '../context/ExpenseContext';
 import { useAuth } from '../context/AuthContext';
 import { budgetsApi } from '../services/api';
+import { CategoryIcon } from '../components/categories/categoryIcons';
 
 const statusColor = (s) => ({
   OK:        '#059669',
@@ -11,10 +12,16 @@ const statusColor = (s) => ({
   NO_BUDGET: '#2563eb',
 }[s] || '#64748b');
 
+const StatusIcon = ({ status }) => ({
+  OK:       <CheckCircle2 size={12} />,
+  WARNING:  <AlertTriangle size={12} />,
+  EXCEEDED: <AlertTriangle size={12} />,
+}[status] || null);
+
 const statusLabel = (s) => ({
-  OK:        '✅ On Track',
-  WARNING:   '⚠️ Warning',
-  EXCEEDED:  '🚨 Exceeded',
+  OK:        'On Track',
+  WARNING:   'Warning',
+  EXCEEDED:  'Exceeded',
   NO_BUDGET: 'No Limit Set',
 }[s] || s);
 
@@ -203,11 +210,12 @@ export const BudgetSettingsPage = () => {
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '1.1rem' }}>{cat.icon || '📁'}</span>
+                    <CategoryIcon icon={cat.icon} size={16} color={cat.color || '#2563eb'} />
                     <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{cat.name}</span>
                   </div>
                   {catBudget ? (
-                    <span style={{ fontSize: '0.75rem', color: statusColor(catBudget.status), fontWeight: 700 }}>
+                    <span style={{ fontSize: '0.75rem', color: statusColor(catBudget.status), fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      <StatusIcon status={catBudget.status} />
                       {catBudget.percentUsed?.toFixed(0)}% · {statusLabel(catBudget.status)}
                     </span>
                   ) : (

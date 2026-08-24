@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   DollarSign, TrendingUp, Plus, Calendar, ArrowUpRight,
-  Users, Target, Wallet, AlertTriangle, ScanLine, ChevronRight
+  Users, Target, Wallet, AlertTriangle, ScanLine, ChevronRight, CreditCard
 } from 'lucide-react';
 import { useExpense } from '../context/ExpenseContext';
 import { useAuth } from '../context/AuthContext';
@@ -111,7 +111,7 @@ export const DashboardPage = () => {
               )}
             </div>
             <h1 style={{ fontSize: '1.35rem', color: 'var(--text-primary)', marginBottom: '2px', fontWeight: 800 }}>
-              Welcome back, {currentUser?.fullName?.split(' ')[0] || 'there'} 👋
+              Welcome back, {currentUser?.fullName?.split(' ')[0] || 'there'}
             </h1>
             <p style={{ fontSize: '0.83rem', color: 'var(--text-muted)' }}>
               {expenses.length} transactions · {groups.length} group{groups.length !== 1 ? 's' : ''} · {currentMonth}
@@ -146,7 +146,7 @@ export const DashboardPage = () => {
           <AlertTriangle size={17} color={personalBudget.status === 'EXCEEDED' ? '#dc2626' : '#d97706'} />
           <div style={{ flex: 1 }}>
             <p style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>
-              {personalBudget.status === 'EXCEEDED' ? '🚨 Monthly Budget Exceeded!' : '⚠️ Budget Warning — 80% Reached'}
+              {personalBudget.status === 'EXCEEDED' ? 'Monthly Budget Exceeded!' : 'Budget Warning — 80% Reached'}
             </p>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
               ₹{personalBudget.spent?.toFixed(2)} spent of ₹{personalBudget.overallLimit?.toFixed(2)} limit ({personalBudget.percentUsed?.toFixed(1)}% used)
@@ -326,9 +326,8 @@ export const DashboardPage = () => {
                   width: '36px', height: '36px', borderRadius: '9px', flexShrink: 0,
                   background: '#dbeafe',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1rem',
                 }}>
-                  💳
+                  <CreditCard size={16} color="#2563eb" />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

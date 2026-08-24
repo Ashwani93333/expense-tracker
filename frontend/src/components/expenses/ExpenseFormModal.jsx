@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle, Loader2, Users, DollarSign, CalendarDays, Tag, AlignLeft, ScanLine } from 'lucide-react';
+import { X, CheckCircle, Loader2, Users, DollarSign, CalendarDays, Tag, AlignLeft, ScanLine, Scale, PenLine, Percent, AlertTriangle } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 import { useAuth } from '../../context/AuthContext';
 import { groupsApi } from '../../services/api';
 import { CategorySearchSelect } from '../categories/CategorySearchSelect';
 
-const SplitTypeBtn = ({ value, current, label, onClick }) => (
+const SplitTypeBtn = ({ value, current, label, icon: Icon, onClick }) => (
   <button
     type="button"
     onClick={() => onClick(value)}
@@ -18,9 +18,10 @@ const SplitTypeBtn = ({ value, current, label, onClick }) => (
       fontWeight: current === value ? 700 : 500,
       fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'var(--font)',
       transition: 'var(--t-fast)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
     }}
   >
-    {label}
+    <Icon size={13} /> {label}
   </button>
 );
 
@@ -272,9 +273,9 @@ export const ExpenseFormModal = () => {
               <div>
                 <label className="input-label" style={{ marginBottom: '8px', display: 'block' }}>Split Method</label>
                 <div style={{ display: 'flex', gap: '6px' }}>
-                  <SplitTypeBtn value="EQUAL"   current={splitType} label="⚖️ Equal"    onClick={setSplitType} />
-                  <SplitTypeBtn value="PERCENT" current={splitType} label="% Percent"   onClick={setSplitType} />
-                  <SplitTypeBtn value="CUSTOM"  current={splitType} label="✏️ Custom"   onClick={setSplitType} />
+                  <SplitTypeBtn value="EQUAL"   current={splitType} label="Equal"    icon={Scale}   onClick={setSplitType} />
+                  <SplitTypeBtn value="PERCENT" current={splitType} label="% Percent" icon={Percent} onClick={setSplitType} />
+                  <SplitTypeBtn value="CUSTOM"  current={splitType} label="Custom"   icon={PenLine} onClick={setSplitType} />
                 </div>
               </div>
 
@@ -321,8 +322,8 @@ export const ExpenseFormModal = () => {
                   ))}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: '8px 14px', background: 'var(--bg-muted)' }}>
                     <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)' }}>Total</span>
-                    <span style={{ fontSize: '0.88rem', fontWeight: 800, color: splitError ? '#dc2626' : '#059669', textAlign: 'right' }}>
-                      ₹{splitTotal.toFixed(2)} {splitError && '⚠️'}
+                    <span style={{ fontSize: '0.88rem', fontWeight: 800, color: splitError ? '#dc2626' : '#059669', textAlign: 'right', display: 'inline-flex', alignItems: 'center', gap: '5px', justifyContent: 'flex-end' }}>
+                      ₹{splitTotal.toFixed(2)} {splitError && <AlertTriangle size={13} />}
                     </span>
                   </div>
                 </div>

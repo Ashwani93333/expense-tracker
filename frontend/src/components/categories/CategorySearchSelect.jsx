@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Tag, Plus } from 'lucide-react';
+import { Tag, Plus, Check } from 'lucide-react';
+import { CategoryIcon } from './categoryIcons';
 
 export const CategorySearchSelect = ({ categories, value, onChange, addCategory }) => {
   const [query, setQuery] = useState('');
@@ -90,7 +91,7 @@ export const CategorySearchSelect = ({ categories, value, onChange, addCategory 
 
   const displayValue = isOpen
     ? query
-    : (selected ? `${selected.icon ? selected.icon + ' ' : ''}${selected.name}` : '');
+    : (selected ? selected.name : '');
 
   return (
     <div ref={wrapRef} style={{ position: 'relative' }}>
@@ -160,9 +161,9 @@ export const CategorySearchSelect = ({ categories, value, onChange, addCategory 
                   borderBottom: '1px solid var(--border)',
                 }}
               >
-                <span style={{ fontSize: '1rem' }}>{cat.icon || '📁'}</span>
+                <CategoryIcon icon={cat.icon} size={15} color="var(--text-secondary)" />
                 {cat.name}
-                {cat.id === value && <span style={{ marginLeft: 'auto', color: 'var(--accent)', fontSize: '0.75rem' }}>&#10003;</span>}
+                {cat.id === value && <Check size={13} style={{ marginLeft: 'auto', color: 'var(--accent)' }} />}
               </div>
             ))
           ) : (

@@ -501,7 +501,7 @@ export const GroupDetailPage = () => {
           ) : settlements.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
               <CheckCircle2 size={36} color="#059669" style={{ marginBottom: '10px' }} />
-              <p style={{ color: '#059669', fontWeight: 600 }}>All settled up! 🎉</p>
+              <p style={{ color: '#059669', fontWeight: 600 }}>All settled up!</p>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '4px' }}>No outstanding balances this month.</p>
             </div>
           ) : (

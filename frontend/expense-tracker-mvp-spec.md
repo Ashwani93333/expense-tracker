@@ -1,6 +1,21 @@
 1. hey check for instant update fileds when user click to sumbit or done etc process makr and updat ethe data at evry page ... and also updat ethe onboarding page make it long =er to scroll and add some animation show our feactures ai scab its budget expense all
 
+Later on-- impact features
 
+1. Recurring expenses — rent/subscriptions auto-created on schedule (Expense has no recurrence field yet)
+2. CSV/PDF export — export expenses & group reports; also bank statement import
+3. Dark mode — your styling is inline CSS vars, easy win via data-theme
+4. Debt simplification — minimize transactions in SettlementService (A→B→C instead of 3 transfers)
+Engagement / polish
+5. Savings goals — target amount + progress bar, ties into existing budget alerts
+6. Real-time group updates — WebSockets so members see new expenses/balances live
+7. Comments/reactions on expenses — great for group disputes
+8. Calendar view of expenses per month
+Bigger bets
+9. AI insights — spending anomaly detection, month-over-month forecast (you already have rule-based classification to build on)
+10. Multi-currency support — travel groups with conversion rates
+11. 2FA + OAuth login on top of JWT
+12. PWA/offline mode — mobile-installable, queue expenses offline
 
 
 

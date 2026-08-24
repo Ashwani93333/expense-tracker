@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
 import {
   UploadCloud, ScanLine, Loader2, CheckCircle2, ShieldCheck, Tag,
-  X, Edit3, DollarSign, Calendar, FileText, Zap, AlertCircle
+  X, Edit3, DollarSign, Calendar, FileText, Zap, AlertCircle, AlertTriangle,
+  ShoppingCart, Smartphone, UtensilsCrossed
 } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 import { expensesApi } from '../../services/api';
@@ -14,6 +15,7 @@ const DEMO_TEMPLATES = [
     categoryName: 'Food & Dining',
     confidenceScore: 0.98,
     expenseDate: new Date().toISOString().split('T')[0],
+    demoIcon: ShoppingCart,
   },
   {
     description: 'Croma Electronics Store',
@@ -21,6 +23,7 @@ const DEMO_TEMPLATES = [
     categoryName: 'Shopping',
     confidenceScore: 0.95,
     expenseDate: new Date().toISOString().split('T')[0],
+    demoIcon: Smartphone,
   },
   {
     description: 'Swiggy Order',
@@ -28,6 +31,7 @@ const DEMO_TEMPLATES = [
     categoryName: 'Food & Dining',
     confidenceScore: 0.97,
     expenseDate: new Date().toISOString().split('T')[0],
+    demoIcon: UtensilsCrossed,
   },
 ];
 
@@ -38,6 +42,17 @@ const SCAN_STEPS = [
   'Matching expense category...',
   'Done! Review results below.',
 ];
+
+const getCurrentMonthKey = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+};
+
+const getMonthLabel = (dateStr) => {
+  if (!/^\d{4}-\d{2}/.test(dateStr)) return dateStr;
+  const [y, m] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+};
 
 export const ReceiptScanner = () => {
   const { addExpense, addCategory, categories } = useExpense();
@@ -329,17 +344,20 @@ export const ReceiptScanner = () => {
                     Or try a demo receipt (simulation)
                   </p>
                   <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    {DEMO_TEMPLATES.map((t, i) => (
-                      <button
-                        key={i}
-                        className="btn btn-secondary btn-sm"
-                        onClick={e => { e.stopPropagation(); handleDemoScan(i); }}
-                        style={{ fontSize: '0.78rem' }}
-                      >
-                        {i === 0 ? '🛒' : i === 1 ? '📱' : '🍱'} {t.description.split(' ')[0]} ·{' '}
-                        ₹{t.amount.toLocaleString('en-IN')}
-                      </button>
-                    ))}
+                    {DEMO_TEMPLATES.map((t, i) => {
+                      const DemoIcon = t.demoIcon;
+                      return (
+                        <button
+                          key={i}
+                          className="btn btn-secondary btn-sm"
+                          onClick={e => { e.stopPropagation(); handleDemoScan(i); }}
+                          style={{ fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                        >
+                          <DemoIcon size={13} /> {t.description.split(' ')[0]} ·{' '}
+                          ₹{t.amount.toLocaleString('en-IN')}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -393,6 +411,22 @@ export const ReceiptScanner = () => {
 
           {/* Editable form */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+
+            {/* Off-month date warning */}
+            {editDate && !editDate.startsWith(getCurrentMonthKey()) && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '10px',
+                padding: '10px 14px', borderRadius: 'var(--r-md)',
+                background: '#fffbeb', border: '1px solid #fde68a',
+              }}>
+                <AlertTriangle size={16} color="#d97706" style={{ flexShrink: 0 }} />
+                <span style={{ fontSize: '0.8rem', color: '#92400e', fontWeight: 500 }}>
+                  Receipt date is <strong>{editDate}</strong> — it will be saved under{' '}
+                  <strong>{getMonthLabel(editDate)}</strong>{' '}
+                  and won't appear in the current month's dashboard.
+                </span>
+              </div>
+            )}
 
             {/* Amount */}
             <div className="input-group" style={{ margin: 0 }}>

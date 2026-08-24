@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-import { Plus, Tag, ShieldCheck, Trash2, Check, Loader2 } from 'lucide-react';
+import { Plus, ShieldCheck, Trash2, Check, Loader2, Tag } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
+import { CATEGORY_ICONS, CategoryIcon } from './categoryIcons';
 
 const PRESET_COLORS = ['#2563eb', '#10b981', '#7c3aed', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6', '#ec4899', '#84cc16', '#f97316'];
-const PRESET_ICONS = ['🍔', '🚗', '🏠', '💊', '🎮', '✈️', '💪', '🐾', '📚', '🛒', '💰', '🎵', '☕'];
 
 export const CategoriesManager = () => {
   const { categories, addCategory, deleteCategory, isLoading } = useExpense();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [name, setName] = useState('');
-  const [icon, setIcon] = useState('📁');
+  const [icon, setIcon] = useState('folder');
   const [color, setColor] = useState('#2563eb');
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
@@ -21,7 +21,7 @@ export const CategoriesManager = () => {
     setSaving(true);
     try {
       await addCategory({ name: name.trim(), icon, color });
-      setName(''); setIcon('📁'); setColor('#2563eb');
+      setName(''); setIcon('folder'); setColor('#2563eb');
       setIsFormOpen(false);
     } catch {}
     finally { setSaving(false); }
@@ -66,20 +66,22 @@ export const CategoriesManager = () => {
                 />
               </div>
               <div className="input-group" style={{ margin: 0 }}>
-                <label className="input-label">Emoji Icon</label>
+                <label className="input-label">Icon</label>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  {PRESET_ICONS.map(ic => (
+                  {CATEGORY_ICONS.map(({ key, label, icon: Icon }) => (
                     <button
-                      key={ic} type="button"
-                      onClick={() => setIcon(ic)}
+                      key={key} type="button" title={label}
+                      onClick={() => setIcon(key)}
                       style={{
-                        padding: '6px 8px', borderRadius: '8px', cursor: 'pointer', fontSize: '1.1rem',
-                        background: icon === ic ? 'var(--accent-light)' : 'var(--bg-surface)',
-                        border: `1px solid ${icon === ic ? 'var(--accent)' : 'var(--border)'}`,
+                        padding: '6px 8px', borderRadius: '8px', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: icon === key ? 'var(--accent)' : 'var(--text-muted)',
+                        background: icon === key ? 'var(--accent-light)' : 'var(--bg-surface)',
+                        border: `1px solid ${icon === key ? 'var(--accent)' : 'var(--border)'}`,
                         transition: 'var(--t-fast)',
                       }}
                     >
-                      {ic}
+                      <Icon size={16} />
                     </button>
                   ))}
                 </div>
@@ -134,9 +136,8 @@ export const CategoriesManager = () => {
                   background: `${cat.color || '#2563eb'}15`,
                   border: `1px solid ${cat.color || '#2563eb'}30`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1.2rem',
                 }}>
-                  {cat.icon || <Tag size={18} color={cat.color || '#2563eb'} />}
+                  <CategoryIcon icon={cat.icon} size={18} color={cat.color || '#2563eb'} />
                 </div>
                 <div style={{ minWidth: 0 }}>
                   <h4 style={{ fontSize: '0.875rem', color: 'var(--text-primary)', margin: 0, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

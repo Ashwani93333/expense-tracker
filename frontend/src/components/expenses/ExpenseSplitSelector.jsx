@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users } from 'lucide-react';
+import { Users, Check } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 
 export const ExpenseSplitSelector = ({ 
@@ -226,8 +226,9 @@ export const ExpenseSplitSelector = ({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Enter percentage allocation per member:</span>
-                <span style={{ color: isPercentValid ? '#10b981' : '#ef4444', fontWeight: 700 }}>
-                  Total: {totalPercentSum.toFixed(1)}% {isPercentValid ? '✓' : '(Must equal 100%)'}
+                <span style={{ color: isPercentValid ? '#10b981' : '#ef4444', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  Total: {totalPercentSum.toFixed(1)}% {isPercentValid && <Check size={12} />}
+                  {!isPercentValid && '(Must equal 100%)'}
                 </span>
               </div>
 
@@ -275,8 +276,9 @@ export const ExpenseSplitSelector = ({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Enter exact share amount per member:</span>
-                <span style={{ color: isCustomValid ? '#10b981' : '#ef4444', fontWeight: 700 }}>
-                  Total: ₹{totalSharesSum.toFixed(2)} / ₹{expenseAmount.toFixed(2)} {isCustomValid ? '✓' : '(Must match total)'}
+                <span style={{ color: isCustomValid ? '#10b981' : '#ef4444', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  Total: ₹{totalSharesSum.toFixed(2)} / ₹{expenseAmount.toFixed(2)} {isCustomValid && <Check size={12} />}
+                  {!isCustomValid && '(Must match total)'}
                 </span>
               </div>
 

@@ -4,6 +4,7 @@ import {
   Users, PieChart, Receipt, Zap, Shield, TrendingUp, BarChart3,
   Loader2, AlertCircle, Mail, Lock, User, Wallet, ScanLine,
   Smartphone, ChevronDown, Target, CreditCard, Bell, Link2, Share2,
+  Heart, HelpCircle, IndianRupee,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -198,7 +199,7 @@ const BudgetDemo = () => {
             fontSize: '0.78rem', fontWeight: 700, color: '#92400e',
             animation: 'fade-slide-in 0.5s ease',
           }}>
-            <Bell size={14} /> 80% threshold crossed — alert sent to your device 🔔
+            <Bell size={14} /> 80% threshold crossed — alert sent to your device
           </div>
         )}
       </div>
@@ -340,7 +341,7 @@ const NotifDemo = () => {
   const items = [
     { type: 'red', title: 'Group budget exceeded', desc: 'Tech Roommates crossed ₹45,000 threshold.' },
     { type: 'amber', title: '80% budget reached', desc: 'Personal monthly budget is at 82%.' },
-    { type: 'green', title: 'Split settled ✅', desc: 'Marcus paid you ₹600 for Team Dinner.' },
+    { type: 'green', title: 'Split settled', desc: 'Marcus paid you ₹600 for Team Dinner.' },
   ];
   return (
     <div className="demo-window">
@@ -524,7 +525,7 @@ const Testimonials = () => (
   <section data-reveal style={{ padding: '90px 5%', background: '#fff' }}>
     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
       <SectionHeading
-        badge={<>❤️ Loved by real users</>}
+        badge={<><Heart size={12} /> Loved by real users</>}
         title="Don\u2019t take our word for it"
         sub="Thousands of individuals and teams already manage money smarter with ExpenseTracker."
       />
@@ -564,7 +565,7 @@ const FaqSection = () => {
     <section data-reveal style={{ padding: '90px 5%', background: '#f8fafc' }}>
       <div style={{ maxWidth: '780px', margin: '0 auto' }}>
         <SectionHeading
-          badge={<>🙋 Frequently asked</>}
+          badge={<><HelpCircle size={12} /> Frequently asked</>}
           title="Got questions? We\u2019ve got answers"
           sub="Everything you need to know before you start."
         />
@@ -870,7 +871,7 @@ export const OnboardingPage = () => {
       <section data-reveal style={{ padding: '90px 5%', background: '#f8fafc' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <SectionHeading
-            badge={<>✨ Everything included</>}
+            badge={<><Sparkles size={12} /> Everything included</>}
             title="Everything you need. Nothing you don\u2019t."
             sub="A powerful suite designed to make personal finance and group expenses absolutely effortless."
           />
@@ -938,8 +939,10 @@ export const OnboardingPage = () => {
               </div>
             </div>
             <div style={{ position: 'relative', zIndex: 1, marginTop: '36px', display: 'flex', gap: '10px' }}>
-              {['₹', '💳', '🧾', '👥'].map((e, i) => (
-                <div key={i} style={{ width: '44px', height: '44px', borderRadius: '14px', background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.15rem', animation: 'float-item 4s ease-in-out infinite', animationDelay: `${i * 0.4}s` }}>{e}</div>
+              {[IndianRupee, CreditCard, Receipt, Users].map((Icon, i) => (
+                <div key={i} style={{ width: '44px', height: '44px', borderRadius: '14px', background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'float-item 4s ease-in-out infinite', animationDelay: `${i * 0.4}s` }}>
+                  <Icon size={19} color="#fff" />
+                </div>
               ))}
             </div>
           </div>
