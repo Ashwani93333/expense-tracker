@@ -22,6 +22,10 @@ public interface ExpenseRepository extends JpaRepository<Expense, UUID> {
     List<Expense> findByGroupIdAndExpenseDateBetweenOrderByExpenseDateDesc(
             UUID groupId, LocalDate startDate, LocalDate endDate);
 
+    /** Group expenses for a given month filtered by approval status */
+    List<Expense> findByGroupIdAndStatusAndExpenseDateBetweenOrderByExpenseDateDesc(
+            UUID groupId, String status, LocalDate startDate, LocalDate endDate);
+
     /** Sum of personal expenses in a month (non-group) */
     @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e " +
            "WHERE e.user.id = :userId AND e.group IS NULL " +
@@ -62,9 +66,10 @@ public interface ExpenseRepository extends JpaRepository<Expense, UUID> {
             @Param("start") LocalDate start,
             @Param("end") LocalDate end);
 
-    /** Sum of group expenses in a month */
+    /** Sum of APPROVED group expenses in a month — pending/rejected payments don't count */
     @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e " +
            "WHERE e.group.id = :groupId " +
+           "AND e.status = 'APPROVED' " +
            "AND e.expenseDate BETWEEN :start AND :end")
     BigDecimal sumGroupExpensesForMonth(
             @Param("groupId") UUID groupId,
@@ -81,9 +86,10 @@ public interface ExpenseRepository extends JpaRepository<Expense, UUID> {
             @Param("start") LocalDate start,
             @Param("end") LocalDate end);
 
-    /** Category breakdown for group expenses in a month */
+    /** Category breakdown for APPROVED group expenses in a month */
     @Query("SELECT e.category.id, e.category.name, SUM(e.amount) FROM Expense e " +
            "WHERE e.group.id = :groupId " +
+           "AND e.status = 'APPROVED' " +
            "AND e.expenseDate BETWEEN :start AND :end " +
            "GROUP BY e.category.id, e.category.name")
     List<Object[]> categoryBreakdownGroup(

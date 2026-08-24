@@ -2,6 +2,7 @@ package com.expensetracker.expense;
 
 import com.expensetracker.expense.dto.CreateExpenseRequest;
 import com.expensetracker.expense.dto.ExpenseDto;
+import com.expensetracker.expense.dto.ReviewExpenseRequest;
 import com.expensetracker.expense.dto.SplitRequest;
 import com.expensetracker.expense.dto.UpdateExpenseRequest;
 import com.expensetracker.model.User;
@@ -95,6 +96,16 @@ public class ExpenseController {
             @PathVariable UUID userId) {
         User user = resolveUser(principal);
         return ResponseEntity.ok(expenseService.settleShare(user, id, userId));
+    }
+
+    /** Group admin approval/rejection of a member's pending payment. */
+    @PatchMapping("/{id}/approval")
+    public ResponseEntity<ExpenseDto> reviewExpense(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable UUID id,
+            @Valid @RequestBody ReviewExpenseRequest request) {
+        User user = resolveUser(principal);
+        return ResponseEntity.ok(expenseService.reviewExpense(user, id, request.getAction(), request.getNote()));
     }
 
     private User resolveUser(UserPrincipal principal) {

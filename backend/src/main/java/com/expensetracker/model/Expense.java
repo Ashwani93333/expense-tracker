@@ -56,6 +56,25 @@ public class Expense {
     @Column(name = "category_confidence")
     private Double categoryConfidence;
 
+    /**
+     * Approval lifecycle for group expenses: PENDING until a group ADMIN reviews
+     * it, then APPROVED or REJECTED. Personal expenses are always APPROVED.
+     * The DB default backfills legacy rows as APPROVED.
+     */
+    @Column(name = "status", nullable = false, length = 20, columnDefinition = "VARCHAR(20) DEFAULT 'APPROVED'")
+    private String status = "APPROVED";
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reviewed_by")
+    private User reviewedBy;
+
+    @Column(name = "reviewed_at")
+    private OffsetDateTime reviewedAt;
+
+    /** Optional note recorded by the reviewing admin (e.g. rejection reason). */
+    @Column(name = "review_note", length = 500)
+    private String reviewNote;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
@@ -90,6 +109,14 @@ public class Expense {
     public void setCategorySource(String categorySource) { this.categorySource = categorySource; }
     public Double getCategoryConfidence() { return categoryConfidence; }
     public void setCategoryConfidence(Double categoryConfidence) { this.categoryConfidence = categoryConfidence; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+    public User getReviewedBy() { return reviewedBy; }
+    public void setReviewedBy(User reviewedBy) { this.reviewedBy = reviewedBy; }
+    public OffsetDateTime getReviewedAt() { return reviewedAt; }
+    public void setReviewedAt(OffsetDateTime reviewedAt) { this.reviewedAt = reviewedAt; }
+    public String getReviewNote() { return reviewNote; }
+    public void setReviewNote(String reviewNote) { this.reviewNote = reviewNote; }
     public OffsetDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
     public OffsetDateTime getUpdatedAt() { return updatedAt; }

@@ -27,6 +27,11 @@ public class ExpenseDto {
     private String receiptUrl;
     private String categorySource;
     private Double categoryConfidence;
+    private String status;
+    private UUID reviewedById;
+    private String reviewedByName;
+    private OffsetDateTime reviewedAt;
+    private String reviewNote;
     private List<ExpenseSplitDto> splits;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
@@ -55,6 +60,13 @@ public class ExpenseDto {
         dto.setReceiptUrl(e.getReceiptUrl());
         dto.setCategorySource(e.getCategorySource());
         dto.setCategoryConfidence(e.getCategoryConfidence());
+        dto.setStatus(e.getStatus());
+        if (e.getReviewedBy() != null) {
+            dto.setReviewedById(e.getReviewedBy().getId());
+            dto.setReviewedByName(e.getReviewedBy().getFullName());
+        }
+        dto.setReviewedAt(e.getReviewedAt());
+        dto.setReviewNote(e.getReviewNote());
         dto.setCreatedAt(e.getCreatedAt());
         dto.setUpdatedAt(e.getUpdatedAt());
         if (splits != null) {
@@ -137,6 +149,16 @@ public class ExpenseDto {
     public void setCategorySource(String categorySource) { this.categorySource = categorySource; }
     public Double getCategoryConfidence() { return categoryConfidence; }
     public void setCategoryConfidence(Double categoryConfidence) { this.categoryConfidence = categoryConfidence; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+    public UUID getReviewedById() { return reviewedById; }
+    public void setReviewedById(UUID reviewedById) { this.reviewedById = reviewedById; }
+    public String getReviewedByName() { return reviewedByName; }
+    public void setReviewedByName(String reviewedByName) { this.reviewedByName = reviewedByName; }
+    public OffsetDateTime getReviewedAt() { return reviewedAt; }
+    public void setReviewedAt(OffsetDateTime reviewedAt) { this.reviewedAt = reviewedAt; }
+    public String getReviewNote() { return reviewNote; }
+    public void setReviewNote(String reviewNote) { this.reviewNote = reviewNote; }
     public List<ExpenseSplitDto> getSplits() { return splits; }
     public void setSplits(List<ExpenseSplitDto> splits) { this.splits = splits; }
     public OffsetDateTime getCreatedAt() { return createdAt; }

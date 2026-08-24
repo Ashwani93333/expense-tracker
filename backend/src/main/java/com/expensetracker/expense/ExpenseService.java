@@ -11,7 +11,9 @@ import com.expensetracker.expense.dto.CreateExpenseRequest;
 import com.expensetracker.expense.dto.ExpenseDto;
 import com.expensetracker.expense.dto.SplitRequest;
 import com.expensetracker.expense.dto.UpdateExpenseRequest;
+import com.expensetracker.group.GroupRoleGuard;
 import com.expensetracker.model.*;
+import com.expensetracker.notification.NotificationService;
 import com.expensetracker.repository.*;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -26,6 +29,10 @@ import java.util.stream.Collectors;
 
 @Service
 public class ExpenseService {
+
+    public static final String STATUS_PENDING = "PENDING";
+    public static final String STATUS_APPROVED = "APPROVED";
+    public static final String STATUS_REJECTED = "REJECTED";
 
     private final ExpenseRepository expenseRepository;
     private final ExpenseGroupRepository groupRepository;
@@ -35,6 +42,8 @@ public class ExpenseService {
     private final ExpenseSplitRepository splitRepository;
     private final ExpenseCategoryClassifier categoryClassifier;
     private final ApplicationEventPublisher eventPublisher;
+    private final GroupRoleGuard groupRoleGuard;
+    private final NotificationService notificationService;
 
     public ExpenseService(
             ExpenseRepository expenseRepository,
@@ -44,7 +53,9 @@ public class ExpenseService {
             ExpenseSplitService splitService,
             ExpenseSplitRepository splitRepository,
             ExpenseCategoryClassifier categoryClassifier,
-            ApplicationEventPublisher eventPublisher) {
+            ApplicationEventPublisher eventPublisher,
+            GroupRoleGuard groupRoleGuard,
+            NotificationService notificationService) {
         this.expenseRepository = expenseRepository;
         this.groupRepository = groupRepository;
         this.groupMemberRepository = groupMemberRepository;
@@ -53,6 +64,8 @@ public class ExpenseService {
         this.splitRepository = splitRepository;
         this.categoryClassifier = categoryClassifier;
         this.eventPublisher = eventPublisher;
+        this.groupRoleGuard = groupRoleGuard;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -87,6 +100,16 @@ public class ExpenseService {
                 expense.setPaidBy(paidBy);
             } else {
                 expense.setPaidBy(currentUser);
+            }
+
+            // Admin payments are trusted and take effect immediately; member
+            // payments stay PENDING until a group admin validates them.
+            if (groupRoleGuard.isAdmin(group.getId(), currentUser.getId())) {
+                expense.setStatus(STATUS_APPROVED);
+                expense.setReviewedBy(currentUser);
+                expense.setReviewedAt(OffsetDateTime.now());
+            } else {
+                expense.setStatus(STATUS_PENDING);
             }
         }
 
@@ -174,8 +197,21 @@ public class ExpenseService {
             expense.setCategorySource(ClassificationSource.USER.name());
             expense.setCategoryConfidence(1.0);
         }
+        // An edited group payment must be re-validated by an admin unless the
+        // editor is an admin themselves — otherwise approval could be bypassed.
+        if (expense.getGroup() != null && STATUS_APPROVED.equals(expense.getStatus())
+                && !groupRoleGuard.isAdmin(expense.getGroup().getId(), user.getId())) {
+            resetToPending(expense);
+        }
         Expense saved = expenseRepository.save(expense);
         return ExpenseDto.fromEntity(saved, splitRepository.findByExpenseId(saved.getId()));
+    }
+
+    private void resetToPending(Expense expense) {
+        expense.setStatus(STATUS_PENDING);
+        expense.setReviewedBy(null);
+        expense.setReviewedAt(null);
+        expense.setReviewNote(null);
     }
 
     @Transactional
@@ -210,15 +246,76 @@ public class ExpenseService {
     }
 
     @Transactional(readOnly = true)
-    public List<ExpenseDto> getGroupExpenses(User user, UUID groupId, String month) {
+    public List<ExpenseDto> getGroupExpenses(User user, UUID groupId, String month, String status) {
         boolean isMember = groupMemberRepository.existsByGroupIdAndUserIdAndStatus(groupId, user.getId(), "ACTIVE");
         if (!isMember) throw new AccessDeniedException("You are not a member of this group");
 
         LocalDate[] range = parseMonthRange(month);
-        return expenseRepository.findByGroupIdAndExpenseDateBetweenOrderByExpenseDateDesc(groupId, range[0], range[1])
-                .stream()
+        List<Expense> expenses = (status == null || status.isBlank())
+                ? expenseRepository.findByGroupIdAndExpenseDateBetweenOrderByExpenseDateDesc(groupId, range[0], range[1])
+                : expenseRepository.findByGroupIdAndStatusAndExpenseDateBetweenOrderByExpenseDateDesc(
+                        groupId, status.toUpperCase(), range[0], range[1]);
+        return expenses.stream()
                 .map(e -> ExpenseDto.fromEntity(e, splitRepository.findByExpenseId(e.getId())))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Group admin validation of a member's payment. Only ACTIVE group admins can
+     * decide, only PENDING expenses are reviewable, and a rejection must carry a
+     * note so the owner knows why. The owner is notified of every decision.
+     */
+    @Transactional
+    public ExpenseDto reviewExpense(User reviewer, UUID expenseId, String action, String note) {
+        Expense expense = expenseRepository.findById(expenseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Expense not found: " + expenseId));
+        if (expense.getGroup() == null) {
+            throw new BadRequestException("Personal expenses do not require admin approval");
+        }
+        UUID groupId = expense.getGroup().getId();
+        groupRoleGuard.requireAdmin(groupId, reviewer.getId());
+
+        if (!STATUS_PENDING.equals(expense.getStatus())) {
+            throw new BadRequestException("This expense has already been reviewed");
+        }
+        String decision = action == null ? "" : action.trim().toUpperCase();
+        if (!"APPROVE".equals(decision) && !"REJECT".equals(decision)) {
+            throw new BadRequestException("action must be APPROVE or REJECT");
+        }
+        boolean approved = "APPROVE".equals(decision);
+        if (!approved && (note == null || note.isBlank())) {
+            throw new BadRequestException("A reason is required when rejecting an expense");
+        }
+
+        expense.setStatus(approved ? STATUS_APPROVED : STATUS_REJECTED);
+        expense.setReviewedBy(reviewer);
+        expense.setReviewedAt(OffsetDateTime.now());
+        expense.setReviewNote(approved ? null : note.trim());
+        Expense saved = expenseRepository.save(expense);
+
+        User owner = saved.getUser();
+        String amount = "₹" + saved.getAmount() + " for \"" + saved.getDescription() + "\"";
+        if (approved) {
+            notificationService.createNotification(
+                    owner,
+                    "EXPENSE_APPROVED",
+                    "Payment approved",
+                    reviewer.getFullName() + " approved your payment of " + amount + ".",
+                    saved.getId(),
+                    "EXPENSE");
+            // Budget thresholds were skipped while the payment was pending.
+            eventPublisher.publishEvent(new ExpenseCreatedEvent(
+                    owner.getId(), groupId, saved.getExpenseDate()));
+        } else {
+            notificationService.createNotification(
+                    owner,
+                    "EXPENSE_REJECTED",
+                    "Payment rejected",
+                    reviewer.getFullName() + " rejected your payment of " + amount + " Reason: " + note.trim(),
+                    saved.getId(),
+                    "EXPENSE");
+        }
+        return ExpenseDto.fromEntity(saved, splitRepository.findByExpenseId(saved.getId()));
     }
 
     @Transactional

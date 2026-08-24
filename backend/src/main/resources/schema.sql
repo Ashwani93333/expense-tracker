@@ -108,6 +108,10 @@ CREATE TABLE IF NOT EXISTS expenses (
     expense_date    DATE NOT NULL,
     split_type      VARCHAR(20),
     receipt_url     VARCHAR(500),
+    status          VARCHAR(20) NOT NULL DEFAULT 'APPROVED',
+    reviewed_by     UUID REFERENCES users(id),
+    reviewed_at     TIMESTAMP WITH TIME ZONE,
+    review_note     VARCHAR(500),
     created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

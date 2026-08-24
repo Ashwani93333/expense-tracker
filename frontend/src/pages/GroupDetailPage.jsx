@@ -2,15 +2,32 @@ import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft, Share2, Users, Plus, Target, PieChart, CreditCard,
   LogOut, Key, CheckCircle2, DollarSign, AlertTriangle, TrendingUp,
-  RefreshCw, Loader2, Clock, CalendarClock, Ban
+  RefreshCw, Loader2, Clock, CalendarClock, Ban, XCircle, ShieldCheck
 } from 'lucide-react';
 import { useExpense } from '../context/ExpenseContext';
 import { useAuth } from '../context/AuthContext';
-import { groupsApi } from '../services/api';
+import { groupsApi, expensesApi } from '../services/api';
 import { InviteMemberModal } from '../components/groups/InviteMemberModal';
 import { GroupRoleBadge } from '../components/groups/GroupRoleBadge';
 
 const statusColor = (s) => ({ OK: '#059669', WARNING: '#d97706', EXCEEDED: '#dc2626' }[s] || '#2563eb');
+
+const EXPENSE_STATUS_STYLES = {
+  PENDING:  { background: '#fffbeb', color: '#d97706', border: '#fde68a', label: 'Pending Approval' },
+  APPROVED: { background: '#ecfdf5', color: '#059669', border: '#a7f3d0', label: 'Verified' },
+  REJECTED: { background: '#fef2f2', color: '#dc2626', border: '#fecaca', label: 'Rejected' },
+};
+
+const ExpenseStatusBadge = ({ status }) => {
+  const s = EXPENSE_STATUS_STYLES[status];
+  if (!s) return null;
+  return (
+    <span className="badge" style={{
+      fontSize: '0.63rem', background: s.background, color: s.color,
+      border: `1px solid ${s.border}`,
+    }}>{s.label}</span>
+  );
+};
 
 const MiniProgress = ({ pct, status }) => (
   <div className="progress-track" style={{ height: '5px', marginTop: '6px' }}>
@@ -37,7 +54,8 @@ export const GroupDetailPage = () => {
   const {
     groups, activeGroupId, setActiveTab,
     setIsAddModalOpen, isInviteModalOpen, setIsInviteModalOpen,
-    leaveGroup, removeMember, updateMemberRole, updateGroupBudget, updateMemberBudgetCap,
+    leaveGroup, removeMember, updateMemberRole, updateGroupInfo,
+    updateGroupBudget, updateMemberBudgetCap,
     currentMonth, showToast, dataVersion,
   } = useExpense();
   const { currentUser } = useAuth();
@@ -54,6 +72,9 @@ export const GroupDetailPage = () => {
   const [savingCap, setSavingCap]       = useState('');
   const [expiryInput, setExpiryInput]   = useState('');
   const [savingExpiry, setSavingExpiry] = useState(false);
+  const [reviewingId, setReviewingId]   = useState('');
+  const [rejectingId, setRejectingId]   = useState(null);
+  const [rejectNote, setRejectNote]     = useState('');
 
   const grp = groups.find(g => g.id === activeGroupId) || groups[0];
 
@@ -79,6 +100,27 @@ export const GroupDetailPage = () => {
 
   useEffect(() => { fetchGroupData(); }, [activeGroupId, currentMonth, dataVersion]);
 
+  const reviewExpense = async (exp, action) => {
+    if (action === 'REJECT' && !rejectNote.trim()) {
+      showToast('Please add a reason for the rejection', 'error');
+      return;
+    }
+    setReviewingId(exp.id);
+    try {
+      await expensesApi.review(exp.id, { action, note: action === 'REJECT' ? rejectNote.trim() : null });
+      showToast(action === 'APPROVE'
+        ? 'Payment verified — it now counts toward budgets and settlements.'
+        : 'Payment rejected. The member has been notified.');
+      setRejectingId(null);
+      setRejectNote('');
+      await fetchGroupData();
+    } catch (err) {
+      showToast(err.message || 'Failed to review payment', 'error');
+    } finally {
+      setReviewingId('');
+    }
+  };
+
   if (!grp) return (
     <div className="card" style={{ padding: '48px', textAlign: 'center' }}>
       <p style={{ color: 'var(--text-muted)' }}>Group not found. <button className="btn btn-ghost btn-sm" onClick={() => setActiveTab('groups')}>← Back</button></p>
@@ -90,6 +132,7 @@ export const GroupDetailPage = () => {
   const userRole = userMember?.role || 'MEMBER';
   const isAdmin = userRole === 'ADMIN';
   const totalSpent = report?.totalSpent ?? groupExpenses.reduce((s, e) => s + (e.amount || 0), 0);
+  const pendingExpenses = groupExpenses.filter(e => e.status === 'PENDING');
 
   const isExpired = grp.expiresAt && new Date(grp.expiresAt) < new Date();
   const daysUntilExpiry = grp.expiresAt ? Math.ceil((new Date(grp.expiresAt) - new Date()) / (1000 * 60 * 60 * 24)) : null;
@@ -235,6 +278,28 @@ export const GroupDetailPage = () => {
         </div>
       )}
 
+      {/* Pending Payment Approvals Alert (admin) */}
+      {isAdmin && pendingExpenses.length > 0 && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 18px',
+          borderRadius: 'var(--r-lg)',
+          background: '#fffbeb', border: '1px solid #fde68a',
+        }}>
+          <ShieldCheck size={18} color="#d97706" />
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+              {pendingExpenses.length} payment{pendingExpenses.length !== 1 ? 's' : ''} awaiting your approval
+            </p>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
+              Member payments must be verified by you before they count toward budgets, reports or settlements.
+            </p>
+          </div>
+          <button className="btn btn-primary btn-sm" onClick={() => setActiveSubTab('expenses')}>
+            Review Now
+          </button>
+        </div>
+      )}
+
       {/* Sub-Nav Tabs */}
       <div style={{ display: 'flex', gap: '4px', padding: '4px', background: 'var(--bg-muted)', borderRadius: 'var(--r-md)', width: 'fit-content' }}>
         {SUB_TABS.map(tab => {
@@ -342,13 +407,14 @@ export const GroupDetailPage = () => {
                     if (!expiryInput) return;
                     setSavingExpiry(true);
                     try {
-                      await groupsApi.update(grp.id, { expiresAt: new Date(expiryInput).toISOString() });
+                      await updateGroupInfo(
+                        grp.id,
+                        { expiresAt: new Date(expiryInput).toISOString() },
+                        `Expiry updated — group now expires ${new Date(expiryInput).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                      );
                       await fetchGroupData();
                       setExpiryInput('');
-                      showToast('Expiry date updated');
-                    } catch (err) {
-                      showToast(err.message || 'Failed to update expiry', 'error');
-                    }
+                    } catch {}
                     setSavingExpiry(false);
                   }}
                 >
@@ -394,20 +460,87 @@ export const GroupDetailPage = () => {
           ) : (
             groupExpenses.map(exp => (
               <div key={exp.id} style={{
-                display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px',
-                borderRadius: 'var(--r-md)', marginBottom: '8px',
-                background: 'var(--bg-surface)', border: '1px solid var(--border)',
+                padding: '12px 14px', borderRadius: 'var(--r-md)', marginBottom: '8px',
+                background: exp.status === 'PENDING' ? '#fffdf6'
+                  : exp.status === 'REJECTED' ? '#fffbfa' : 'var(--bg-surface)',
+                border: `1px solid ${exp.status === 'PENDING' ? '#fde68a'
+                  : exp.status === 'REJECTED' ? '#fecaca' : 'var(--border)'}`,
               }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{exp.description}</div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                    {exp.expenseDate || exp.date} · {exp.categoryName} · Paid by {exp.paidByName}
-                    {exp.splitType && ` · ${exp.splitType} split`}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{exp.description}</span>
+                      <ExpenseStatusBadge status={exp.status} />
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      {exp.expenseDate || exp.date} · {exp.categoryName} · Paid by {exp.paidByName}
+                      {exp.splitType && ` · ${exp.splitType} split`}
+                    </div>
+                    {exp.status === 'REJECTED' && exp.reviewNote && (
+                      <div style={{ fontSize: '0.72rem', color: '#dc2626', marginTop: '4px' }}>
+                        Rejected by {exp.reviewedByName || 'admin'} · {exp.reviewNote}
+                      </div>
+                    )}
+                    {exp.status === 'APPROVED' && exp.reviewedByName && exp.userId !== currentUser?.id && (
+                      <div style={{ fontSize: '0.7rem', color: '#059669', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <ShieldCheck size={11} /> Verified by {exp.reviewedByName}
+                      </div>
+                    )}
                   </div>
+                  <span style={{
+                    fontSize: '1rem', fontWeight: 700,
+                    color: exp.status === 'REJECTED' ? 'var(--text-faint)' : '#dc2626',
+                    textDecoration: exp.status === 'REJECTED' ? 'line-through' : 'none',
+                  }}>
+                    ₹{(exp.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </span>
                 </div>
-                <span style={{ fontSize: '1rem', fontWeight: 700, color: '#dc2626' }}>
-                  ₹{(exp.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </span>
+
+                {isAdmin && exp.status === 'PENDING' && rejectingId !== exp.id && (
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed var(--border)' }}>
+                    <button
+                      className="btn btn-emerald btn-xs"
+                      disabled={reviewingId === exp.id}
+                      onClick={() => reviewExpense(exp, 'APPROVE')}
+                    >
+                      {reviewingId === exp.id
+                        ? <Loader2 size={12} style={{ animation: 'spin 0.7s linear infinite' }} />
+                        : <CheckCircle2 size={12} />} Verify Payment
+                    </button>
+                    <button
+                      className="btn btn-xs"
+                      style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 'var(--r-sm)', gap: '4px' }}
+                      onClick={() => { setRejectingId(exp.id); setRejectNote(''); }}
+                    >
+                      <XCircle size={12} /> Reject
+                    </button>
+                  </div>
+                )}
+
+                {isAdmin && exp.status === 'PENDING' && rejectingId === exp.id && (
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed var(--border)' }}>
+                    <input
+                      type="text"
+                      className="input-field"
+                      style={{ flex: 1, fontSize: '0.8rem' }}
+                      placeholder="Reason for rejection (shared with the member)"
+                      value={rejectNote}
+                      onChange={e => setRejectNote(e.target.value)}
+                      maxLength={500}
+                    />
+                    <button
+                      className="btn btn-xs"
+                      style={{ background: '#dc2626', color: '#fff', border: '1px solid #dc2626', borderRadius: 'var(--r-sm)', gap: '4px', flexShrink: 0 }}
+                      disabled={!rejectNote.trim() || reviewingId === exp.id}
+                      onClick={() => reviewExpense(exp, 'REJECT')}
+                    >
+                      {reviewingId === exp.id
+                        ? <Loader2 size={12} style={{ animation: 'spin 0.7s linear infinite' }} />
+                        : <XCircle size={12} />} Confirm Reject
+                    </button>
+                    <button className="btn btn-ghost btn-xs" onClick={() => setRejectingId(null)}>Cancel</button>
+                  </div>
+                )}
               </div>
             ))
           )}

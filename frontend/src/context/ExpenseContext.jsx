@@ -155,7 +155,9 @@ export const ExpenseProvider = ({ children }) => {
       // Instantly refresh all data to update charts, budgets, and dashboard
       fetchAll();
       bumpDataVersion();
-      let msg = `Expense "₹${parseFloat(formData.amount).toFixed(2)}" added successfully!`;
+      let msg = newExpense?.status === 'PENDING'
+        ? `Payment of ₹${parseFloat(formData.amount).toFixed(2)} submitted — a group admin will verify it shortly.`
+        : `Expense "₹${parseFloat(formData.amount).toFixed(2)}" added successfully!`;
       if (savedDate && !inCurrentMonth) {
         const [y, m] = savedDate.split('-').map(Number);
         const label = new Date(y, m - 1, 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
@@ -288,6 +290,20 @@ export const ExpenseProvider = ({ children }) => {
       showToast(`Member role updated to ${newRole}.`);
     } catch (err) {
       showToast(err.message || 'Failed to update role', 'error');
+    }
+  };
+
+  // ─── Update Group Info (name/description/expiry — admin only on backend) ────
+  const updateGroupInfo = async (groupId, payload, successMessage = 'Group details updated.') => {
+    try {
+      const updated = await groupsApi.update(groupId, payload);
+      setGroups(prev => prev.map(g => g.id === groupId ? { ...g, ...updated } : g));
+      bumpDataVersion();
+      showToast(successMessage);
+      return updated;
+    } catch (err) {
+      showToast(err.message || 'Failed to update group', 'error');
+      throw err;
     }
   };
 
@@ -474,6 +490,7 @@ export const ExpenseProvider = ({ children }) => {
       leaveGroup,
       removeMember,
       updateMemberRole,
+      updateGroupInfo,
       updateGroupBudget,
       updateMemberBudgetCap,
       updatePersonalBudget,

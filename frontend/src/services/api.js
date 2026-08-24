@@ -90,6 +90,7 @@ export const expensesApi = {
   summary: (month) => request('GET', '/api/expenses/summary', null, { month }),
   updateSplits: (id, splits) => request('PATCH', `/api/expenses/${id}/splits`, splits),
   settleSplit: (expenseId, userId) => request('PATCH', `/api/expenses/${expenseId}/splits/${userId}/settle`),
+  review: (id, payload) => request('PATCH', `/api/expenses/${id}/approval`, payload),
   scan: (file) => {
     const formData = new FormData();
     formData.append('file', file);
@@ -112,7 +113,7 @@ export const groupsApi = {
   removeMember: (id, userId) => request('DELETE', `/api/groups/${id}/members/${userId}`),
   updateMemberRole: (id, userId, payload) => request('PATCH', `/api/groups/${id}/members/${userId}/role`, payload),
   // Group Expenses
-  listExpenses: (id, month) => request('GET', `/api/groups/${id}/expenses`, null, { month }),
+  listExpenses: (id, month, status) => request('GET', `/api/groups/${id}/expenses`, null, { month, status }),
   createExpense: (id, payload) => request('POST', `/api/groups/${id}/expenses`, payload),
   // Group Budget
   setBudget: (id, month, payload) => request('PUT', `/api/groups/${id}/budget`, payload, { month }),
