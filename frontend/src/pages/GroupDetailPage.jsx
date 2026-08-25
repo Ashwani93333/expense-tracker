@@ -10,12 +10,12 @@ import { groupsApi, expensesApi } from '../services/api';
 import { InviteMemberModal } from '../components/groups/InviteMemberModal';
 import { GroupRoleBadge } from '../components/groups/GroupRoleBadge';
 
-const statusColor = (s) => ({ OK: '#059669', WARNING: '#d97706', EXCEEDED: '#dc2626' }[s] || '#2563eb');
+const statusColor = (s) => ({ OK: '#22c55e', WARNING: '#f59e0b', EXCEEDED: '#ef4444' }[s] || '#737373');
 
 const EXPENSE_STATUS_STYLES = {
-  PENDING:  { background: '#fffbeb', color: '#d97706', border: '#fde68a', label: 'Pending Approval' },
-  APPROVED: { background: '#ecfdf5', color: '#059669', border: '#a7f3d0', label: 'Verified' },
-  REJECTED: { background: '#fef2f2', color: '#dc2626', border: '#fecaca', label: 'Rejected' },
+  PENDING:  { background: 'rgba(245,158,11,0.08)', color: '#f59e0b', border: 'rgba(245,158,11,0.2)', label: 'Pending Approval' },
+  APPROVED: { background: 'rgba(34,197,94,0.08)', color: '#22c55e', border: 'rgba(34,197,94,0.2)', label: 'Verified' },
+  REJECTED: { background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: 'rgba(239,68,68,0.2)', label: 'Rejected' },
 };
 
 const ExpenseStatusBadge = ({ status }) => {
@@ -42,9 +42,9 @@ const SettlementRow = ({ from, to, amount }) => (
     border: '1px solid var(--border)', marginBottom: '8px',
   }}>
     <div style={{ flex: 1 }}>
-      <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#dc2626' }}>{from}</span>
+      <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#ef4444' }}>{from}</span>
       <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0 8px' }}>→ owes</span>
-      <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#059669' }}>{to}</span>
+      <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#22c55e' }}>{to}</span>
     </div>
     <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>₹{amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
   </div>
@@ -173,9 +173,9 @@ export const GroupDetailPage = () => {
           <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
             <div style={{
               width: '48px', height: '48px', borderRadius: '14px',
-              background: 'var(--accent-light)', color: 'var(--accent)',
+              background: '#050505', color: '#B7FF00',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '1.4rem', flexShrink: 0, fontWeight: 800, border: '1px solid var(--border-accent)',
+              fontSize: '1.4rem', flexShrink: 0, fontWeight: 800, border: '1px solid #1a1a1a',
             }}>
               {grp.name?.charAt(0)}
             </div>
@@ -190,9 +190,9 @@ export const GroupDetailPage = () => {
 
           <div style={{ display: 'flex', gap: '20px' }}>
             {[
-              { label: 'Members',  value: grp.memberCount || members.length, color: '#4f46e5' },
-              { label: 'Spent',    value: `₹${totalSpent.toLocaleString('en-IN')}`, color: '#dc2626' },
-              { label: 'Currency', value: grp.currencyCode || 'INR', color: '#059669' },
+              { label: 'Members',  value: grp.memberCount || members.length, color: '#B7FF00' },
+              { label: 'Spent',    value: `₹${totalSpent.toLocaleString('en-IN')}`, color: '#ef4444' },
+              { label: 'Currency', value: grp.currencyCode || 'INR', color: '#22c55e' },
             ].map(s => (
               <div key={s.label} style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: '1.1rem', fontWeight: 800, color: s.color }}>{s.value}</div>
@@ -205,7 +205,7 @@ export const GroupDetailPage = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '14px', flexWrap: 'wrap' }}>
           <Key size={13} color="var(--text-muted)" />
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Invite Code:</span>
-          <code style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent)', background: 'var(--accent-light)', padding: '2px 8px', borderRadius: '6px', border: '1px solid var(--border-accent)' }}>
+          <code style={{ fontSize: '0.8rem', fontWeight: 700, color: '#B7FF00', background: 'rgba(183,255,0,0.08)', padding: '2px 8px', borderRadius: '6px', border: '1px solid rgba(183,255,0,0.15)' }}>
             {grp.inviteCode}
           </code>
           {grp.expiresAt && (
@@ -225,10 +225,10 @@ export const GroupDetailPage = () => {
         <div style={{
           display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 18px',
           borderRadius: 'var(--r-lg)',
-          background: budgetStatus.status === 'EXCEEDED' ? '#fef2f2' : '#fffbeb',
-          border: `1px solid ${budgetStatus.status === 'EXCEEDED' ? '#fecaca' : '#fde68a'}`,
+          background: budgetStatus.status === 'EXCEEDED' ? 'rgba(239,68,68,0.06)' : 'rgba(245,158,11,0.06)',
+          border: `1px solid ${budgetStatus.status === 'EXCEEDED' ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)'}`,
         }}>
-          <AlertTriangle size={18} color={budgetStatus.status === 'EXCEEDED' ? '#dc2626' : '#d97706'} />
+          <AlertTriangle size={18} color={budgetStatus.status === 'EXCEEDED' ? '#ef4444' : '#f59e0b'} />
           <div style={{ flex: 1 }}>
             <p style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
               Group budget {budgetStatus.status === 'EXCEEDED' ? 'exceeded!' : `at ${budgetStatus.percentUsed?.toFixed(0)}%`}
@@ -245,11 +245,11 @@ export const GroupDetailPage = () => {
         <div style={{
           display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 18px',
           borderRadius: 'var(--r-lg)',
-          background: '#fef2f2', border: '1px solid #fecaca',
+          background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)',
         }}>
-          <Ban size={18} color="#dc2626" />
+          <Ban size={18} color="#ef4444" />
           <div style={{ flex: 1 }}>
-            <p style={{ fontSize: '0.875rem', fontWeight: 700, color: '#dc2626', margin: 0 }}>
+            <p style={{ fontSize: '0.875rem', fontWeight: 700, color: '#ef4444', margin: 0 }}>
               This group has expired
             </p>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
@@ -263,9 +263,9 @@ export const GroupDetailPage = () => {
         <div style={{
           display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 18px',
           borderRadius: 'var(--r-lg)',
-          background: '#fffbeb', border: '1px solid #fde68a',
+          background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)',
         }}>
-          <Clock size={18} color="#d97706" />
+          <Clock size={18} color="#f59e0b" />
           <div style={{ flex: 1 }}>
             <p style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
               This group expires in {daysUntilExpiry} day{daysUntilExpiry !== 1 ? 's' : ''}
@@ -283,9 +283,9 @@ export const GroupDetailPage = () => {
         <div style={{
           display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 18px',
           borderRadius: 'var(--r-lg)',
-          background: '#fffbeb', border: '1px solid #fde68a',
+          background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)',
         }}>
-          <ShieldCheck size={18} color="#d97706" />
+          <ShieldCheck size={18} color="#f59e0b" />
           <div style={{ flex: 1 }}>
             <p style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
               {pendingExpenses.length} payment{pendingExpenses.length !== 1 ? 's' : ''} awaiting your approval
@@ -301,7 +301,7 @@ export const GroupDetailPage = () => {
       )}
 
       {/* Sub-Nav Tabs */}
-      <div style={{ display: 'flex', gap: '4px', padding: '4px', background: 'var(--bg-muted)', borderRadius: 'var(--r-md)', width: 'fit-content' }}>
+      <div style={{ display: 'flex', gap: '4px', padding: '4px', background: '#050505', borderRadius: 'var(--r-md)', width: 'fit-content' }}>
         {SUB_TABS.map(tab => {
           const Icon = tab.icon;
           const active = activeSubTab === tab.id;
@@ -312,15 +312,14 @@ export const GroupDetailPage = () => {
               style={{
                 display: 'flex', alignItems: 'center', gap: '6px',
                 padding: '8px 14px', border: 'none', borderRadius: 'var(--r-sm)',
-                background: active ? '#fff' : 'transparent',
-                color: active ? 'var(--text-primary)' : 'var(--text-muted)',
+                background: active ? 'rgba(183,255,0,0.12)' : 'transparent',
+                color: active ? '#B7FF00' : '#737373',
                 fontWeight: active ? 700 : 500, fontSize: '0.83rem',
                 cursor: 'pointer', fontFamily: 'var(--font)',
-                boxShadow: active ? 'var(--shadow-sm)' : 'none',
                 transition: 'var(--t-fast)',
               }}
             >
-              <Icon size={14} color={active ? "var(--accent)" : "currentColor"} />
+              <Icon size={14} color={active ? "#B7FF00" : "currentColor"} />
               {tab.label}
             </button>
           );
@@ -461,10 +460,10 @@ export const GroupDetailPage = () => {
             groupExpenses.map(exp => (
               <div key={exp.id} style={{
                 padding: '12px 14px', borderRadius: 'var(--r-md)', marginBottom: '8px',
-                background: exp.status === 'PENDING' ? '#fffdf6'
-                  : exp.status === 'REJECTED' ? '#fffbfa' : 'var(--bg-surface)',
-                border: `1px solid ${exp.status === 'PENDING' ? '#fde68a'
-                  : exp.status === 'REJECTED' ? '#fecaca' : 'var(--border)'}`,
+                background: exp.status === 'PENDING' ? 'rgba(245,158,11,0.04)'
+                  : exp.status === 'REJECTED' ? 'rgba(239,68,68,0.04)' : 'var(--bg-surface)',
+                border: `1px solid ${exp.status === 'PENDING' ? 'rgba(245,158,11,0.15)'
+                  : exp.status === 'REJECTED' ? 'rgba(239,68,68,0.15)' : 'var(--border)'}`,
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -477,19 +476,19 @@ export const GroupDetailPage = () => {
                       {exp.splitType && ` · ${exp.splitType} split`}
                     </div>
                     {exp.status === 'REJECTED' && exp.reviewNote && (
-                      <div style={{ fontSize: '0.72rem', color: '#dc2626', marginTop: '4px' }}>
+                      <div style={{ fontSize: '0.72rem', color: '#ef4444', marginTop: '4px' }}>
                         Rejected by {exp.reviewedByName || 'admin'} · {exp.reviewNote}
                       </div>
                     )}
                     {exp.status === 'APPROVED' && exp.reviewedByName && exp.userId !== currentUser?.id && (
-                      <div style={{ fontSize: '0.7rem', color: '#059669', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <div style={{ fontSize: '0.7rem', color: '#22c55e', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <ShieldCheck size={11} /> Verified by {exp.reviewedByName}
                       </div>
                     )}
                   </div>
                   <span style={{
                     fontSize: '1rem', fontWeight: 700,
-                    color: exp.status === 'REJECTED' ? 'var(--text-faint)' : '#dc2626',
+                    color: exp.status === 'REJECTED' ? 'var(--text-faint)' : '#ef4444',
                     textDecoration: exp.status === 'REJECTED' ? 'line-through' : 'none',
                   }}>
                     ₹{(exp.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
@@ -509,7 +508,7 @@ export const GroupDetailPage = () => {
                     </button>
                     <button
                       className="btn btn-xs"
-                      style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 'var(--r-sm)', gap: '4px' }}
+                      style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 'var(--r-sm)', gap: '4px' }}
                       onClick={() => { setRejectingId(exp.id); setRejectNote(''); }}
                     >
                       <XCircle size={12} /> Reject
@@ -530,7 +529,7 @@ export const GroupDetailPage = () => {
                     />
                     <button
                       className="btn btn-xs"
-                      style={{ background: '#dc2626', color: '#fff', border: '1px solid #dc2626', borderRadius: 'var(--r-sm)', gap: '4px', flexShrink: 0 }}
+                      style={{ background: '#ef4444', color: '#fff', border: '1px solid #ef4444', borderRadius: 'var(--r-sm)', gap: '4px', flexShrink: 0 }}
                       disabled={!rejectNote.trim() || reviewingId === exp.id}
                       onClick={() => reviewExpense(exp, 'REJECT')}
                     >
@@ -574,9 +573,9 @@ export const GroupDetailPage = () => {
                 ) : (
                   <div style={{
                     width: '36px', height: '36px', borderRadius: '50%',
-                    background: 'var(--accent-light)', border: '1px solid var(--border-accent)',
+                    background: 'rgba(183,255,0,0.08)', border: '1px solid rgba(183,255,0,0.15)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '0.75rem', fontWeight: 800, color: 'var(--accent)', flexShrink: 0,
+                    fontSize: '0.75rem', fontWeight: 800, color: '#B7FF00', flexShrink: 0,
                   }}>
                     {m.userName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                   </div>
@@ -585,7 +584,7 @@ export const GroupDetailPage = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{m.userName}</span>
                     <GroupRoleBadge role={m.role} />
-                    {m.userId === currentUser?.id && <span className="badge badge-blue" style={{ fontSize: '0.63rem' }}>You</span>}
+                    {m.userId === currentUser?.id && <span className="badge" style={{ fontSize: '0.63rem', background: '#050505', color: '#B7FF00' }}>You</span>}
                   </div>
                   <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{m.userEmail}</span>
                 </div>
@@ -599,7 +598,7 @@ export const GroupDetailPage = () => {
                     </button>
                     <button
                       className="btn btn-xs"
-                      style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 'var(--r-sm)' }}
+                      style={{ background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 'var(--r-sm)' }}
                       onClick={() => removeMember(grp.id, m.userId)}
                     >
                       Remove
@@ -609,7 +608,7 @@ export const GroupDetailPage = () => {
                 {!isAdmin && m.userId === currentUser?.id && (
                   <button
                     className="btn btn-xs"
-                    style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 'var(--r-sm)', gap: '5px' }}
+                    style={{ background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 'var(--r-sm)', gap: '5px' }}
                     onClick={() => leaveGroup(grp.id)}
                   >
                     <LogOut size={12} /> Leave
@@ -633,8 +632,8 @@ export const GroupDetailPage = () => {
             ))
           ) : settlements.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <CheckCircle2 size={36} color="#059669" style={{ marginBottom: '10px' }} />
-              <p style={{ color: '#059669', fontWeight: 600 }}>All settled up!</p>
+              <CheckCircle2 size={36} color="#22c55e" style={{ marginBottom: '10px' }} />
+              <p style={{ color: '#22c55e', fontWeight: 600 }}>All settled up!</p>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '4px' }}>No outstanding balances this month.</p>
             </div>
           ) : (

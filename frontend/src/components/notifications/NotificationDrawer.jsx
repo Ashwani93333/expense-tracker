@@ -3,18 +3,18 @@ import { Bell, CheckCheck, X, AlertTriangle, Users, DollarSign, TrendingUp, Info
 import { useExpense } from '../../context/ExpenseContext';
 
 const notifIconMap = {
-  EXPENSE_SPLIT_ASSIGNED:           { icon: DollarSign,    bg: '#dbeafe', color: '#2563eb' },
-  GROUP_JOIN_REQUEST:               { icon: Users,         bg: '#ede9fe', color: '#7c3aed' },
-  GROUP_BUDGET_SET:                 { icon: TrendingUp,    bg: '#d1fae5', color: '#059669' },
-  BUDGET_THRESHOLD_REACHED:         { icon: AlertTriangle, bg: '#fef3c7', color: '#d97706' },
-  BUDGET_EXCEEDED:                  { icon: AlertTriangle, bg: '#fee2e2', color: '#dc2626' },
-  CATEGORY_BUDGET_THRESHOLD_REACHED:{ icon: AlertTriangle, bg: '#fef3c7', color: '#d97706' },
-  CATEGORY_BUDGET_EXCEEDED:         { icon: AlertTriangle, bg: '#fee2e2', color: '#dc2626' },
-  CATEGORY_LIMIT_EXCEEDED:          { icon: AlertTriangle, bg: '#fee2e2', color: '#dc2626' },
-  TOTAL_EXPENDITURE_THRESHOLD_REACHED: { icon: AlertTriangle, bg: '#fee2e2', color: '#dc2626' },
-  GROUP_BUDGET_THRESHOLD_REACHED:   { icon: AlertTriangle, bg: '#fef3c7', color: '#d97706' },
-  GROUP_BUDGET_EXCEEDED:            { icon: AlertTriangle, bg: '#fee2e2', color: '#dc2626' },
-  MONTHLY_SUMMARY:                  { icon: TrendingUp,    bg: '#e0e7ff', color: '#4f46e5' },
+  EXPENSE_SPLIT_ASSIGNED:           { icon: DollarSign,    bg: 'rgba(183,255,0,0.08)', color: '#B7FF00' },
+  GROUP_JOIN_REQUEST:               { icon: Users,         bg: 'rgba(183,255,0,0.08)', color: '#B7FF00' },
+  GROUP_BUDGET_SET:                 { icon: TrendingUp,    bg: 'rgba(34,197,94,0.08)', color: '#22c55e' },
+  BUDGET_THRESHOLD_REACHED:         { icon: AlertTriangle, bg: 'rgba(245,158,11,0.08)', color: '#f59e0b' },
+  BUDGET_EXCEEDED:                  { icon: AlertTriangle, bg: 'rgba(239,68,68,0.08)', color: '#ef4444' },
+  CATEGORY_BUDGET_THRESHOLD_REACHED:{ icon: AlertTriangle, bg: 'rgba(245,158,11,0.08)', color: '#f59e0b' },
+  CATEGORY_BUDGET_EXCEEDED:         { icon: AlertTriangle, bg: 'rgba(239,68,68,0.08)', color: '#ef4444' },
+  CATEGORY_LIMIT_EXCEEDED:          { icon: AlertTriangle, bg: 'rgba(239,68,68,0.08)', color: '#ef4444' },
+  TOTAL_EXPENDITURE_THRESHOLD_REACHED: { icon: AlertTriangle, bg: 'rgba(239,68,68,0.08)', color: '#ef4444' },
+  GROUP_BUDGET_THRESHOLD_REACHED:   { icon: AlertTriangle, bg: 'rgba(245,158,11,0.08)', color: '#f59e0b' },
+  GROUP_BUDGET_EXCEEDED:            { icon: AlertTriangle, bg: 'rgba(239,68,68,0.08)', color: '#ef4444' },
+  MONTHLY_SUMMARY:                  { icon: TrendingUp,    bg: 'rgba(183,255,0,0.08)', color: '#B7FF00' },
 };
 
 const timeAgo = (isoStr) => {
@@ -59,9 +59,10 @@ export const NotificationDrawer = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
               width: '32px', height: '32px', borderRadius: '8px',
-              background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: '#050505', border: '1px solid #1a1a1a',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <Bell size={16} color="#2563eb" />
+              <Bell size={16} color="#B7FF00" />
             </div>
             <div>
               <h3 style={{ fontSize: '0.95rem', color: 'var(--text-primary)', fontWeight: 700, margin: 0 }}>Notifications</h3>
@@ -93,15 +94,15 @@ export const NotificationDrawer = () => {
         <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
           {notifications.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-                <Bell size={22} color="var(--text-faint)" />
+              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#050505', border: '1px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+                <Bell size={22} color="#737373" />
               </div>
               <h4 style={{ color: 'var(--text-primary)', fontSize: '0.95rem', marginBottom: '4px', fontWeight: 700 }}>All caught up!</h4>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>No notifications yet.</p>
             </div>
           ) : (
             notifications.map(notif => {
-              const cfg = notifIconMap[notif.type] || { icon: Info, bg: 'var(--bg-surface)', color: 'var(--text-muted)' };
+              const cfg = notifIconMap[notif.type] || { icon: Info, bg: 'rgba(115,115,115,0.08)', color: '#737373' };
               const Icon = cfg.icon;
               return (
                 <div
@@ -110,12 +111,12 @@ export const NotificationDrawer = () => {
                   style={{
                     display: 'flex', alignItems: 'flex-start', gap: '10px',
                     padding: '11px 12px', borderRadius: 'var(--r-lg)', marginBottom: '4px',
-                    background: notif.isRead ? 'transparent' : '#eff6ff',
-                    border: `1px solid ${notif.isRead ? 'transparent' : '#dbeafe'}`,
+                    background: notif.isRead ? 'transparent' : 'rgba(183,255,0,0.04)',
+                    border: `1px solid ${notif.isRead ? 'transparent' : 'rgba(183,255,0,0.1)'}`,
                     cursor: 'pointer', transition: 'var(--t-fast)',
                   }}
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-surface)'}
-                  onMouseLeave={e => e.currentTarget.style.background = notif.isRead ? 'transparent' : '#eff6ff'}
+                  onMouseLeave={e => e.currentTarget.style.background = notif.isRead ? 'transparent' : 'rgba(183,255,0,0.04)'}
                 >
                   <div style={{
                     width: '32px', height: '32px', borderRadius: '8px', flexShrink: 0,
@@ -132,7 +133,7 @@ export const NotificationDrawer = () => {
                         {notif.title}
                       </h5>
                       {!notif.isRead && (
-                        <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#2563eb', flexShrink: 0, marginTop: '4px' }} />
+                        <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#B7FF00', flexShrink: 0, marginTop: '4px' }} />
                       )}
                     </div>
                     <p style={{ fontSize: '0.76rem', color: 'var(--text-muted)', margin: '3px 0 0 0', lineHeight: 1.45 }}>

@@ -36,9 +36,9 @@ export const GroupsPage = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-              <span className="badge badge-indigo"><Users size={11} /> Group Management</span>
+              <span className="badge" style={{ background: '#050505', color: '#B7FF00' }}><Users size={11} /> Groups</span>
             </div>
-            <h2 style={{ fontSize: '1.3rem', color: 'var(--text-primary)', marginBottom: '4px', fontWeight: 800 }}>Groups &amp; Shared Budgets</h2>
+            <h2 style={{ fontSize: '1.3rem', color: 'var(--text-primary)', marginBottom: '4px', fontWeight: 800 }}>Groups & Shared Budgets</h2>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
               Create shared expense pools, split bills, and track who owes whom.
             </p>
@@ -57,9 +57,9 @@ export const GroupsPage = () => {
       {/* Stat Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
         {[
-          { label: 'Joined Groups', value: isLoading ? '—' : `${groups.length}`, icon: Users, iconBg: '#ede9fe', iconColor: '#7c3aed', sub: 'Active memberships' },
-          { label: 'Total Members', value: isLoading ? '—' : `${totalMembers}`, icon: UserPlus, iconBg: '#d1fae5', iconColor: '#059669', sub: 'Across all groups' },
-          { label: 'Admin Of',      value: isLoading ? '—' : `${groups.filter(g => g.currentUserRole === 'ADMIN').length}`, icon: ShieldCheck, iconBg: '#fef3c7', iconColor: '#d97706', sub: 'Groups you manage' },
+          { label: 'Joined Groups', value: isLoading ? '—' : `${groups.length}`, icon: Users, sub: 'Active memberships' },
+          { label: 'Total Members', value: isLoading ? '—' : `${totalMembers}`, icon: UserPlus, sub: 'Across all groups' },
+          { label: 'Admin Of',      value: isLoading ? '—' : `${groups.filter(g => g.currentUserRole === 'ADMIN').length}`, icon: ShieldCheck, sub: 'Groups you manage' },
         ].map(card => (
           <div key={card.label} className="card" style={{ padding: '18px 20px' }}>
             {isLoading ? (
@@ -72,8 +72,12 @@ export const GroupsPage = () => {
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 600 }}>{card.label}</span>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: card.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <card.icon size={16} color={card.iconColor} />
+                  <div style={{
+                    width: '32px', height: '32px', borderRadius: '8px',
+                    background: '#050505', border: '1px solid #1a1a1a',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <card.icon size={16} color="#B7FF00" />
                   </div>
                 </div>
                 <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1, marginBottom: '4px' }}>{card.value}</div>

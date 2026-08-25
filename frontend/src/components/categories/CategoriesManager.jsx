@@ -3,7 +3,7 @@ import { Plus, ShieldCheck, Trash2, Check, Loader2, Tag } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 import { CATEGORY_ICONS, CategoryIcon } from './categoryIcons';
 
-const PRESET_COLORS = ['#2563eb', '#10b981', '#7c3aed', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6', '#ec4899', '#84cc16', '#f97316'];
+const PRESET_COLORS = ['#B7FF00', '#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6', '#ec4899', '#84cc16', '#f97316'];
 
 export const CategoriesManager = () => {
   const { categories, addCategory, deleteCategory, isLoading } = useExpense();
@@ -11,7 +11,7 @@ export const CategoriesManager = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [name, setName] = useState('');
   const [icon, setIcon] = useState('folder');
-  const [color, setColor] = useState('#2563eb');
+  const [color, setColor] = useState('#B7FF00');
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
@@ -21,7 +21,7 @@ export const CategoriesManager = () => {
     setSaving(true);
     try {
       await addCategory({ name: name.trim(), icon, color });
-      setName(''); setIcon('folder'); setColor('#2563eb');
+      setName(''); setIcon('folder'); setColor('#B7FF00');
       setIsFormOpen(false);
     } catch {}
     finally { setSaving(false); }
@@ -41,7 +41,7 @@ export const CategoriesManager = () => {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-              <span className="badge badge-amber"><Tag size={11} /> Categories</span>
+              <span className="badge" style={{ background: '#050505', color: '#B7FF00' }}><Tag size={11} /> Categories</span>
             </div>
             <h2 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', fontWeight: 800, margin: 0 }}>Category Manager</h2>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
@@ -75,9 +75,9 @@ export const CategoriesManager = () => {
                       style={{
                         padding: '6px 8px', borderRadius: '8px', cursor: 'pointer',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: icon === key ? 'var(--accent)' : 'var(--text-muted)',
-                        background: icon === key ? 'var(--accent-light)' : 'var(--bg-surface)',
-                        border: `1px solid ${icon === key ? 'var(--accent)' : 'var(--border)'}`,
+                        color: icon === key ? '#B7FF00' : 'var(--text-muted)',
+                        background: icon === key ? 'rgba(183,255,0,0.08)' : 'var(--bg-surface)',
+                        border: `1px solid ${icon === key ? 'rgba(183,255,0,0.2)' : 'var(--border)'}`,
                         transition: 'var(--t-fast)',
                       }}
                     >
@@ -133,11 +133,11 @@ export const CategoriesManager = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                 <div style={{
                   width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0,
-                  background: `${cat.color || '#2563eb'}15`,
-                  border: `1px solid ${cat.color || '#2563eb'}30`,
+                  background: `${cat.color || '#737373'}15`,
+                  border: `1px solid ${cat.color || '#737373'}30`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <CategoryIcon icon={cat.icon} size={18} color={cat.color || '#2563eb'} />
+                  <CategoryIcon icon={cat.icon} size={18} color={cat.color || '#737373'} />
                 </div>
                 <div style={{ minWidth: 0 }}>
                   <h4 style={{ fontSize: '0.875rem', color: 'var(--text-primary)', margin: 0, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -145,7 +145,7 @@ export const CategoriesManager = () => {
                   </h4>
                   <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     {cat.isSystem ? (
-                      <><ShieldCheck size={10} color="#059669" /> System</>
+                      <><ShieldCheck size={10} color="#22c55e" /> System</>
                     ) : (
                       'Custom'
                     )}
@@ -158,7 +158,7 @@ export const CategoriesManager = () => {
                   className="btn btn-ghost btn-icon"
                   onClick={() => handleDelete(cat.id)}
                   disabled={deletingId === cat.id}
-                  style={{ color: '#dc2626', width: '32px', height: '32px', flexShrink: 0 }}
+                  style={{ color: '#ef4444', width: '32px', height: '32px', flexShrink: 0 }}
                 >
                   {deletingId === cat.id
                     ? <Loader2 size={14} style={{ animation: 'spin 0.7s linear infinite' }} />

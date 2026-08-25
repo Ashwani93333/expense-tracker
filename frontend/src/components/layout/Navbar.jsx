@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Bell, Search, Wallet, Users, LogOut, User, ChevronDown, ScanLine } from 'lucide-react';
+import { Plus, Bell, Search, Wallet, LogOut, User, ChevronDown, ScanLine } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 import { useAuth } from '../../context/AuthContext';
 
@@ -27,9 +27,10 @@ export const Navbar = () => {
     <header style={{
       position: 'sticky', top: 0, zIndex: 200,
       height: 'var(--header-height)',
-      background: 'var(--bg-header)',
+      background: 'rgba(255,255,255,0.85)',
+      backdropFilter: 'blur(16px)',
+      WebkitBackdropFilter: 'blur(16px)',
       borderBottom: '1px solid var(--border)',
-      boxShadow: 'var(--shadow-xs)',
     }}>
       <div style={{
         height: '100%',
@@ -37,31 +38,28 @@ export const Navbar = () => {
         padding: '0 24px', gap: '16px',
       }}>
 
-        {/* Brand */}
+        {/* Brand — visible on mobile only (desktop shows in sidebar) */}
         <div
           style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', flexShrink: 0, userSelect: 'none' }}
           onClick={() => setActiveTab('dashboard')}
         >
           <div style={{
-            width: '32px', height: '32px', borderRadius: '8px',
-            background: 'linear-gradient(135deg, #2563eb, #4f46e5)',
+            width: '34px', height: '34px', borderRadius: '10px',
+            background: '#050505',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 2px 8px rgba(37,99,235,0.30)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
           }}>
-            <Wallet size={16} color="#fff" />
+            <Wallet size={17} color="#B7FF00" />
           </div>
-          <div>
+          <div className="desktop-only">
             <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
-              ExpenseTracker
-            </div>
-            <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-              Finance Suite
+              Expense<span style={{ color: 'var(--accent)' }}>Tracker</span>
             </div>
           </div>
         </div>
 
         {/* Search */}
-        <div style={{ flex: 1, maxWidth: '400px', position: 'relative' }}>
+        <div className="navbar-search" style={{ flex: 1, maxWidth: '400px', position: 'relative' }}>
           <Search size={14} style={{
             position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)',
             color: 'var(--text-faint)',
@@ -70,26 +68,26 @@ export const Navbar = () => {
             type="text"
             placeholder="Search expenses, groups..."
             className="input-field"
-            style={{ paddingLeft: '34px', fontSize: '0.83rem', borderRadius: 'var(--r-full)', height: '36px', padding: '0 14px 0 34px' }}
+            style={{ paddingLeft: '34px', fontSize: '0.83rem', borderRadius: 'var(--r-full)', height: '38px', padding: '0 14px 0 34px', background: 'var(--bg-surface)' }}
           />
         </div>
 
         {/* Right actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
 
-          {/* Scan Receipt */}
+          {/* Scan Receipt — desktop only */}
           <button
-            className="btn btn-secondary btn-sm"
+            className="btn btn-secondary btn-sm desktop-only"
             onClick={() => setActiveTab('scan')}
             style={{ gap: '5px' }}
           >
-            <ScanLine size={14} color="var(--accent)" />
-            <span style={{ color: 'var(--accent)' }}>Scan</span>
+            <ScanLine size={14} color="var(--accent-dark)" />
+            <span>Scan</span>
           </button>
 
-          {/* Add Expense */}
+          {/* Add Expense — desktop only */}
           <button
-            className="btn btn-primary btn-sm"
+            className="btn btn-primary btn-sm desktop-only"
             onClick={() => setIsAddModalOpen(true)}
             id="add-expense-btn"
           >
@@ -102,21 +100,21 @@ export const Navbar = () => {
             onClick={() => setIsNotifDrawerOpen(prev => !prev)}
             id="notif-bell-btn"
             style={{
-              position: 'relative', width: '36px', height: '36px',
+              position: 'relative', width: '38px', height: '38px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'transparent', border: '1px solid var(--border-strong)',
+              background: 'var(--bg-surface)', border: '1px solid var(--border)',
               borderRadius: 'var(--r-md)', cursor: 'pointer', transition: 'var(--t-fast)',
             }}
-            onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-surface)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-strong)'}
+            onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
           >
             <Bell size={16} color="var(--text-muted)" />
             {unreadNotifCount > 0 && (
               <span style={{
                 position: 'absolute', top: '-3px', right: '-3px',
                 minWidth: '16px', height: '16px', borderRadius: '99px',
-                background: '#dc2626', color: '#fff',
-                fontSize: '0.6rem', fontWeight: 700,
+                background: 'var(--accent)', color: '#050505',
+                fontSize: '0.6rem', fontWeight: 800,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 padding: '0 3px',
                 border: '2px solid #fff',
@@ -135,7 +133,7 @@ export const Navbar = () => {
                 display: 'flex', alignItems: 'center', gap: '8px',
                 padding: '5px 10px 5px 5px', borderRadius: 'var(--r-full)',
                 background: userMenuOpen ? 'var(--bg-surface)' : 'transparent',
-                border: '1px solid var(--border-strong)',
+                border: '1px solid var(--border)',
                 cursor: 'pointer', transition: 'var(--t-fast)',
               }}
             >
@@ -143,27 +141,25 @@ export const Navbar = () => {
                 <img
                   src={avatarUrl}
                   alt={currentUser?.fullName}
-                  style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover' }}
+                  style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover' }}
                 />
               ) : (
                 <div style={{
-                  width: '26px', height: '26px', borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #2563eb, #4f46e5)',
+                  width: '28px', height: '28px', borderRadius: '50%',
+                  background: '#050505',
+                  border: '1.5px solid var(--accent)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '0.65rem', fontWeight: 800, color: '#fff',
+                  fontSize: '0.65rem', fontWeight: 800, color: 'var(--accent)',
                 }}>
                   {initials}
                 </div>
               )}
-              <div style={{ textAlign: 'left' }}>
+              <div className="desktop-only" style={{ textAlign: 'left' }}>
                 <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.2 }}>
                   {currentUser?.fullName?.split(' ')[0] || 'User'}
                 </div>
-                <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', lineHeight: 1 }}>
-                  {currentUser?.role === 'ROLE_USER' ? 'Member' : currentUser?.role}
-                </div>
               </div>
-              <ChevronDown size={13} color="var(--text-faint)" />
+              <ChevronDown size={13} color="var(--text-faint)" className="desktop-only" />
             </button>
 
             {userMenuOpen && (
@@ -175,8 +171,8 @@ export const Navbar = () => {
                 <div
                   style={{
                     position: 'absolute', top: 'calc(100% + 8px)', right: 0,
-                    width: '220px',
-                    background: '#fff',
+                    width: '240px',
+                    background: '#ffffff',
                     border: '1px solid var(--border)',
                     borderRadius: 'var(--r-xl)',
                     padding: '6px',
@@ -186,7 +182,7 @@ export const Navbar = () => {
                   }}
                 >
                   {/* User Info */}
-                  <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)', marginBottom: '4px' }}>
+                  <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', marginBottom: '4px' }}>
                     <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>{currentUser?.fullName}</div>
                     <div style={{ fontSize: '0.73rem', color: 'var(--text-muted)', marginTop: '2px' }}>{currentUser?.email}</div>
                   </div>
@@ -210,7 +206,7 @@ export const Navbar = () => {
                   <div style={{ borderTop: '1px solid var(--border)', marginTop: '4px', paddingTop: '4px' }}>
                     <button
                       onClick={handleLogout}
-                      style={{ ...dropdownItemStyle, color: '#dc2626' }}
+                      style={{ ...dropdownItemStyle, color: '#ef4444' }}
                     >
                       <LogOut size={14} />
                       <span>Sign Out</span>
@@ -234,5 +230,4 @@ const dropdownItemStyle = {
   fontSize: '0.84rem', fontWeight: 500, cursor: 'pointer',
   borderRadius: 'var(--r-md)', transition: 'var(--t-fast)',
   fontFamily: 'var(--font)', textAlign: 'left',
-  onMouseEnter: undefined,
 };

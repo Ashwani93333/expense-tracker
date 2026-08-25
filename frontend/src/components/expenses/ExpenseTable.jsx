@@ -39,17 +39,17 @@ export const ExpenseTable = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
       {/* Header + Filters */}
-      <div className="card" style={{ padding: '18px 22px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+      <div className="card" style={{ padding: '20px 24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
           <div>
-            <h1 style={{ fontSize: '1.15rem', color: 'var(--text-primary)', fontWeight: 800, marginBottom: '2px' }}>My Expenses</h1>
+            <h1 style={{ fontSize: '1.2rem', color: 'var(--text-primary)', fontWeight: 800, marginBottom: '2px' }}>Recent Expenses</h1>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
               {filteredExpenses.length} transactions · Total ₹{totalFiltered.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </p>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <button className="btn btn-secondary btn-sm" onClick={() => setActiveTab('scan')} style={{ color: 'var(--accent)' }}>
-              <ScanLine size={13} color="var(--accent)" /> Scan Receipt
+            <button className="btn btn-secondary btn-sm" onClick={() => setActiveTab('scan')}>
+              <ScanLine size={13} /> Scan Receipt
             </button>
             <button className="btn btn-primary btn-sm" onClick={() => setIsAddModalOpen(true)}>
               <Plus size={13} /> Add Expense
@@ -58,12 +58,12 @@ export const ExpenseTable = () => {
         </div>
 
         {/* Search + Type Filter */}
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '12px' }}>
           <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
             <Search size={14} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)' }} />
             <input
               type="text"
-              placeholder="Search by description, category..."
+              placeholder="Search expenses..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="input-field"
@@ -71,7 +71,7 @@ export const ExpenseTable = () => {
             />
           </div>
 
-          <div style={{ display: 'flex', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '3px', gap: '2px' }}>
+          <div style={{ display: 'flex', background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-full)', padding: '3px', gap: '2px' }}>
             {[
               { id: 'ALL', label: 'All' },
               { id: 'PERSONAL', label: 'Personal' },
@@ -80,7 +80,13 @@ export const ExpenseTable = () => {
               <button
                 key={f.id}
                 onClick={() => setSelectedGroupFilter(f.id)}
-                className={`btn btn-xs ${selectedGroupFilter === f.id ? 'btn-primary' : 'btn-ghost'}`}
+                style={{
+                  padding: '5px 12px', borderRadius: 'var(--r-full)',
+                  border: 'none', fontSize: '0.78rem', fontWeight: 600,
+                  background: selectedGroupFilter === f.id ? '#050505' : 'transparent',
+                  color: selectedGroupFilter === f.id ? '#B7FF00' : 'var(--text-muted)',
+                  cursor: 'pointer', transition: 'var(--t-fast)', fontFamily: 'var(--font)',
+                }}
               >
                 {f.label}
               </button>
@@ -92,17 +98,32 @@ export const ExpenseTable = () => {
         <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px' }}>
           <button
             onClick={() => setSelectedCategory('ALL')}
-            className={`btn btn-xs ${selectedCategory === 'ALL' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{ borderRadius: 'var(--r-full)', whiteSpace: 'nowrap', flexShrink: 0 }}
+            style={{
+              padding: '5px 12px', borderRadius: 'var(--r-full)',
+              border: selectedCategory === 'ALL' ? '1px solid #050505' : '1px solid var(--border)',
+              background: selectedCategory === 'ALL' ? '#050505' : 'transparent',
+              color: selectedCategory === 'ALL' ? 'var(--accent)' : 'var(--text-muted)',
+              fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
+              whiteSpace: 'nowrap', flexShrink: 0, fontFamily: 'var(--font)',
+              transition: 'var(--t-fast)',
+            }}
           >
-            All Categories
+            All
           </button>
           {categories.map(cat => (
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`btn btn-xs ${selectedCategory === cat.id ? 'btn-primary' : 'btn-ghost'}`}
-              style={{ borderRadius: 'var(--r-full)', whiteSpace: 'nowrap', flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+              style={{
+                padding: '5px 12px', borderRadius: 'var(--r-full)',
+                border: selectedCategory === cat.id ? '1px solid #050505' : '1px solid var(--border)',
+                background: selectedCategory === cat.id ? '#050505' : 'transparent',
+                color: selectedCategory === cat.id ? 'var(--accent)' : 'var(--text-muted)',
+                fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
+                whiteSpace: 'nowrap', flexShrink: 0,
+                display: 'inline-flex', alignItems: 'center', gap: '5px',
+                fontFamily: 'var(--font)', transition: 'var(--t-fast)',
+              }}
             >
               <CategoryIcon icon={cat.icon} size={12} />
               {cat.name}
@@ -118,7 +139,7 @@ export const ExpenseTable = () => {
             <div className="skeleton" style={{ height: '14px', width: '25%', marginBottom: '14px' }} />
             {Array.from({ length: 2 }).map((_, j) => (
               <div key={j} style={{ display: 'flex', gap: '12px', marginBottom: '12px', alignItems: 'center' }}>
-                <div className="skeleton" style={{ width: '38px', height: '38px', borderRadius: '9px', flexShrink: 0 }} />
+                <div className="skeleton" style={{ width: '38px', height: '38px', borderRadius: '10px', flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
                   <div className="skeleton" style={{ height: '13px', width: '55%', marginBottom: '6px' }} />
                   <div className="skeleton" style={{ height: '10px', width: '35%' }} />
@@ -131,13 +152,18 @@ export const ExpenseTable = () => {
       ) : sortedDates.length === 0 ? (
         <div className="card" style={{ padding: '56px 24px', textAlign: 'center' }}>
           <FileText size={36} color="var(--text-faint)" style={{ marginBottom: '12px' }} />
-          <h4 style={{ color: 'var(--text-primary)', marginBottom: '6px' }}>No expenses found</h4>
+          <h4 style={{ color: 'var(--text-primary)', marginBottom: '6px', fontWeight: 700 }}>No expenses found</h4>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '16px' }}>
-            {searchQuery ? 'Try adjusting your search or filters.' : 'Start by adding your first expense.'}
+            {searchQuery ? 'Try adjusting your search or filters.' : 'Start tracking your spending and get a clearer picture of your financial habits.'}
           </p>
-          <button className="btn btn-primary btn-sm" onClick={() => setIsAddModalOpen(true)}>
-            <Plus size={13} /> Add Expense
-          </button>
+          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+            <button className="btn btn-primary btn-sm" onClick={() => setIsAddModalOpen(true)}>
+              <Plus size={13} /> Add Expense
+            </button>
+            <button className="btn btn-secondary btn-sm" onClick={() => setActiveTab('scan')}>
+              <ScanLine size={13} /> Scan Receipt
+            </button>
+          </div>
         </div>
       ) : (
         sortedDates.map(dateStr => {
@@ -151,13 +177,13 @@ export const ExpenseTable = () => {
                 paddingBottom: '12px', marginBottom: '10px', borderBottom: '1px solid var(--border)',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Calendar size={14} color="var(--accent)" />
+                  <Calendar size={14} color="var(--text-muted)" />
                   <span style={{ fontSize: '0.88rem', color: 'var(--text-primary)', fontWeight: 700 }}>
                     {new Date(dateStr + 'T12:00:00').toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                   </span>
                   <span className="badge" style={{ fontSize: '0.65rem' }}>{dayExpenses.length}</span>
                 </div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#dc2626' }}>
+                <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)' }}>
                   -₹{dayTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </div>
               </div>
@@ -170,7 +196,7 @@ export const ExpenseTable = () => {
                     <div
                       key={exp.id}
                       style={{
-                        padding: '10px 12px', borderRadius: 'var(--r-lg)',
+                        padding: '11px 14px', borderRadius: 'var(--r-lg)',
                         border: '1px solid var(--border)',
                         background: 'var(--bg-card)',
                         transition: 'var(--t-fast)',
@@ -181,11 +207,11 @@ export const ExpenseTable = () => {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         {/* Category icon */}
                         <div style={{
-                          width: '38px', height: '38px', borderRadius: '9px', flexShrink: 0,
-                          background: '#eff6ff', border: '1px solid #dbeafe',
+                          width: '38px', height: '38px', borderRadius: '10px', flexShrink: 0,
+                          background: 'var(--bg-surface)', border: '1px solid var(--border)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                         }}>
-                          <CategoryIcon icon={catIcon} size={17} color="#2563eb" />
+                          <CategoryIcon icon={catIcon} size={17} color="var(--text-muted)" />
                         </div>
 
                         {/* Info */}
@@ -195,7 +221,7 @@ export const ExpenseTable = () => {
                               {exp.description || 'Expense'}
                             </span>
                             {exp.groupName && (
-                              <span className="badge badge-blue" style={{ fontSize: '0.63rem' }}>
+                              <span className="badge badge-lime" style={{ fontSize: '0.63rem' }}>
                                 <Users size={9} /> {exp.groupName}
                               </span>
                             )}
@@ -209,21 +235,21 @@ export const ExpenseTable = () => {
 
                         {/* Amount + Delete */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#dc2626' }}>
+                          <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                             -₹{(exp.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </div>
                           <button
                             onClick={() => deleteExpense(exp.id)}
                             title="Delete"
                             style={{
-                              background: 'none', border: '1px solid var(--border)',
+                              background: 'none', border: '1px solid transparent',
                               cursor: 'pointer', color: 'var(--text-faint)',
                               borderRadius: 'var(--r-sm)', width: '30px', height: '30px',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                               transition: 'var(--t-fast)',
                             }}
-                            onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#dc2626'; e.currentTarget.style.borderColor = '#fecaca'; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-faint)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
+                            onMouseEnter={e => { e.currentTarget.style.background = 'var(--red-light)'; e.currentTarget.style.color = 'var(--red)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.2)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-faint)'; e.currentTarget.style.borderColor = 'transparent'; }}
                           >
                             <Trash2 size={13} />
                           </button>
@@ -244,22 +270,23 @@ export const ExpenseTable = () => {
                               key={sp.userId || sp.id}
                               style={{
                                 display: 'inline-flex', alignItems: 'center', gap: '4px',
-                                padding: '2px 8px', borderRadius: 'var(--r-full)',
-                                background: sp.isSettled ? '#d1fae5' : 'var(--bg-surface)',
-                                border: `1px solid ${sp.isSettled ? '#a7f3d0' : 'var(--border)'}`,
-                                fontSize: '0.71rem', color: sp.isSettled ? '#065f46' : 'var(--text-secondary)',
+                                padding: '3px 8px', borderRadius: 'var(--r-full)',
+                                background: sp.isSettled ? 'var(--green-light)' : 'var(--bg-surface)',
+                                border: `1px solid ${sp.isSettled ? 'rgba(34,197,94,0.2)' : 'var(--border)'}`,
+                                fontSize: '0.71rem',
+                                color: sp.isSettled ? 'var(--green-text)' : 'var(--text-secondary)',
                               }}
                             >
                               <span>{sp.userName || sp.name}: ₹{(sp.shareAmount || 0).toFixed(2)}</span>
                               {sp.isSettled ? (
-                                <Check size={10} color="#059669" />
+                                <Check size={10} color="var(--green)" />
                               ) : (
                                 sp.userId === currentUser?.id && (
                                   <button
                                     onClick={() => settleSplitShare(exp.id, sp.userId)}
                                     style={{
                                       background: 'none', border: 'none', cursor: 'pointer',
-                                      color: 'var(--accent)', fontSize: '0.65rem', fontWeight: 700,
+                                      color: 'var(--accent-dark)', fontSize: '0.65rem', fontWeight: 700,
                                       padding: '0 2px', fontFamily: 'var(--font)',
                                     }}
                                   >

@@ -10,11 +10,11 @@ const SplitTypeBtn = ({ value, current, label, icon: Icon, onClick }) => (
     type="button"
     onClick={() => onClick(value)}
     style={{
-      flex: 1, padding: '8px 4px', border: '1px solid',
-      borderColor: current === value ? 'var(--accent)' : 'var(--border-strong)',
+      flex: 1, padding: '10px 4px', border: '1px solid',
+      borderColor: current === value ? '#050505' : 'var(--border)',
       borderRadius: 'var(--r-md)',
-      background: current === value ? 'var(--accent-light)' : '#fff',
-      color: current === value ? 'var(--accent)' : 'var(--text-muted)',
+      background: current === value ? '#050505' : '#fff',
+      color: current === value ? '#B7FF00' : 'var(--text-muted)',
       fontWeight: current === value ? 700 : 500,
       fontSize: '0.8rem', cursor: 'pointer', fontFamily: 'var(--font)',
       transition: 'var(--t-fast)',
@@ -141,15 +141,15 @@ export const ExpenseFormModal = () => {
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          width: '100%', maxWidth: '560px', maxHeight: '90vh',
-          overflowY: 'auto', padding: '24px', borderRadius: 'var(--r-2xl)',
+          width: '100%', maxWidth: '580px', maxHeight: '90vh',
+          overflowY: 'auto', padding: '28px', borderRadius: 'var(--r-2xl)',
           background: '#fff', border: '1px solid var(--border)',
           boxShadow: 'var(--shadow-modal)',
           animation: 'slideUp 0.18s ease',
         }}
       >
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
           <div>
             <h3 style={{ fontSize: '1.1rem', color: 'var(--text-primary)', fontWeight: 800 }}>
               {isGroupExpense ? 'Log Group Expense' : 'Add Personal Expense'}
@@ -163,14 +163,14 @@ export const ExpenseFormModal = () => {
               type="button"
               className="btn btn-ghost btn-sm"
               onClick={() => { setIsAddModalOpen(false); setActiveTab('scan'); }}
-              style={{ color: 'var(--accent)', fontSize: '0.78rem' }}
+              style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}
             >
-              <ScanLine size={13} color="var(--accent)" /> Scan Receipt
+              <ScanLine size={13} /> Scan
             </button>
             <button
               onClick={() => setIsAddModalOpen(false)}
               style={{
-                background: 'none', border: '1px solid var(--border)', borderRadius: 'var(--r-md)',
+                background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)',
                 cursor: 'pointer', color: 'var(--text-muted)',
                 width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
@@ -180,22 +180,24 @@ export const ExpenseFormModal = () => {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-          {/* Amount + Description */}
-          <div style={{ display: 'grid', gridTemplateColumns: '0.85fr 1.3fr', gap: '12px' }}>
-            <div className="input-group" style={{ margin: 0 }}>
-              <label className="input-label"><DollarSign size={12} /> Amount (₹) *</label>
-              <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#059669', fontWeight: 700, fontSize: '1rem' }}>₹</span>
-                <input
-                  type="number" step="0.01" placeholder="0.00" required
-                  value={amount} onChange={e => setAmount(e.target.value)}
-                  className="input-field"
-                  style={{ paddingLeft: '28px', fontSize: '1.1rem', fontWeight: 800, color: '#059669' }}
-                />
-              </div>
+          {/* Amount — large hero input */}
+          <div className="input-group" style={{ margin: 0 }}>
+            <label className="input-label" style={{ fontSize: '0.82rem' }}><DollarSign size={12} /> Amount *</label>
+            <div style={{ position: 'relative' }}>
+              <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)', fontWeight: 700, fontSize: '1.3rem' }}>₹</span>
+              <input
+                type="number" step="0.01" placeholder="0.00" required
+                value={amount} onChange={e => setAmount(e.target.value)}
+                className="input-field"
+                style={{ paddingLeft: '32px', fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', height: '60px' }}
+              />
             </div>
+          </div>
+
+          {/* Description + Date */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '12px' }}>
             <div className="input-group" style={{ margin: 0 }}>
               <label className="input-label"><AlignLeft size={12} /> Description *</label>
               <input
@@ -204,30 +206,30 @@ export const ExpenseFormModal = () => {
                 className="input-field"
               />
             </div>
-          </div>
-
-          {/* Category + Date */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div className="input-group" style={{ margin: 0 }}>
-              <label className="input-label"><Tag size={12} /> Category</label>
-              <CategorySearchSelect
-                categories={categories}
-                value={categoryId}
-                onChange={setCategoryId}
-                addCategory={addCategory}
-              />
-            </div>
-            <div className="input-group" style={{ margin: 0 }}>
-              <label className="input-label"><CalendarDays size={12} /> Expense Date</label>
+              <label className="input-label"><CalendarDays size={12} /> Date</label>
               <input type="date" required value={expenseDate} onChange={e => setExpenseDate(e.target.value)} className="input-field" />
             </div>
+          </div>
+
+          {/* Category */}
+          <div className="input-group" style={{ margin: 0 }}>
+            <label className="input-label"><Tag size={12} /> Category</label>
+            <CategorySearchSelect
+              categories={categories}
+              value={categoryId}
+              onChange={setCategoryId}
+              addCategory={addCategory}
+            />
           </div>
 
           {/* Group Toggle */}
           {groups.length > 0 && (
             <div style={{
-              padding: '12px 14px', borderRadius: 'var(--r-lg)',
-              background: 'var(--accent-light)', border: '1px solid var(--border-accent)',
+              padding: '14px 16px', borderRadius: 'var(--r-xl)',
+              background: isGroupExpense ? 'rgba(183,255,0,0.06)' : 'var(--bg-surface)',
+              border: `1px solid ${isGroupExpense ? 'rgba(183,255,0,0.2)' : 'var(--border)'}`,
+              transition: 'var(--t-fast)',
             }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
                 <input
@@ -237,14 +239,13 @@ export const ExpenseFormModal = () => {
                     setIsGroupExpense(e.target.checked);
                     if (e.target.checked && !selectedGroupId && groups.length > 0) setSelectedGroupId(groups[0].id);
                   }}
-                  style={{ width: '16px', height: '16px', accentColor: 'var(--accent)', cursor: 'pointer' }}
+                  style={{ width: '16px', height: '16px', accentColor: '#050505', cursor: 'pointer' }}
                 />
                 <div>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--accent)' }}>
-                    <Users size={13} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
-                    Split with a group
+                  <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <Users size={13} /> Split with a group
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '1px' }}>
                     Assign shares to group members
                   </div>
                 </div>
@@ -286,26 +287,26 @@ export const ExpenseFormModal = () => {
                 </div>
               ) : splits.length > 0 && (
                 <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--r-lg)', overflow: 'hidden', border: '1px solid var(--border)' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: '7px 14px', borderBottom: '1px solid var(--border)', background: 'var(--bg-muted)' }}>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Member</span>
-                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Share</span>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: '8px 14px', borderBottom: '1px solid var(--border)', background: '#050505' }}>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#525252', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Member</span>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#525252', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Share</span>
                   </div>
                   {splits.map(sp => (
-                    <div key={sp.userId} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'center', padding: '8px 14px', borderBottom: '1px solid var(--border)' }}>
+                    <div key={sp.userId} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'center', padding: '9px 14px', borderBottom: '1px solid var(--border)' }}>
                       <span style={{ fontSize: '0.83rem', color: 'var(--text-primary)', fontWeight: 500 }}>
                         {sp.userName}
-                        {sp.userId === currentUser?.id && <span className="badge badge-blue" style={{ marginLeft: '6px', fontSize: '0.62rem' }}>You</span>}
+                        {sp.userId === currentUser?.id && <span className="badge" style={{ marginLeft: '6px', fontSize: '0.62rem', background: '#050505', color: '#B7FF00' }}>You</span>}
                       </span>
                       <div style={{ textAlign: 'right' }}>
                         {splitType === 'EQUAL' ? (
-                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#059669' }}>₹{sp.shareAmount.toFixed(2)}</span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>₹{sp.shareAmount.toFixed(2)}</span>
                         ) : splitType === 'PERCENT' ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '5px', justifyContent: 'flex-end' }}>
                             <input
                               type="number" step="0.1" min="0" max="100"
                               value={sp.sharePercent || ''}
                               onChange={e => updateSplitPercent(sp.userId, e.target.value)}
-                              style={{ width: '55px', padding: '4px 7px', border: '1px solid var(--border-strong)', borderRadius: 'var(--r-sm)', color: 'var(--text-primary)', fontSize: '0.82rem', outline: 'none', textAlign: 'right', fontFamily: 'var(--font)', background: '#fff' }}
+                              style={{ width: '55px', padding: '4px 7px', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', color: 'var(--text-primary)', fontSize: '0.82rem', outline: 'none', textAlign: 'right', fontFamily: 'var(--font)', background: '#fff' }}
                             />
                             <span style={{ color: 'var(--text-muted)', fontSize: '0.73rem' }}>% = ₹{sp.shareAmount.toFixed(2)}</span>
                           </div>
@@ -314,15 +315,15 @@ export const ExpenseFormModal = () => {
                             type="number" step="0.01" min="0"
                             value={sp.shareAmount || ''}
                             onChange={e => updateSplitAmount(sp.userId, e.target.value)}
-                            style={{ width: '90px', padding: '4px 7px', border: '1px solid var(--border-strong)', borderRadius: 'var(--r-sm)', color: '#059669', fontSize: '0.87rem', fontWeight: 700, outline: 'none', textAlign: 'right', fontFamily: 'var(--font)', background: '#fff' }}
+                            style={{ width: '90px', padding: '4px 7px', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', color: 'var(--text-primary)', fontSize: '0.87rem', fontWeight: 700, outline: 'none', textAlign: 'right', fontFamily: 'var(--font)', background: '#fff' }}
                           />
                         )}
                       </div>
                     </div>
                   ))}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: '8px 14px', background: 'var(--bg-muted)' }}>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)' }}>Total</span>
-                    <span style={{ fontSize: '0.88rem', fontWeight: 800, color: splitError ? '#dc2626' : '#059669', textAlign: 'right', display: 'inline-flex', alignItems: 'center', gap: '5px', justifyContent: 'flex-end' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: '9px 14px', background: '#050505' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#737373' }}>Total</span>
+                    <span style={{ fontSize: '0.88rem', fontWeight: 800, color: splitError ? '#ef4444' : '#B7FF00', textAlign: 'right', display: 'inline-flex', alignItems: 'center', gap: '5px', justifyContent: 'flex-end' }}>
                       ₹{splitTotal.toFixed(2)} {splitError && <AlertTriangle size={13} />}
                     </span>
                   </div>
@@ -332,7 +333,7 @@ export const ExpenseFormModal = () => {
           )}
 
           {/* Actions */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '14px', borderTop: '1px solid var(--border)', marginTop: '4px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '16px', borderTop: '1px solid var(--border)', marginTop: '4px' }}>
             <button type="button" className="btn btn-secondary" onClick={() => setIsAddModalOpen(false)}>
               Cancel
             </button>

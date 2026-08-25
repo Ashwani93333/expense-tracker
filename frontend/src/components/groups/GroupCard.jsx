@@ -28,11 +28,11 @@ export const GroupCard = ({ group, onSelect }) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
           <div style={{
             width: '38px', height: '38px', borderRadius: '10px', flexShrink: 0,
-            background: isExpired ? '#fef2f2' : 'var(--accent-light)',
-            border: `1px solid ${isExpired ? '#fecaca' : 'var(--border-accent)'}`,
+            background: isExpired ? 'rgba(239,68,68,0.08)' : '#050505',
+            border: `1px solid ${isExpired ? 'rgba(239,68,68,0.2)' : '#1a1a1a'}`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '1.1rem', fontWeight: 800,
-            color: isExpired ? '#dc2626' : 'var(--accent)',
+            color: isExpired ? '#ef4444' : '#B7FF00',
           }}>
             {group.name?.charAt(0).toUpperCase()}
           </div>
@@ -42,17 +42,17 @@ export const GroupCard = ({ group, onSelect }) => {
                 {group.name}
               </h3>
               {userRole === 'ADMIN' && (
-                <span className="badge badge-violet" style={{ fontSize: '0.63rem', flexShrink: 0 }}>
+                <span className="badge" style={{ fontSize: '0.63rem', flexShrink: 0, background: '#050505', color: '#B7FF00' }}>
                   <ShieldCheck size={10} /> Admin
                 </span>
               )}
               {isExpired && (
-                <span className="badge" style={{ fontSize: '0.63rem', flexShrink: 0, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>
+                <span className="badge" style={{ fontSize: '0.63rem', flexShrink: 0, background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}>
                   <AlertTriangle size={10} /> Expired
                 </span>
               )}
               {isExpiringSoon && (
-                <span className="badge badge-amber" style={{ fontSize: '0.63rem', flexShrink: 0 }}>
+                <span className="badge" style={{ fontSize: '0.63rem', flexShrink: 0, background: 'rgba(245,158,11,0.08)', color: '#f59e0b' }}>
                   <Clock size={10} /> {daysUntilExpiry}d left
                 </span>
               )}
@@ -66,11 +66,11 @@ export const GroupCard = ({ group, onSelect }) => {
         <div style={{
           display: 'flex', alignItems: 'center', gap: '4px',
           padding: '3px 8px', borderRadius: '6px',
-          background: 'var(--bg-muted)', border: '1px solid var(--border)',
-          fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 700, fontFamily: 'monospace',
+          background: '#050505', border: '1px solid #1a1a1a',
+          fontSize: '0.72rem', color: '#B7FF00', fontWeight: 700, fontFamily: 'monospace',
           flexShrink: 0,
         }}>
-          <Key size={10} />
+          <Key size={10} color="#737373" />
           <span>{group.inviteCode}</span>
         </div>
       </div>
@@ -99,7 +99,7 @@ export const GroupCard = ({ group, onSelect }) => {
           <Users size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
           {memberCount} member{memberCount !== 1 ? 's' : ''}
         </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--accent)', fontSize: '0.8rem', fontWeight: 700 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#B7FF00', fontSize: '0.8rem', fontWeight: 700 }}>
           <span>{isExpired ? 'View' : 'Open'}</span>
           <ArrowRight size={13} />
         </div>

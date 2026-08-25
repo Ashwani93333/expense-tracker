@@ -6,11 +6,11 @@ import { budgetsApi } from '../services/api';
 import { CategoryIcon } from '../components/categories/categoryIcons';
 
 const statusColor = (s) => ({
-  OK:        '#059669',
-  WARNING:   '#d97706',
-  EXCEEDED:  '#dc2626',
-  NO_BUDGET: '#2563eb',
-}[s] || '#64748b');
+  OK:        '#22c55e',
+  WARNING:   '#f59e0b',
+  EXCEEDED:  '#ef4444',
+  NO_BUDGET: '#737373',
+}[s] || '#737373');
 
 const StatusIcon = ({ status }) => ({
   OK:       <CheckCircle2 size={12} />,
@@ -91,7 +91,7 @@ export const BudgetSettingsPage = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-              <span className="badge badge-emerald"><Target size={11} /> Personal Budgets</span>
+              <span className="badge" style={{ background: '#050505', color: '#B7FF00' }}><Target size={11} /> Personal Budgets</span>
             </div>
             <h2 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', marginBottom: '4px', fontWeight: 800 }}>Budget Settings</h2>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
@@ -163,7 +163,7 @@ export const BudgetSettingsPage = () => {
         ) : (
           <div style={{
             padding: '16px', borderRadius: 'var(--r-md)',
-            background: 'var(--bg-surface)', border: '1px dashed var(--border-strong)',
+            background: 'var(--bg-surface)', border: '1px dashed var(--border)',
             textAlign: 'center', marginBottom: '16px',
           }}>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No overall budget set for {month}.</p>
@@ -205,12 +205,12 @@ export const BudgetSettingsPage = () => {
             const pct = catBudget?.percentUsed || 0;
             return (
               <div key={cat.id} style={{
-                marginBottom: '14px', padding: '14px 16px', borderRadius: 'var(--r-md)',
+                marginBottom: '14px', padding: '14px 16px', borderRadius: 'var(--r-lg)',
                 background: 'var(--bg-surface)', border: '1px solid var(--border)',
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <CategoryIcon icon={cat.icon} size={16} color={cat.color || '#2563eb'} />
+                    <CategoryIcon icon={cat.icon} size={16} color={cat.color || '#737373'} />
                     <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{cat.name}</span>
                   </div>
                   {catBudget ? (

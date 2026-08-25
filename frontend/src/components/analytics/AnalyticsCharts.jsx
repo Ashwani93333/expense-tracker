@@ -4,7 +4,7 @@ import { TrendingUp, PieChart as PieIcon, Award, Calendar, RefreshCw } from 'luc
 import { useExpense } from '../../context/ExpenseContext';
 import { expensesApi } from '../../services/api';
 
-const PALETTE = ['#2563eb', '#10b981', '#7c3aed', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6', '#84cc16'];
+const PALETTE = ['#B7FF00', '#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6', '#ec4899'];
 
 export const AnalyticsCharts = () => {
   const { expenses, currentMonth, setCurrentMonth } = useExpense();
@@ -74,11 +74,11 @@ export const AnalyticsCharts = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
       {/* Header with month picker */}
-      <div className="card" style={{ padding: '20px 24px' }}>
+      <div className="card" style={{ padding: '22px 24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <span className="badge badge-blue"><TrendingUp size={11} /> Analytics</span>
+              <span className="badge" style={{ background: '#050505', color: '#B7FF00' }}><TrendingUp size={11} /> Analytics</span>
             </div>
             <h2 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', fontWeight: 800, margin: 0 }}>Spending Analytics</h2>
           </div>
@@ -97,10 +97,10 @@ export const AnalyticsCharts = () => {
       {/* Summary Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
         {[
-          { label: 'Total Spend',      value: loading ? '—' : `₹${totalSpent.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,   color: '#dc2626' },
-          { label: 'Avg Transaction',  value: loading ? '—' : `₹${avgTransaction.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, color: '#d97706' },
-          { label: 'Transactions',     value: loading ? '—' : `${expenses.length}`,                                                       color: '#059669' },
-          { label: 'Top Category',     value: loading ? '—' : (categoryPieData[0]?.name || 'N/A'),                                        color: '#2563eb' },
+          { label: 'Total Spend',      value: loading ? '—' : `₹${totalSpent.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,   accent: '#B7FF00' },
+          { label: 'Avg Transaction',  value: loading ? '—' : `₹${avgTransaction.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, accent: '#f59e0b' },
+          { label: 'Transactions',     value: loading ? '—' : `${expenses.length}`,                                                       accent: '#22c55e' },
+          { label: 'Top Category',     value: loading ? '—' : (categoryPieData[0]?.name || 'N/A'),                                        accent: '#B7FF00' },
         ].map(s => (
           <div key={s.label} className="card" style={{ padding: '18px 20px' }}>
             {loading ? (
@@ -111,7 +111,9 @@ export const AnalyticsCharts = () => {
             ) : (
               <>
                 <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '6px' }}>{s.label}</div>
-                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: s.color, letterSpacing: '-0.02em' }}>{s.value}</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: s.accent === '#B7FF00' ? 'var(--text-primary)' : s.accent, letterSpacing: '-0.02em' }}>
+                  {s.label === 'Top Category' ? <span style={{ color: s.accent }}>{s.value}</span> : s.value}
+                </div>
               </>
             )}
           </div>
@@ -120,11 +122,17 @@ export const AnalyticsCharts = () => {
 
       {/* Charts */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px' }}>
-        
+
         {/* Bar Chart */}
         <div className="card" style={{ padding: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-            <TrendingUp size={18} color="var(--accent)" />
+            <div style={{
+              width: '32px', height: '32px', borderRadius: '8px',
+              background: '#050505', border: '1px solid #1a1a1a',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <TrendingUp size={16} color="#B7FF00" />
+            </div>
             <h4 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700 }}>Daily Spend Trend</h4>
           </div>
           {loading ? (
@@ -138,14 +146,14 @@ export const AnalyticsCharts = () => {
               <BarChart data={trendBarData} margin={{ top: 10, right: 8, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#2563eb" />
-                    <stop offset="100%" stopColor="#60a5fa" />
+                    <stop offset="0%" stopColor="#B7FF00" />
+                    <stop offset="100%" stopColor="#8AB000" />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-                <XAxis dataKey="date" stroke="#9ca3af" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="#9ca3af" fontSize={11} tickLine={false} axisLine={false} tickFormatter={val => `₹${val}`} />
-                <Tooltip contentStyle={tooltipStyle} formatter={val => [`₹${val.toFixed(2)}`, 'Spend']} cursor={{ fill: 'var(--bg-muted)' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#1a1a1a" vertical={false} />
+                <XAxis dataKey="date" stroke="#525252" fontSize={11} tickLine={false} axisLine={false} />
+                <YAxis stroke="#525252" fontSize={11} tickLine={false} axisLine={false} tickFormatter={val => `₹${val}`} />
+                <Tooltip contentStyle={tooltipStyle} formatter={val => [`₹${val.toFixed(2)}`, 'Spend']} cursor={{ fill: 'rgba(183,255,0,0.04)' }} />
                 <Bar dataKey="amount" fill="url(#barGrad)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -155,7 +163,13 @@ export const AnalyticsCharts = () => {
         {/* Pie Chart */}
         <div className="card" style={{ padding: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-            <PieIcon size={18} color="var(--accent)" />
+            <div style={{
+              width: '32px', height: '32px', borderRadius: '8px',
+              background: '#050505', border: '1px solid #1a1a1a',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <PieIcon size={16} color="#B7FF00" />
+            </div>
             <h4 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700 }}>Category Breakdown</h4>
           </div>
           {loading ? (
@@ -197,7 +211,13 @@ export const AnalyticsCharts = () => {
       {topMerchants.length > 0 && (
         <div className="card" style={{ padding: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
-            <Award size={18} color="#d97706" />
+            <div style={{
+              width: '32px', height: '32px', borderRadius: '8px',
+              background: '#050505', border: '1px solid #1a1a1a',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Award size={16} color="#B7FF00" />
+            </div>
             <h4 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700 }}>Top Expense Descriptions</h4>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -206,12 +226,12 @@ export const AnalyticsCharts = () => {
               return (
                 <div key={item.merchant} style={{
                   display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px',
-                  borderRadius: 'var(--r-md)', background: 'var(--bg-surface)', border: '1px solid var(--border)',
+                  borderRadius: 'var(--r-lg)', background: 'var(--bg-surface)', border: '1px solid var(--border)',
                 }}>
                   <span style={{
-                    fontWeight: 800, fontSize: '0.9rem',
-                    color: i === 0 ? '#d97706' : 'var(--text-muted)',
-                    width: '22px', flexShrink: 0,
+                    fontWeight: 800, fontSize: '0.85rem',
+                    color: i === 0 ? 'var(--accent)' : 'var(--text-faint)',
+                    width: '24px', flexShrink: 0,
                   }}>#{i + 1}</span>
                   <span style={{ flex: 1, fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {item.merchant}

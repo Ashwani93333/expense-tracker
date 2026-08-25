@@ -65,7 +65,6 @@ export const ReceiptScanner = () => {
   const [error, setError] = useState('');
   const [previewUrl, setPreviewUrl] = useState(null);
 
-  // Editable form state
   const [editAmount, setEditAmount] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editDate, setEditDate] = useState('');
@@ -92,7 +91,6 @@ export const ReceiptScanner = () => {
     setError('');
     setScannedData(null);
 
-    // Show image preview
     const reader = new FileReader();
     reader.onload = e => setPreviewUrl(e.target.result);
     reader.readAsDataURL(file);
@@ -102,7 +100,6 @@ export const ReceiptScanner = () => {
     setScanProgress(0);
 
     try {
-      // Start UI steps animation
       let step = 0;
       const stepInterval = setInterval(() => {
         step++;
@@ -111,7 +108,6 @@ export const ReceiptScanner = () => {
         if (step >= SCAN_STEPS.length - 1) clearInterval(stepInterval);
       }, 500);
 
-      // Real API call
       const data = await expensesApi.scan(file);
       clearInterval(stepInterval);
       setScanStep(SCAN_STEPS.length - 1);
@@ -124,11 +120,11 @@ export const ReceiptScanner = () => {
         confidenceScore: data.confidenceScore || 0.95,
       };
 
-      const catMatch = categories.find(c => 
-        (data.category && c.name?.toLowerCase().includes(data.category.toLowerCase())) || 
+      const catMatch = categories.find(c =>
+        (data.category && c.name?.toLowerCase().includes(data.category.toLowerCase())) ||
         c.id === data.categoryId
       ) || categories[0];
-      
+
       mappedData.categoryId = catMatch?.id;
       mappedData.categoryName = catMatch?.name;
 
@@ -195,29 +191,30 @@ export const ReceiptScanner = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '800px', margin: '0 auto', width: '100%' }}>
 
       {/* Header */}
-      <div className="card" style={{ padding: '22px 24px' }}>
+      <div className="card" style={{ padding: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{
-            width: '44px', height: '44px', borderRadius: '10px',
-            background: 'linear-gradient(135deg, #2563eb, #4f46e5)',
+            width: '48px', height: '48px', borderRadius: '14px',
+            background: '#050505',
+            border: '1px solid #1a1a1a',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexShrink: 0,
           }}>
-            <ScanLine size={22} color="#fff" />
+            <ScanLine size={22} color="#B7FF00" />
           </div>
           <div>
             <h1 style={{ fontSize: '1.2rem', color: 'var(--text-primary)', fontWeight: 800, marginBottom: '3px' }}>
               AI Receipt Scanner
             </h1>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-              Upload any paper or digital receipt — the AI extracts merchant, date &amp; total automatically.
+              Upload any paper or digital receipt — the AI extracts merchant, date & total automatically.
             </p>
           </div>
           <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
             <span style={{
               display: 'inline-flex', alignItems: 'center', gap: '5px',
               padding: '4px 10px', borderRadius: '99px',
-              background: '#d1fae5', color: '#065f46',
+              background: 'rgba(183,255,0,0.12)', color: 'var(--accent)',
               fontSize: '0.72rem', fontWeight: 700,
             }}>
               <Zap size={11} /> OCR Powered
@@ -231,11 +228,11 @@ export const ReceiptScanner = () => {
         <div style={{
           display: 'flex', alignItems: 'center', gap: '10px',
           padding: '12px 16px', borderRadius: 'var(--r-lg)',
-          background: '#fef2f2', border: '1px solid #fecaca',
+          background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)',
         }}>
-          <AlertCircle size={16} color="#dc2626" />
-          <span style={{ fontSize: '0.85rem', color: '#dc2626', fontWeight: 500 }}>{error}</span>
-          <button onClick={() => setError('')} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', padding: '2px' }}>
+          <AlertCircle size={16} color="#ef4444" />
+          <span style={{ fontSize: '0.85rem', color: '#ef4444', fontWeight: 500 }}>{error}</span>
+          <button onClick={() => setError('')} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '2px' }}>
             <X size={14} />
           </button>
         </div>
@@ -254,9 +251,9 @@ export const ReceiptScanner = () => {
               if (file) handleFileUpload(file);
             }}
             style={{
-              padding: '48px 24px', textAlign: 'center',
-              border: `2px dashed ${isDragOver ? '#2563eb' : '#d1d5db'}`,
-              background: isDragOver ? '#eff6ff' : 'var(--bg-card)',
+              padding: '52px 24px', textAlign: 'center',
+              border: `2px dashed ${isDragOver ? '#B7FF00' : 'var(--border)'}`,
+              background: isDragOver ? 'rgba(183,255,0,0.03)' : 'var(--bg-card)',
               borderRadius: 'var(--r-xl)',
               transition: 'var(--t-base)',
               cursor: isProcessing ? 'default' : 'pointer',
@@ -267,14 +264,15 @@ export const ReceiptScanner = () => {
             {isProcessing ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
                 <div style={{ position: 'relative', width: '60px', height: '60px' }}>
-                  <Loader2 size={60} color="#2563eb" style={{ animation: 'spin 1s linear infinite', position: 'absolute', inset: 0, opacity: 0.15 }} />
+                  <Loader2 size={60} color="#B7FF00" style={{ animation: 'spin 1s linear infinite', position: 'absolute', inset: 0, opacity: 0.15 }} />
                   <div style={{
                     position: 'absolute', inset: '8px',
                     borderRadius: '50%',
-                    background: '#2563eb',
+                    background: '#050505',
+                    border: '1.5px solid rgba(183,255,0,0.3)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
-                    <ScanLine size={20} color="#fff" />
+                    <ScanLine size={20} color="#B7FF00" />
                   </div>
                 </div>
                 <div>
@@ -285,17 +283,17 @@ export const ReceiptScanner = () => {
                     {SCAN_STEPS[Math.min(scanStep, SCAN_STEPS.length - 1)]}
                   </p>
                 </div>
-                {/* Progress bar */}
                 <div style={{ width: '100%', maxWidth: '280px' }}>
-                  <div className="progress-track" style={{ height: '6px' }}>
-                    <div className="progress-fill" style={{ width: `${scanProgress}%`, background: '#2563eb', transition: 'width 0.4s ease' }} />
+                  <div className="progress-track" style={{ height: '5px' }}>
+                    <div className="progress-fill" style={{ width: `${scanProgress}%`, background: '#B7FF00', transition: 'width 0.4s ease' }} />
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
                     {SCAN_STEPS.slice(0, -1).map((_, i) => (
                       <div key={i} style={{
                         width: '8px', height: '8px', borderRadius: '50%',
-                        background: i < scanStep ? '#2563eb' : '#e5e7eb',
-                        transition: 'background 0.3s ease',
+                        background: i < scanStep ? '#B7FF00' : '#1a1a1a',
+                        border: `1px solid ${i < scanStep ? '#B7FF00' : '#333'}`,
+                        transition: 'all 0.3s ease',
                       }} />
                     ))}
                   </div>
@@ -304,13 +302,13 @@ export const ReceiptScanner = () => {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
                 <div style={{
-                  width: '60px', height: '60px', borderRadius: '50%',
-                  background: isDragOver ? '#dbeafe' : 'var(--bg-surface)',
-                  border: `2px dashed ${isDragOver ? '#2563eb' : '#d1d5db'}`,
+                  width: '64px', height: '64px', borderRadius: '50%',
+                  background: isDragOver ? 'rgba(183,255,0,0.08)' : 'var(--bg-surface)',
+                  border: `2px dashed ${isDragOver ? '#B7FF00' : 'var(--border)'}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'var(--t-base)',
                 }}>
-                  <UploadCloud size={26} color={isDragOver ? '#2563eb' : '#9ca3af'} />
+                  <UploadCloud size={26} color={isDragOver ? '#B7FF00' : 'var(--text-faint)'} />
                 </div>
 
                 <div>
@@ -364,7 +362,7 @@ export const ReceiptScanner = () => {
             )}
           </div>
 
-          {/* Image preview (shown while processing) */}
+          {/* Image preview */}
           {previewUrl && (
             <div className="card" style={{ padding: '16px' }}>
               <p style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '10px' }}>Uploaded Receipt Preview</p>
@@ -378,19 +376,20 @@ export const ReceiptScanner = () => {
         </>
       ) : (
         /* OCR Result + Edit Form */
-        <div className="card" style={{ padding: '24px' }}>
+        <div className="card" style={{ padding: '28px' }}>
           {/* Result header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '22px', paddingBottom: '18px', borderBottom: '1px solid var(--border)' }}>
             <div style={{
-              width: '38px', height: '38px', borderRadius: '10px',
-              background: '#d1fae5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              width: '40px', height: '40px', borderRadius: '10px',
+              background: 'rgba(183,255,0,0.1)', border: '1px solid rgba(183,255,0,0.2)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
             }}>
-              <ShieldCheck size={20} color="#059669" />
+              <ShieldCheck size={20} color="#B7FF00" />
             </div>
             <div style={{ flex: 1 }}>
               <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700, margin: 0 }}>Receipt Scanned Successfully</h3>
               <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>
-                Confidence: <strong style={{ color: '#059669' }}>{((scannedData.confidenceScore || 0.95) * 100).toFixed(0)}%</strong> · Review &amp; confirm below
+                Confidence: <strong style={{ color: '#B7FF00' }}>{((scannedData.confidenceScore || 0.95) * 100).toFixed(0)}%</strong> · Review & confirm below
               </p>
             </div>
             <button className="btn btn-ghost btn-sm" onClick={resetAll}>
@@ -399,27 +398,27 @@ export const ReceiptScanner = () => {
           </div>
 
           {/* Confidence bar */}
-          <div style={{ marginBottom: '20px' }}>
+          <div style={{ marginBottom: '22px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>OCR Confidence</span>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#059669' }}>{((scannedData.confidenceScore || 0.95) * 100).toFixed(0)}%</span>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#B7FF00' }}>{((scannedData.confidenceScore || 0.95) * 100).toFixed(0)}%</span>
             </div>
             <div className="progress-track" style={{ height: '5px' }}>
-              <div className="progress-fill" style={{ width: `${(scannedData.confidenceScore || 0.95) * 100}%`, background: '#10b981' }} />
+              <div className="progress-fill" style={{ width: `${(scannedData.confidenceScore || 0.95) * 100}%`, background: '#B7FF00' }} />
             </div>
           </div>
 
           {/* Editable form */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
             {/* Off-month date warning */}
             {editDate && !editDate.startsWith(getCurrentMonthKey()) && (
               <div style={{
                 display: 'flex', alignItems: 'center', gap: '10px',
                 padding: '10px 14px', borderRadius: 'var(--r-md)',
-                background: '#fffbeb', border: '1px solid #fde68a',
+                background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)',
               }}>
-                <AlertTriangle size={16} color="#d97706" style={{ flexShrink: 0 }} />
+                <AlertTriangle size={16} color="#f59e0b" style={{ flexShrink: 0 }} />
                 <span style={{ fontSize: '0.8rem', color: '#92400e', fontWeight: 500 }}>
                   Receipt date is <strong>{editDate}</strong> — it will be saved under{' '}
                   <strong>{getMonthLabel(editDate)}</strong>{' '}
@@ -432,13 +431,13 @@ export const ReceiptScanner = () => {
             <div className="input-group" style={{ margin: 0 }}>
               <label className="input-label"><DollarSign size={12} /> Amount (₹) *</label>
               <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#059669', fontWeight: 700 }}>₹</span>
+                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)', fontWeight: 700 }}>₹</span>
                 <input
                   type="number" step="0.01"
                   value={editAmount}
                   onChange={e => setEditAmount(e.target.value)}
                   className="input-field"
-                  style={{ paddingLeft: '28px', fontSize: '1.15rem', fontWeight: 800, color: '#059669' }}
+                  style={{ paddingLeft: '28px', fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)' }}
                 />
               </div>
             </div>
@@ -480,7 +479,7 @@ export const ReceiptScanner = () => {
             </div>
 
             {/* Actions */}
-            <div style={{ display: 'flex', gap: '10px', marginTop: '6px', paddingTop: '14px', borderTop: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '6px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
               <button className="btn btn-secondary" onClick={resetAll} style={{ flex: 1 }}>
                 <X size={14} /> Discard
               </button>
@@ -499,9 +498,9 @@ export const ReceiptScanner = () => {
 
       {/* How it works */}
       {!scannedData && !isProcessing && (
-        <div className="card" style={{ padding: '20px 24px' }}>
-          <h4 style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 700, marginBottom: '14px' }}>How it works</h4>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
+        <div className="card" style={{ padding: '22px 24px' }}>
+          <h4 style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 700, marginBottom: '16px' }}>How it works</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '14px' }}>
             {[
               { step: '1', icon: UploadCloud, label: 'Upload Receipt', sub: 'JPEG, PNG, PDF or drag & drop' },
               { step: '2', icon: ScanLine, label: 'AI Extracts Data', sub: 'OCR reads amount, date & merchant' },
@@ -510,11 +509,11 @@ export const ReceiptScanner = () => {
             ].map(({ step, icon: Icon, label, sub }) => (
               <div key={step} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '8px' }}>
                 <div style={{
-                  width: '36px', height: '36px', borderRadius: '10px',
-                  background: 'var(--accent-light)', border: '1px solid var(--border-accent)',
+                  width: '38px', height: '38px', borderRadius: '10px',
+                  background: '#050505', border: '1px solid #1a1a1a',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <Icon size={17} color="var(--accent)" />
+                  <Icon size={17} color="#B7FF00" />
                 </div>
                 <div>
                   <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)' }}>{label}</div>

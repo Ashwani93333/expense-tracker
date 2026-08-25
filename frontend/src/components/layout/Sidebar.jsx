@@ -9,7 +9,8 @@ import {
   TrendingUp,
   ScanLine,
   BellRing,
-  ChevronRight,
+  Wallet,
+  Settings,
 } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 
@@ -22,19 +23,29 @@ const NAV_SECTIONS = [
     ],
   },
   {
-    label: 'Finance',
+    label: 'Money',
     items: [
-      { id: 'expenses',         label: 'My Expenses',      icon: ReceiptText },
-      { id: 'scan',             label: 'Scan Receipt',     icon: ScanLine, highlight: true },
-      { id: 'budget-settings',  label: 'Budget',           icon: Target },
-      { id: 'categories',       label: 'Categories',       icon: Tag },
-      { id: 'notification-settings', label: 'Notification Alerts', icon: BellRing },
+      { id: 'expenses',         label: 'Expenses',      icon: ReceiptText },
+      { id: 'budget-settings',  label: 'Budgets',       icon: Target },
+      { id: 'categories',       label: 'Categories',    icon: Tag },
     ],
   },
   {
     label: 'Groups',
     items: [
-      { id: 'groups',       label: 'My Groups',       icon: Users, badgeKey: 'groups' },
+      { id: 'groups',       label: 'Groups',       icon: Users, badgeKey: 'groups' },
+    ],
+  },
+  {
+    label: 'AI',
+    items: [
+      { id: 'scan',             label: 'Scan Receipt',     icon: ScanLine, highlight: true },
+    ],
+  },
+  {
+    label: 'Settings',
+    items: [
+      { id: 'notification-settings', label: 'Notifications', icon: BellRing },
     ],
   },
 ];
@@ -50,14 +61,14 @@ export const Sidebar = () => {
   };
 
   return (
-    <aside style={{
+    <aside className="desktop-sidebar" style={{
       width: 'var(--sidebar-width)',
       flexShrink: 0,
-      background: 'var(--bg-sidebar)',
-      borderRight: '1px solid var(--border)',
+      background: '#050505',
+      borderRight: '1px solid #1a1a1a',
       display: 'flex',
       flexDirection: 'column',
-      padding: '16px 10px',
+      padding: '20px 12px',
       minHeight: 'calc(100vh - var(--header-height))',
       position: 'sticky',
       top: 'var(--header-height)',
@@ -69,9 +80,9 @@ export const Sidebar = () => {
         <div key={section.label} style={{ marginBottom: '24px' }}>
           {/* Section Label */}
           <div style={{
-            fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-faint)',
-            textTransform: 'uppercase', letterSpacing: '0.08em',
-            paddingLeft: '10px', marginBottom: '4px',
+            fontSize: '0.65rem', fontWeight: 700, color: '#525252',
+            textTransform: 'uppercase', letterSpacing: '0.1em',
+            paddingLeft: '12px', marginBottom: '6px',
           }}>
             {section.label}
           </div>
@@ -89,10 +100,10 @@ export const Sidebar = () => {
                 onClick={() => setActiveTab(item.id)}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '8px 10px', borderRadius: 'var(--r-md)', width: '100%',
-                  border: 'none', marginBottom: '1px',
-                  background: active ? 'var(--accent-light)' : 'transparent',
-                  color: active ? 'var(--accent)' : 'var(--text-secondary)',
+                  padding: '10px 12px', borderRadius: 'var(--r-md)', width: '100%',
+                  border: 'none', marginBottom: '2px',
+                  background: active ? 'rgba(183, 255, 0, 0.12)' : 'transparent',
+                  color: active ? 'var(--accent)' : '#737373',
                   fontWeight: active ? 600 : 500,
                   fontSize: '0.855rem',
                   cursor: 'pointer',
@@ -102,30 +113,31 @@ export const Sidebar = () => {
                 }}
                 onMouseEnter={e => {
                   if (!active) {
-                    e.currentTarget.style.background = 'var(--bg-surface)';
-                    e.currentTarget.style.color = 'var(--text-primary)';
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                    e.currentTarget.style.color = '#d4d4d4';
                   }
                 }}
                 onMouseLeave={e => {
                   if (!active) {
                     e.currentTarget.style.background = 'transparent';
-                    e.currentTarget.style.color = 'var(--text-secondary)';
+                    e.currentTarget.style.color = '#737373';
                   }
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <Icon
-                    size={16}
-                    color={active ? 'var(--accent)' : item.highlight ? 'var(--accent)' : 'var(--text-faint)'}
+                    size={17}
+                    color={active ? 'var(--accent)' : item.highlight ? 'var(--accent)' : 'inherit'}
                     style={{ flexShrink: 0 }}
                   />
                   <span>{item.label}</span>
                   {item.highlight && !active && (
                     <span style={{
-                      fontSize: '0.6rem', fontWeight: 700,
-                      padding: '1px 5px', borderRadius: '99px',
-                      background: 'var(--accent-light)',
+                      fontSize: '0.58rem', fontWeight: 800,
+                      padding: '2px 6px', borderRadius: '99px',
+                      background: 'rgba(183, 255, 0, 0.12)',
                       color: 'var(--accent)',
+                      letterSpacing: '0.04em',
                     }}>
                       AI
                     </span>
@@ -134,9 +146,9 @@ export const Sidebar = () => {
                 {badge != null && badge > 0 && (
                   <span style={{
                     fontSize: '0.68rem', fontWeight: 700,
-                    padding: '1px 7px', borderRadius: '99px',
-                    background: active ? 'rgba(37,99,235,0.15)' : '#f3f4f6',
-                    color: active ? 'var(--accent)' : 'var(--text-muted)',
+                    padding: '2px 7px', borderRadius: '99px',
+                    background: active ? 'rgba(183,255,0,0.2)' : 'rgba(255,255,255,0.08)',
+                    color: active ? 'var(--accent)' : '#737373',
                   }}>
                     {badge}
                   </span>
@@ -151,19 +163,19 @@ export const Sidebar = () => {
       <div style={{ flex: 1 }} />
 
       {/* API Status badge */}
-      {/* <div style={{
+      <div style={{
         padding: '12px', borderRadius: 'var(--r-lg)',
-        background: 'var(--bg-surface)', border: '1px solid var(--border)',
+        background: 'rgba(255,255,255,0.03)', border: '1px solid #1a1a1a',
         margin: '8px 0',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '4px' }}>
-          <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', flexShrink: 0 }} />
-          <span style={{ fontSize: '0.77rem', fontWeight: 600, color: 'var(--text-secondary)' }}>API Connected</span>
+          <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#22c55e', flexShrink: 0 }} />
+          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#737373' }}>Connected</span>
         </div>
-        <p style={{ fontSize: '0.71rem', color: 'var(--text-faint)', lineHeight: 1.5 }}>
-          localhost:8080 · JWT auth
+        <p style={{ fontSize: '0.68rem', color: '#525252', lineHeight: 1.5 }}>
+          API · JWT auth
         </p>
-      </div> */}
+      </div>
     </aside>
   );
 };

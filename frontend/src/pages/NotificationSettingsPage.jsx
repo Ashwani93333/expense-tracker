@@ -80,7 +80,6 @@ export const NotificationSettingsPage = () => {
       payload.totalExpenditureThresholds = parseList(drafts.totalExpenditureThresholds);
     }
 
-    // Include threshold type changes from edits
     if (edits.overallBudgetThresholdType) payload.overallBudgetThresholdType = edits.overallBudgetThresholdType;
     if (edits.categoryBudgetThresholdType) payload.categoryBudgetThresholdType = edits.categoryBudgetThresholdType;
     if (edits.totalExpenditureThresholdType) payload.totalExpenditureThresholdType = edits.totalExpenditureThresholdType;
@@ -143,8 +142,8 @@ export const NotificationSettingsPage = () => {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-          <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            {isAmount ? <BarChart3 size={16} color="#2563eb" /> : <Target size={16} color="#2563eb" />}
+          <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: '#050505', border: '1px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            {isAmount ? <BarChart3 size={16} color="#B7FF00" /> : <Target size={16} color="#B7FF00" />}
           </div>
           <div>
             <h4 style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 700, margin: 0 }}>{title}</h4>
@@ -162,7 +161,7 @@ export const NotificationSettingsPage = () => {
       </div>
 
       {/* Percentage / Amount toggle */}
-      <div style={{ display: 'flex', gap: '4px', padding: '3px', background: 'var(--bg-muted)', borderRadius: 'var(--r-sm)', width: 'fit-content' }}>
+      <div style={{ display: 'flex', gap: '4px', padding: '3px', background: '#050505', borderRadius: 'var(--r-sm)', width: 'fit-content' }}>
         {['PERCENTAGE', 'AMOUNT'].map(t => (
           <button
             key={t}
@@ -170,11 +169,10 @@ export const NotificationSettingsPage = () => {
             onClick={() => setEdits(prev => ({ ...prev, [typeKey]: t }))}
             style={{
               padding: '5px 14px', border: 'none', borderRadius: 'var(--r-sm)',
-              background: currentType === t ? '#fff' : 'transparent',
-              color: currentType === t ? 'var(--text-primary)' : 'var(--text-muted)',
+              background: currentType === t ? 'rgba(183,255,0,0.12)' : 'transparent',
+              color: currentType === t ? '#B7FF00' : '#737373',
               fontWeight: currentType === t ? 700 : 500, fontSize: '0.75rem',
               cursor: 'pointer', fontFamily: 'var(--font)',
-              boxShadow: currentType === t ? 'var(--shadow-sm)' : 'none',
               transition: 'var(--t-fast)',
             }}
           >
@@ -191,7 +189,7 @@ export const NotificationSettingsPage = () => {
           listVal(listKey).map((t, i) => (
             <span key={i} style={{
               fontSize: '0.74rem', fontWeight: 700, padding: '2px 9px', borderRadius: '99px',
-              background: '#eff6ff', color: '#2563eb', border: '1px solid #dbeafe',
+              background: 'rgba(183,255,0,0.08)', color: '#B7FF00', border: '1px solid rgba(183,255,0,0.15)',
             }}>
               {isAmount ? `₹${t.toLocaleString('en-IN')}` : `${t}%`}
             </span>
@@ -237,7 +235,7 @@ export const NotificationSettingsPage = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-              <span className="badge badge-amber"><Bell size={11} /> Notification Alerts</span>
+              <span className="badge" style={{ background: '#050505', color: '#B7FF00' }}><Bell size={11} /> Notification Alerts</span>
             </div>
             <h2 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', marginBottom: '4px', fontWeight: 800 }}>Notification Settings</h2>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
@@ -278,12 +276,12 @@ export const NotificationSettingsPage = () => {
               return (
                 <div key={ch.key} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
-                  padding: '14px 16px', borderRadius: 'var(--r-md)', marginBottom: '10px',
+                  padding: '14px 16px', borderRadius: 'var(--r-lg)', marginBottom: '10px',
                   background: 'var(--bg-surface)', border: '1px solid var(--border)',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-                    <div style={{ width: '36px', height: '36px', borderRadius: '9px', background: '#dbeafe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Icon size={16} color="#2563eb" />
+                    <div style={{ width: '36px', height: '36px', borderRadius: '9px', background: '#050505', border: '1px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Icon size={16} color="#B7FF00" />
                     </div>
                     <div>
                       <h4 style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 700, margin: 0 }}>{ch.label}</h4>
@@ -341,8 +339,8 @@ export const NotificationSettingsPage = () => {
                 background: 'var(--bg-surface)', border: '1px solid var(--border)',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                  <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: '#e0e7ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Wallet size={16} color="#4f46e5" />
+                  <div style={{ width: '34px', height: '34px', borderRadius: '9px', background: '#050505', border: '1px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Wallet size={16} color="#B7FF00" />
                   </div>
                   <div>
                     <h4 style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 700, margin: 0 }}>Monthly Summary</h4>
@@ -373,15 +371,15 @@ export const NotificationSettingsPage = () => {
                 {categoryLimits.map(limit => (
                   <div key={limit.categoryId} style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '10px 14px', borderRadius: 'var(--r-md)',
+                    padding: '10px 14px', borderRadius: 'var(--r-lg)',
                     background: 'var(--bg-surface)', border: '1px solid var(--border)',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Tag size={14} color="#2563eb" />
+                      <Tag size={14} color="#B7FF00" />
                       <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{limit.categoryName}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#dc2626' }}>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#ef4444' }}>
                         ₹{limit.limitAmount.toLocaleString('en-IN')}
                       </span>
                       <button
@@ -390,7 +388,7 @@ export const NotificationSettingsPage = () => {
                         title="Remove limit"
                         style={{ padding: '4px' }}
                       >
-                        <X size={14} color="#dc2626" />
+                        <X size={14} color="#ef4444" />
                       </button>
                     </div>
                   </div>
@@ -439,7 +437,7 @@ export const NotificationSettingsPage = () => {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-            <AlertTriangle size={14} color="#d97706" />
+            <AlertTriangle size={14} color="#f59e0b" />
             Threshold values are applied on save. Choose between percentage (%) or absolute amount (₹) for each alert type.
           </div>
         </>

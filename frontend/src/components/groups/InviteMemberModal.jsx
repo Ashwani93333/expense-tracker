@@ -121,7 +121,7 @@ export const InviteMemberModal = ({ groupId, inviteCode, groupName }) => {
         {/* ── Header ─────────────────────────────────────────────── */}
         <div style={{
           padding: '22px 26px',
-          background: 'linear-gradient(135deg, #2563eb 0%, #4f46e5 55%, #7c3aed 100%)',
+          background: 'linear-gradient(135deg, #050505 0%, #1a1a1a 55%, #141414 100%)',
           color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

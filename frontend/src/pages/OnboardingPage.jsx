@@ -104,7 +104,7 @@ const AiScanDemo = () => {
             {[0, 1, 2, 3, 4, 5].map(i => (
               <div key={i} style={{ height: '6px', width: i === 5 ? '45%' : '90%', background: '#e2e8f0', borderRadius: '2px', marginBottom: '8px' }} />
             ))}
-            <div style={{ height: '5px', width: '70%', background: '#2563eb', borderRadius: '2px', marginTop: '6px' }} />
+            <div style={{ height: '5px', width: '70%', background: '#050505', borderRadius: '2px', marginTop: '6px' }} />
           </div>
           {stage >= 1 && (
             <div style={{ position: 'absolute', left: '10%', right: '10%', height: '3px', background: 'linear-gradient(90deg, transparent, #22d3ee, transparent)', boxShadow: '0 0 12px #22d3ee', animation: 'scan-line 1.6s linear infinite' }} />
@@ -117,7 +117,7 @@ const AiScanDemo = () => {
         </div>
         {/* Extracted fields */}
         <div style={{ padding: '20px', background: '#f8fafc' }}>
-          <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px' }}>Extracted Data</div>
+          <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#050505', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px' }}>Extracted Data</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {fields.map(f => (
               <div key={f.label} style={{
@@ -129,7 +129,7 @@ const AiScanDemo = () => {
               }}>
                 <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>{f.label}</span>
                 {f.show ? (
-                  <span style={{ fontSize: '0.82rem', fontWeight: 800, color: f.label === 'Total' ? '#059669' : '#111827' }}>{f.value}</span>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 800, color: f.label === 'Total' ? '#22c55e' : '#111827' }}>{f.value}</span>
                 ) : (
                   <span style={{ display: 'flex', gap: '3px' }}>
                     {[0, 1, 2].map(i => <span key={i} style={{ width: '4px', height: '4px', borderRadius: '50%', background: '#cbd5e1', animation: 'typing-dot 1s ease infinite', animationDelay: `${i * 0.18}s` }} />)}
@@ -139,7 +139,7 @@ const AiScanDemo = () => {
             ))}
           </div>
           {stage >= 4 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '14px', fontSize: '0.74rem', fontWeight: 700, color: '#059669' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '14px', fontSize: '0.74rem', fontWeight: 700, color: '#22c55e' }}>
               <CheckCircle2 size={14} /> Receipt analyzed in 0.8s — ready to save
             </div>
           )}
@@ -177,9 +177,9 @@ const BudgetDemo = () => {
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginTop: '18px' }}>
           {[
-            { label: 'Food', pct: 64, color: '#2563eb' },
+            { label: 'Food', pct: 64, color: '#050505' },
             { label: 'Travel', pct: 91, color: '#d97706' },
-            { label: 'Shopping', pct: 47, color: '#7c3aed' },
+            { label: 'Shopping', pct: 47, color: '#1a1a1a' },
           ].map(c => (
             <div key={c.label} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -237,7 +237,7 @@ const ExpenseDemo = () => {
               animationFillMode: 'backwards',
             }}>
               <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Receipt size={15} color="#2563eb" />
+                <Receipt size={15} color="#050505" />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#111827', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
@@ -278,18 +278,18 @@ const SplitDemo = () => {
               background: '#fff', border: '1px solid #e2e8f0',
               animation: 'fade-slide-in 0.45s ease', animationDelay: `${i * 0.15}s`, animationFillMode: 'backwards',
             }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: i === 0 ? '#2563eb' : '#7c3aed', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, flexShrink: 0 }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: i === 0 ? '#050505' : '#1a1a1a', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 800, flexShrink: 0 }}>
                 {m.name.split(' ')[0].slice(0, 2).toUpperCase()}
               </div>
               <div style={{ flex: 1, fontSize: '0.8rem', fontWeight: 600, color: '#334155' }}>{m.name}</div>
-              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: m.amt.startsWith('+') ? '#059669' : '#dc2626' }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: m.amt.startsWith('+') ? '#22c55e' : '#dc2626' }}>
                 {m.amt} <span style={{ fontSize: '0.62rem', color: '#94a3b8', fontWeight: 600 }}>({m.ow})</span>
               </span>
             </div>
           ))}
         </div>
         <div style={{ marginTop: '14px', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', borderRadius: '10px', background: '#ecfdf5', border: '1px solid #a7f3d0', fontSize: '0.76rem', fontWeight: 700, color: '#065f46' }}>
-          <CheckCircle2 size={14} color="#059669" /> Net settlements auto-calculated — "who owes whom"
+          <CheckCircle2 size={14} color="#22c55e" /> Net settlements auto-calculated — "who owes whom"
         </div>
       </div>
     </div>
@@ -301,8 +301,8 @@ const AnalyticsDemo = () => {
   const [started, setStarted] = useState(false);
   useEffect(() => { const t = setTimeout(() => setStarted(true), 300); return () => clearTimeout(t); }, []);
   const bars = [
-    { h: 40, c: '#2563eb' }, { h: 65, c: '#2563eb' }, { h: 48, c: '#7c3aed' },
-    { h: 80, c: '#7c3aed' }, { h: 58, c: '#059669' }, { h: 92, c: '#059669' },
+    { h: 40, c: '#050505' }, { h: 65, c: '#050505' }, { h: 48, c: '#1a1a1a' },
+    { h: 80, c: '#1a1a1a' }, { h: 58, c: '#22c55e' }, { h: 92, c: '#22c55e' },
     { h: 70, c: '#d97706' }, { h: 100, c: '#d97706' }, { h: 84, c: '#dc2626' }, { h: 110, c: '#dc2626' },
   ];
   return (
@@ -516,9 +516,9 @@ const HowItWorks = () => (
 
 // ─── Testimonials ─────────────────────────────────────────────────────────────
 const testimonials = [
-  { name: 'Priya Sharma', role: 'Freelance Designer', initials: 'PS', color: '#2563eb', quote: 'The AI receipt scanner is magic. I just snap my bills and my whole month is tracked without lifting a finger.' },
-  { name: 'Rohan Mehta', role: 'Startup Co-founder', initials: 'RM', color: '#7c3aed', quote: 'We split all office expenses through groups. The auto settlements saved us from an entire spreadsheet of awkwardness.' },
-  { name: 'Ananya Iyer', role: 'Broke-but-now-budgeting', initials: 'AI', color: '#059669', quote: 'The 80% budget warning genuinely changed how I spend. I actually think twice before ordering extra dessert now.' },
+  { name: 'Priya Sharma', role: 'Freelance Designer', initials: 'PS', color: '#050505', quote: 'The AI receipt scanner is magic. I just snap my bills and my whole month is tracked without lifting a finger.' },
+  { name: 'Rohan Mehta', role: 'Startup Co-founder', initials: 'RM', color: '#1a1a1a', quote: 'We split all office expenses through groups. The auto settlements saved us from an entire spreadsheet of awkwardness.' },
+  { name: 'Ananya Iyer', role: 'Broke-but-now-budgeting', initials: 'AI', color: '#22c55e', quote: 'The 80% budget warning genuinely changed how I spend. I actually think twice before ordering extra dessert now.' },
 ];
 
 const Testimonials = () => (
@@ -602,9 +602,9 @@ const FaqSection = () => {
 // ─── Floating hero background icons ───────────────────────────────────────────
 const HeroFloatingIcons = () => {
   const items = [
-    { icon: PieChart, top: '22%', left: '6%', color: '#2563eb', delay: '0s', size: 34 },
-    { icon: ScanLine, top: '16%', right: '7%', color: '#7c3aed', delay: '0.6s', size: 32 },
-    { icon: Wallet, top: '62%', left: '10%', color: '#059669', delay: '1.1s', size: 30 },
+    { icon: PieChart, top: '22%', left: '6%', color: '#050505', delay: '0s', size: 34 },
+    { icon: ScanLine, top: '16%', right: '7%', color: '#1a1a1a', delay: '0.6s', size: 32 },
+    { icon: Wallet, top: '62%', left: '10%', color: '#22c55e', delay: '1.1s', size: 30 },
     { icon: Users, bottom: '14%', right: '9%', color: '#d97706', delay: '0.3s', size: 34 },
     { icon: TrendingUp, top: '48%', left: '2%', color: '#0891b2', delay: '1.5s', size: 26 },
     { icon: Bell, top: '34%', right: '16%', color: '#dc2626', delay: '0.9s', size: 26 },
@@ -694,9 +694,9 @@ export const OnboardingPage = () => {
   ];
 
   const features = [
-    { icon: ScanLine, color: '#2563eb', bg: '#eff6ff', title: 'AI Receipt Scanner', desc: 'Snap a photo and the AI extracts merchant, date, and total instantly — with review-before-save.' },
-    { icon: PieChart, color: '#059669', bg: '#ecfdf5', title: 'Smart Budget Caps', desc: 'Set limits for yourself or your team. Warned at 80%, alerted at 100% — never caught off guard.' },
-    { icon: Users, color: '#7c3aed', bg: '#f5f3ff', title: 'Group Expense Splitting', desc: 'Equal, percentage, or custom splits with automatic "who owes whom" settlements.' },
+    { icon: ScanLine, color: '#050505', bg: '#eff6ff', title: 'AI Receipt Scanner', desc: 'Snap a photo and the AI extracts merchant, date, and total instantly — with review-before-save.' },
+    { icon: PieChart, color: '#22c55e', bg: '#ecfdf5', title: 'Smart Budget Caps', desc: 'Set limits for yourself or your team. Warned at 80%, alerted at 100% — never caught off guard.' },
+    { icon: Users, color: '#1a1a1a', bg: '#f5f3ff', title: 'Group Expense Splitting', desc: 'Equal, percentage, or custom splits with automatic "who owes whom" settlements.' },
     { icon: TrendingUp, color: '#d97706', bg: '#fffbeb', title: 'Real-time Analytics', desc: 'Interactive charts reveal exactly where your money goes across all categories.' },
     { icon: Shield, color: '#dc2626', bg: '#fef2f2', title: 'Secure & Synchronized', desc: 'All data is encrypted and synced to the cloud in real time across every device.' },
     { icon: Zap, color: '#0891b2', bg: '#ecfeff', title: 'Instant Notifications', desc: 'Never miss a split, settlement, or budget alert — delivered the second it happens.' },
@@ -724,7 +724,7 @@ export const OnboardingPage = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{
             width: '38px', height: '38px', borderRadius: '12px',
-            background: 'linear-gradient(135deg, #2563eb, #4f46e5)',
+            background: 'linear-gradient(135deg, #050505, #1a1a1a)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 4px 12px rgba(37,99,235,0.35)',
             animation: 'pulse-ring 2.4s ease infinite',
@@ -732,7 +732,7 @@ export const OnboardingPage = () => {
             <Wallet size={19} color="#fff" />
           </div>
           <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#111827', letterSpacing: '-0.02em' }}>
-            Expense<span style={{ color: '#2563eb' }}>Tracker</span>
+            Expense<span style={{ color: '#050505' }}>Tracker</span>
           </div>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
@@ -750,7 +750,7 @@ export const OnboardingPage = () => {
             onClick={() => { setIsSignUpMode(true); scrollToAuth(); }}
             style={{
               padding: '8px 20px', borderRadius: '10px', border: 'none',
-              background: '#2563eb', color: '#fff', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
+              background: '#050505', color: '#fff', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
               boxShadow: '0 4px 10px rgba(37,99,235,0.3)',
               transition: 'var(--t-fast)', fontFamily: 'var(--font)',
             }}
@@ -778,7 +778,7 @@ export const OnboardingPage = () => {
             display: 'inline-flex', alignItems: 'center', gap: '8px',
             padding: '7px 18px', borderRadius: '99px',
             background: 'rgba(255,255,255,0.85)', border: '1px solid var(--border-accent)',
-            color: '#1d4ed8', fontSize: '0.85rem', fontWeight: 700, marginBottom: '30px',
+            color: '#B7FF00', fontSize: '0.85rem', fontWeight: 700, marginBottom: '30px',
             boxShadow: '0 2px 8px rgba(37,99,235,0.08)',
             animation: 'slideDown 0.6s ease-out',
           }}>
@@ -811,7 +811,7 @@ export const OnboardingPage = () => {
               onClick={() => { setIsSignUpMode(true); scrollToAuth(); }}
               style={{
                 padding: '16px 30px', borderRadius: '12px', border: 'none',
-                background: '#2563eb', color: '#fff', fontWeight: 700, fontSize: '1rem', cursor: 'pointer',
+                background: '#050505', color: '#fff', fontWeight: 700, fontSize: '1rem', cursor: 'pointer',
                 boxShadow: '0 12px 24px -6px rgba(37,99,235,0.45)',
                 display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'var(--font)',
                 transition: 'transform 0.2s ease, box-shadow 0.2s ease',
@@ -829,17 +829,17 @@ export const OnboardingPage = () => {
                 display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'var(--font)',
                 transition: 'all 0.2s ease',
               }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = '#2563eb'}
+              onMouseEnter={e => e.currentTarget.style.borderColor = '#050505'}
               onMouseLeave={e => e.currentTarget.style.borderColor = '#e2e8f0'}
             >
-              <Smartphone size={18} color="#2563eb" /> Explore the demo
+              <Smartphone size={18} color="#050505" /> Explore the demo
             </button>
           </div>
 
           <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '34px', flexWrap: 'wrap' }}>
             {['No credit card', 'Free forever plan', 'Works on all devices'].map(t => (
               <span key={t} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: '#64748b', fontWeight: 600 }}>
-                <CheckCircle2 size={14} color="#059669" /> {t}
+                <CheckCircle2 size={14} color="#22c55e" /> {t}
               </span>
             ))}
           </div>
@@ -855,7 +855,7 @@ export const OnboardingPage = () => {
         <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
           {stats.map((s, i) => (
             <div key={i} style={{ textAlign: 'center', padding: '8px' }}>
-              <div style={{ fontSize: 'clamp(1.7rem, 3.5vw, 2.5rem)', fontWeight: 800, color: '#2563eb', letterSpacing: '-0.02em' }}>
+              <div style={{ fontSize: 'clamp(1.7rem, 3.5vw, 2.5rem)', fontWeight: 800, color: '#050505', letterSpacing: '-0.02em' }}>
                 <AnimatedCounter target={s.value} prefix={s.prefix} suffix={s.suffix} decimals={s.decimals} />
               </div>
               <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600, marginTop: '4px' }}>{s.label}</div>
@@ -920,7 +920,7 @@ export const OnboardingPage = () => {
           overflow: 'hidden'
         }}>
           {/* Left panel info */}
-          <div style={{ padding: '60px 40px', background: 'linear-gradient(135deg, #2563eb, #4f46e5, #7c3aed)', color: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ padding: '60px 40px', background: 'linear-gradient(135deg, #050505, #1a1a1a, #141414)', color: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', position: 'relative', overflow: 'hidden' }}>
             <div style={{ position: 'absolute', width: '280px', height: '280px', top: '-80px', right: '-80px', background: 'radial-gradient(circle, rgba(255,255,255,0.16), transparent 65%)', borderRadius: '50%', animation: 'float-slow 12s ease-in-out infinite' }} />
             <div style={{ position: 'relative', zIndex: 1 }}>
               <h3 style={{ fontSize: '1.9rem', fontWeight: 800, marginBottom: '16px', lineHeight: 1.2 }}>Start your journey today.</h3>
@@ -1002,7 +1002,7 @@ export const OnboardingPage = () => {
                       value={formData.fullName}
                       onChange={e => handleChange('fullName', e.target.value)}
                       style={inputStyle}
-                      onFocus={e => e.target.style.borderColor = '#2563eb'}
+                      onFocus={e => e.target.style.borderColor = '#050505'}
                       onBlur={e => e.target.style.borderColor = '#e5e7eb'}
                     />
                   </div>
@@ -1019,7 +1019,7 @@ export const OnboardingPage = () => {
                     onChange={e => handleChange('email', e.target.value)}
                     required
                     style={inputStyle}
-                    onFocus={e => e.target.style.borderColor = '#2563eb'}
+                    onFocus={e => e.target.style.borderColor = '#050505'}
                     onBlur={e => e.target.style.borderColor = '#e5e7eb'}
                   />
                 </div>
@@ -1036,7 +1036,7 @@ export const OnboardingPage = () => {
                     onChange={e => handleChange('password', e.target.value)}
                     required
                     style={{ ...inputStyle, paddingRight: '40px' }}
-                    onFocus={e => e.target.style.borderColor = '#2563eb'}
+                    onFocus={e => e.target.style.borderColor = '#050505'}
                     onBlur={e => e.target.style.borderColor = '#e5e7eb'}
                   />
                   <button
@@ -1052,7 +1052,7 @@ export const OnboardingPage = () => {
                 type="submit" disabled={isLoading}
                 style={{
                   width: '100%', padding: '14px',
-                  background: isLoading ? '#93c5fd' : '#2563eb',
+                  background: isLoading ? '#93c5fd' : '#050505',
                   color: '#fff', border: 'none', borderRadius: '10px',
                   fontSize: '1rem', fontWeight: 700, cursor: isLoading ? 'not-allowed' : 'pointer',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
@@ -1078,7 +1078,7 @@ export const OnboardingPage = () => {
       <footer style={{ padding: '44px 5%', background: '#fff', borderTop: '1px solid var(--border)', textAlign: 'center' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '14px' }}>
-            <Wallet size={17} color="#2563eb" />
+            <Wallet size={17} color="#050505" />
             <span style={{ fontWeight: 800, color: '#111827', fontSize: '1.05rem' }}>ExpenseTracker</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '16px', flexWrap: 'wrap' }}>
@@ -1092,7 +1092,7 @@ export const OnboardingPage = () => {
             })}
           </div>
           <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: 0 }}>
-            Finance Suite API Backend: <code style={{ color: '#2563eb', background: '#eff6ff', padding: '2px 8px', borderRadius: '6px' }}>http://localhost:8080</code>
+            Finance Suite API Backend: <code style={{ color: '#050505', background: '#eff6ff', padding: '2px 8px', borderRadius: '6px' }}>http://localhost:8080</code>
           </p>
           <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '12px' }}>
             © {new Date().getFullYear()} ExpenseTracker. Made for smarter money.
