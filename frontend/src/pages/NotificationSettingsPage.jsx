@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Bell, Loader2, RefreshCw, Save, AlertTriangle, Wallet, Target, BarChart3, Mail, Inbox, Tag, X, Plus } from 'lucide-react';
 import { useExpense } from '../context/ExpenseContext';
 import { usersApi, categoryLimitsApi, categoriesApi } from '../services/api';
+import { PageHeader } from '../components/ui/PageHeader';
 
 const DEFAULT_SETTINGS = {
   inAppNotifications: true,
@@ -231,18 +232,13 @@ export const NotificationSettingsPage = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
       {/* Header */}
-      <div className="card" style={{ padding: '22px 24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-              <span className="badge" style={{ background: '#050505', color: '#B7FF00' }}><Bell size={11} /> Notification Alerts</span>
-            </div>
-            <h2 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', marginBottom: '4px', fontWeight: 800 }}>Notification Settings</h2>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-              Configure budget thresholds, total-spend alerts and monthly summaries.
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+      <PageHeader
+        icon={Bell}
+        badge="Notification Alerts"
+        title="Notification Settings"
+        subtitle="Configure budget thresholds, total-spend alerts and monthly summaries."
+        actions={
+          <>
             <button className="btn btn-secondary btn-sm" onClick={fetchSettings} title="Refresh">
               <RefreshCw size={14} />
             </button>
@@ -250,9 +246,9 @@ export const NotificationSettingsPage = () => {
               {saving ? <Loader2 size={15} style={{ animation: 'spin 0.7s linear infinite' }} /> : <Save size={15} />}
               Save Changes
             </button>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {loading ? (
         <div className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>

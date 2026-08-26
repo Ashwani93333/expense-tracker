@@ -232,6 +232,10 @@ ALTER TABLE categories ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES users
 ALTER TABLE expenses ADD COLUMN IF NOT EXISTS category_source VARCHAR(20);
 ALTER TABLE expenses ADD COLUMN IF NOT EXISTS category_confidence DOUBLE PRECISION;
 
+-- Receipt deduplication: SHA-256 hash of the receipt file.
+ALTER TABLE expenses ADD COLUMN IF NOT EXISTS receipt_hash VARCHAR(64);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_expenses_receipt_hash ON expenses(receipt_hash) WHERE receipt_hash IS NOT NULL;
+
 -- Invite email delivery tracking.
 ALTER TABLE group_invites ADD COLUMN IF NOT EXISTS email_status VARCHAR(20);
 ALTER TABLE group_invites ADD COLUMN IF NOT EXISTS email_sent_at TIMESTAMP WITH TIME ZONE;

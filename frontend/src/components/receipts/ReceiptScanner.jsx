@@ -2,11 +2,12 @@ import React, { useState, useRef } from 'react';
 import {
   UploadCloud, ScanLine, Loader2, CheckCircle2, ShieldCheck, Tag,
   X, Edit3, DollarSign, Calendar, FileText, Zap, AlertCircle, AlertTriangle,
-  ShoppingCart, Smartphone, UtensilsCrossed
+  ShoppingCart, Smartphone, UtensilsCrossed, Sparkles
 } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 import { expensesApi } from '../../services/api';
 import { CategorySearchSelect } from '../categories/CategorySearchSelect';
+import { PageHeader } from '../ui/PageHeader';
 
 const DEMO_TEMPLATES = [
   {
@@ -69,6 +70,7 @@ export const ReceiptScanner = () => {
   const [editDescription, setEditDescription] = useState('');
   const [editDate, setEditDate] = useState('');
   const [editCategoryId, setEditCategoryId] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const fileInputRef = useRef(null);
 
@@ -118,6 +120,8 @@ export const ReceiptScanner = () => {
         description: data.merchantName || data.description,
         expenseDate: data.date || data.expenseDate,
         confidenceScore: data.confidenceScore || 0.95,
+        receiptHash: data.receiptHash || null,
+        receiptUrl: data.receiptUrl || null,
       };
 
       const catMatch = categories.find(c =>
@@ -162,16 +166,25 @@ export const ReceiptScanner = () => {
   };
 
   const handleConfirm = async () => {
-    if (!editAmount || !editDescription) return;
+    if (!editAmount || !editDescription || isSaving) return;
+    setIsSaving(true);
     try {
       await addExpense({
         amount: parseFloat(editAmount),
         description: editDescription,
         expenseDate: editDate,
         categoryId: editCategoryId,
+        receiptHash: scannedData?.receiptHash || null,
+        receiptUrl: scannedData?.receiptUrl || null,
       });
       resetAll();
-    } catch {}
+    } catch (err) {
+      // Show the backend's specific error message (e.g. duplicate receipt)
+      const msg = err?.message || 'Failed to save expense';
+      setError(msg);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const resetAll = () => {
@@ -191,37 +204,22 @@ export const ReceiptScanner = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '800px', margin: '0 auto', width: '100%' }}>
 
       {/* Header */}
-      <div className="card" style={{ padding: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{
-            width: '48px', height: '48px', borderRadius: '14px',
-            background: '#050505',
-            border: '1px solid #1a1a1a',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0,
+      <PageHeader
+        icon={ScanLine}
+        badge="AI Receipt Scanner"
+        title="AI Receipt Scanner"
+        subtitle="Turn a receipt into an expense in seconds."
+        actions={
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: '5px',
+            padding: '4px 10px', borderRadius: '99px',
+            background: 'rgba(183,255,0,0.12)', color: 'var(--accent)',
+            fontSize: '0.72rem', fontWeight: 700,
           }}>
-            <ScanLine size={22} color="#B7FF00" />
-          </div>
-          <div>
-            <h1 style={{ fontSize: '1.2rem', color: 'var(--text-primary)', fontWeight: 800, marginBottom: '3px' }}>
-              AI Receipt Scanner
-            </h1>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-              Upload any paper or digital receipt — the AI extracts merchant, date & total automatically.
-            </p>
-          </div>
-          <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: '5px',
-              padding: '4px 10px', borderRadius: '99px',
-              background: 'rgba(183,255,0,0.12)', color: 'var(--accent)',
-              fontSize: '0.72rem', fontWeight: 700,
-            }}>
-              <Zap size={11} /> OCR Powered
-            </span>
-          </div>
-        </div>
-      </div>
+            <Zap size={11} /> OCR Powered
+          </span>
+        }
+      />
 
       {/* Error */}
       {error && (
@@ -258,9 +256,18 @@ export const ReceiptScanner = () => {
               transition: 'var(--t-base)',
               cursor: isProcessing ? 'default' : 'pointer',
               boxShadow: 'none',
+              position: 'relative',
+              overflow: 'hidden',
             }}
             onClick={() => !isProcessing && fileInputRef.current?.click()}
           >
+            {/* Subtle glow overlay */}
+            <div style={{
+              position: 'absolute', top: '-50%', left: '50%', transform: 'translateX(-50%)',
+              width: '300px', height: '300px',
+              background: 'radial-gradient(circle, rgba(183,255,0,0.04), transparent 65%)',
+              borderRadius: '50%', pointerEvents: 'none',
+            }} />
             {isProcessing ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
                 <div style={{ position: 'relative', width: '60px', height: '60px' }}>
@@ -300,15 +307,15 @@ export const ReceiptScanner = () => {
                 </div>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', position: 'relative', zIndex: 1 }}>
                 <div style={{
-                  width: '64px', height: '64px', borderRadius: '50%',
-                  background: isDragOver ? 'rgba(183,255,0,0.08)' : 'var(--bg-surface)',
-                  border: `2px dashed ${isDragOver ? '#B7FF00' : 'var(--border)'}`,
+                  width: '72px', height: '72px', borderRadius: '50%',
+                  background: isDragOver ? 'rgba(183,255,0,0.08)' : '#050505',
+                  border: `2px dashed ${isDragOver ? '#B7FF00' : '#333'}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'var(--t-base)',
                 }}>
-                  <UploadCloud size={26} color={isDragOver ? '#B7FF00' : 'var(--text-faint)'} />
+                  <UploadCloud size={28} color={isDragOver ? '#B7FF00' : 'var(--text-faint)'} />
                 </div>
 
                 <div>
@@ -486,10 +493,14 @@ export const ReceiptScanner = () => {
               <button
                 className="btn btn-primary"
                 onClick={handleConfirm}
-                disabled={!editAmount || !editDescription}
+                disabled={!editAmount || !editDescription || isSaving}
                 style={{ flex: 2 }}
               >
-                <CheckCircle2 size={15} /> Save Expense
+                {isSaving ? (
+                  <><Loader2 size={15} style={{ animation: 'spin 0.7s linear infinite' }} /> Saving...</>
+                ) : (
+                  <><CheckCircle2 size={15} /> Save Expense</>
+                )}
               </button>
             </div>
           </div>

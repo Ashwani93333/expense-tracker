@@ -49,6 +49,10 @@ public class Expense {
     @Column(name = "receipt_url", length = 500)
     private String receiptUrl;
 
+    /** SHA-256 hex digest of the receipt file; used to detect duplicate uploads. */
+    @Column(name = "receipt_hash", length = 64)
+    private String receiptHash;
+
     /** RULE_BASED | AI | USER | FALLBACK — how the category was determined. */
     @Column(name = "category_source", length = 20)
     private String categorySource;
@@ -105,6 +109,8 @@ public class Expense {
     public void setSplitType(String splitType) { this.splitType = splitType; }
     public String getReceiptUrl() { return receiptUrl; }
     public void setReceiptUrl(String receiptUrl) { this.receiptUrl = receiptUrl; }
+    public String getReceiptHash() { return receiptHash; }
+    public void setReceiptHash(String receiptHash) { this.receiptHash = receiptHash; }
     public String getCategorySource() { return categorySource; }
     public void setCategorySource(String categorySource) { this.categorySource = categorySource; }
     public Double getCategoryConfidence() { return categoryConfidence; }

@@ -86,6 +86,22 @@ public interface ExpenseRepository extends JpaRepository<Expense, UUID> {
             @Param("start") LocalDate start,
             @Param("end") LocalDate end);
 
+    /** All expenses for a user: personal + group (where user is an active member) */
+    @Query("SELECT e FROM Expense e " +
+           "WHERE e.expenseDate BETWEEN :start AND :end " +
+           "AND ( " +
+           "  (e.user.id = :userId AND e.group IS NULL) " +
+           "  OR e.group.id IN (" +
+           "    SELECT gm.group.id FROM GroupMember gm " +
+           "    WHERE gm.user.id = :userId AND gm.status = 'ACTIVE'" +
+           "  )" +
+           ") " +
+           "ORDER BY e.expenseDate DESC")
+    List<Expense> findAllUserExpensesForMonth(
+            @Param("userId") UUID userId,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end);
+
     /** Category breakdown for APPROVED group expenses in a month */
     @Query("SELECT e.category.id, e.category.name, SUM(e.amount) FROM Expense e " +
            "WHERE e.group.id = :groupId " +
@@ -96,4 +112,7 @@ public interface ExpenseRepository extends JpaRepository<Expense, UUID> {
             @Param("groupId") UUID groupId,
             @Param("start") LocalDate start,
             @Param("end") LocalDate end);
+
+    /** Check if an expense with the same receipt hash already exists for this user. */
+    boolean existsByUserIdAndReceiptHash(UUID userId, String receiptHash);
 }

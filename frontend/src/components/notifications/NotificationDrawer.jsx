@@ -58,7 +58,7 @@ export const NotificationDrawer = () => {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
-              width: '32px', height: '32px', borderRadius: '8px',
+              width: '34px', height: '34px', borderRadius: '10px',
               background: '#050505', border: '1px solid #1a1a1a',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
@@ -94,10 +94,10 @@ export const NotificationDrawer = () => {
         <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
           {notifications.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#050505', border: '1px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-                <Bell size={22} color="#737373" />
+              <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: '#050505', border: '1px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+                <Bell size={24} color="#737373" />
               </div>
-              <h4 style={{ color: 'var(--text-primary)', fontSize: '0.95rem', marginBottom: '4px', fontWeight: 700 }}>All caught up!</h4>
+              <h4 style={{ color: 'var(--text-primary)', fontSize: '1rem', marginBottom: '4px', fontWeight: 700 }}>All caught up!</h4>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>No notifications yet.</p>
             </div>
           ) : (

@@ -26,6 +26,7 @@ const Toast = ({ message, type = 'success' }) => {
       iconBg: 'rgba(34, 197, 94, 0.15)',
       iconColor: '#22c55e',
       textColor: '#e5e5e5',
+      symbol: '✓',
     },
     error: {
       border: '1px solid rgba(239, 68, 68, 0.3)',
@@ -33,6 +34,7 @@ const Toast = ({ message, type = 'success' }) => {
       iconBg: 'rgba(239, 68, 68, 0.15)',
       iconColor: '#ef4444',
       textColor: '#e5e5e5',
+      symbol: '!',
     },
     info: {
       border: '1px solid rgba(183, 255, 0, 0.3)',
@@ -40,6 +42,7 @@ const Toast = ({ message, type = 'success' }) => {
       iconBg: 'rgba(183, 255, 0, 0.1)',
       iconColor: '#B7FF00',
       textColor: '#e5e5e5',
+      symbol: 'i',
     },
   };
   const s = styles[type] || styles.success;
@@ -58,6 +61,7 @@ const Toast = ({ message, type = 'success' }) => {
       minWidth: '280px',
       maxWidth: '420px',
       backdropFilter: 'blur(12px)',
+      animation: 'slideUp 0.2s ease',
     }}>
       <div style={{
         width: '28px', height: '28px', borderRadius: '8px',
@@ -96,15 +100,16 @@ const AppContent = () => {
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-page)' }}>
       <Navbar />
 
-      <div style={{ display: 'flex', flex: 1, width: '100%', maxWidth: '1600px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', flex: 1, width: '100%' }}>
         <Sidebar />
 
         <main style={{
           flex: 1,
-          padding: '24px 28px',
-          paddingBottom: 'calc(24px + 70px)',
+          padding: '28px 32px',
+          paddingBottom: 'calc(28px + 70px)',
           minWidth: 0,
           overflowX: 'hidden',
+          maxWidth: '1200px',
         }}
           className="main-content"
         >

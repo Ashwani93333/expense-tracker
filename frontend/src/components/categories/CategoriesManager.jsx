@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Plus, ShieldCheck, Trash2, Check, Loader2, Tag } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 import { CATEGORY_ICONS, CategoryIcon } from './categoryIcons';
+import { PageHeader } from '../ui/PageHeader';
 
 const PRESET_COLORS = ['#B7FF00', '#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6', '#ec4899', '#84cc16', '#f97316'];
 
@@ -37,21 +38,17 @@ export const CategoriesManager = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
       {/* Header */}
-      <div className="card" style={{ padding: '22px 24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-              <span className="badge" style={{ background: '#050505', color: '#B7FF00' }}><Tag size={11} /> Categories</span>
-            </div>
-            <h2 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', fontWeight: 800, margin: 0 }}>Category Manager</h2>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-              {categories.length} categories · Used to tag and filter your expenses
-            </p>
-          </div>
+      <PageHeader
+        icon={Tag}
+        badge="Categories"
+        title="Category Manager"
+        subtitle={`${categories.length} categories · Used to tag and filter your expenses`}
+        actions={
           <button className="btn btn-primary" onClick={() => setIsFormOpen(p => !p)}>
             <Plus size={16} /> {isFormOpen ? 'Cancel' : 'New Category'}
           </button>
-        </div>
+        }
+      >
 
         {/* Create Form */}
         {isFormOpen && (
@@ -114,7 +111,7 @@ export const CategoriesManager = () => {
             </div>
           </form>
         )}
-      </div>
+      </PageHeader>
 
       {/* Categories Grid */}
       {isLoading ? (

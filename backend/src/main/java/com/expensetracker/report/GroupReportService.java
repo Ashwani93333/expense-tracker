@@ -92,9 +92,10 @@ public class GroupReportService {
             memberBreakdown.add(m);
         }
 
-        // Top expense descriptions (proxy for merchants)
-        List<Expense> expenses = expenseRepository.findByGroupIdAndExpenseDateBetweenOrderByExpenseDateDesc(
-                groupId, start, end);
+        // Top expense descriptions (proxy for merchants) — APPROVED only
+        List<Expense> expenses = expenseRepository
+                .findByGroupIdAndStatusAndExpenseDateBetweenOrderByExpenseDateDesc(
+                        groupId, "APPROVED", start, end);
         Map<String, BigDecimal> descTotals = new LinkedHashMap<>();
         for (Expense e : expenses) {
             String desc = e.getDescription() != null ? e.getDescription() : "Unnamed";
@@ -157,9 +158,10 @@ public class GroupReportService {
                     return m;
                 }).collect(Collectors.toList());
 
-        // Daily trend
-        List<Expense> expenses = expenseRepository.findByGroupIdAndExpenseDateBetweenOrderByExpenseDateDesc(
-                groupId, start, end);
+        // Daily trend — APPROVED only
+        List<Expense> expenses = expenseRepository
+                .findByGroupIdAndStatusAndExpenseDateBetweenOrderByExpenseDateDesc(
+                        groupId, "APPROVED", start, end);
         Map<LocalDate, BigDecimal> dailyMap = new TreeMap<>();
         for (Expense e : expenses) {
             dailyMap.merge(e.getExpenseDate(), e.getAmount(), BigDecimal::add);

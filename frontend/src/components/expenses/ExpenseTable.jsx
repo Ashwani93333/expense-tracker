@@ -3,6 +3,8 @@ import { Trash2, Search, Users, Check, Plus, FileText, Calendar, ScanLine } from
 import { useExpense } from '../../context/ExpenseContext';
 import { useAuth } from '../../context/AuthContext';
 import { CategoryIcon } from '../categories/categoryIcons';
+import { PageHeader } from '../ui/PageHeader';
+import { EmptyState } from '../ui/EmptyState';
 
 export const ExpenseTable = () => {
   const { expenses, deleteExpense, categories, settleSplitShare, isLoading, setIsAddModalOpen, setActiveTab } = useExpense();
@@ -39,23 +41,22 @@ export const ExpenseTable = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
       {/* Header + Filters */}
-      <div className="card" style={{ padding: '20px 24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-          <div>
-            <h1 style={{ fontSize: '1.2rem', color: 'var(--text-primary)', fontWeight: 800, marginBottom: '2px' }}>Recent Expenses</h1>
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-              {filteredExpenses.length} transactions · Total ₹{totalFiltered.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+      <PageHeader
+        icon={FileText}
+        badge="Expenses"
+        title="Recent Expenses"
+        subtitle={`${filteredExpenses.length} transactions · Total ₹${totalFiltered.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+        actions={
+          <>
             <button className="btn btn-secondary btn-sm" onClick={() => setActiveTab('scan')}>
               <ScanLine size={13} /> Scan Receipt
             </button>
             <button className="btn btn-primary btn-sm" onClick={() => setIsAddModalOpen(true)}>
               <Plus size={13} /> Add Expense
             </button>
-          </div>
-        </div>
+          </>
+        }
+      >
 
         {/* Search + Type Filter */}
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '12px' }}>
@@ -130,7 +131,7 @@ export const ExpenseTable = () => {
             </button>
           ))}
         </div>
-      </div>
+      </PageHeader>
 
       {/* Expense List */}
       {isLoading ? (
@@ -150,21 +151,15 @@ export const ExpenseTable = () => {
           </div>
         ))
       ) : sortedDates.length === 0 ? (
-        <div className="card" style={{ padding: '56px 24px', textAlign: 'center' }}>
-          <FileText size={36} color="var(--text-faint)" style={{ marginBottom: '12px' }} />
-          <h4 style={{ color: 'var(--text-primary)', marginBottom: '6px', fontWeight: 700 }}>No expenses found</h4>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '16px' }}>
-            {searchQuery ? 'Try adjusting your search or filters.' : 'Start tracking your spending and get a clearer picture of your financial habits.'}
-          </p>
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-            <button className="btn btn-primary btn-sm" onClick={() => setIsAddModalOpen(true)}>
-              <Plus size={13} /> Add Expense
-            </button>
-            <button className="btn btn-secondary btn-sm" onClick={() => setActiveTab('scan')}>
-              <ScanLine size={13} /> Scan Receipt
-            </button>
-          </div>
-        </div>
+        <EmptyState
+          icon={FileText}
+          title={searchQuery ? 'No expenses found' : 'No expenses yet'}
+          description={searchQuery ? 'Try adjusting your search or filters.' : 'Start tracking your spending and get a clearer picture of your financial habits.'}
+          actions={[
+            { label: 'Add Expense', icon: Plus, onClick: () => setIsAddModalOpen(true), primary: true },
+            { label: 'Scan Receipt', icon: ScanLine, onClick: () => setActiveTab('scan') },
+          ]}
+        />
       ) : (
         sortedDates.map(dateStr => {
           const dayExpenses = grouped[dateStr];

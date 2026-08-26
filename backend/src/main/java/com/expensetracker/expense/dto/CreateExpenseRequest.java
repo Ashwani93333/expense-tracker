@@ -38,6 +38,9 @@ public class CreateExpenseRequest {
 
     private String receiptUrl;
 
+    /** SHA-256 hash of the receipt file for duplicate detection (nullable). */
+    private String receiptHash;
+
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
     public String getDescription() { return description; }
@@ -56,4 +59,6 @@ public class CreateExpenseRequest {
     public void setSplits(List<SplitRequest> splits) { this.splits = splits; }
     public String getReceiptUrl() { return receiptUrl; }
     public void setReceiptUrl(String receiptUrl) { this.receiptUrl = receiptUrl; }
+    public String getReceiptHash() { return receiptHash; }
+    public void setReceiptHash(String receiptHash) { this.receiptHash = receiptHash; }
 }

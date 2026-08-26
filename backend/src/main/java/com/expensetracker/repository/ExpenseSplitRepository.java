@@ -19,11 +19,12 @@ public interface ExpenseSplitRepository extends JpaRepository<ExpenseSplit, UUID
 
     Optional<ExpenseSplit> findByExpenseIdAndUserId(UUID expenseId, UUID userId);
 
-    /** Sum of a member's share in a group for a given month */
+    /** Sum of a member's share in a group for a given month (APPROVED expenses only) */
     @Query("SELECT COALESCE(SUM(es.shareAmount), 0) FROM ExpenseSplit es " +
            "JOIN es.expense e " +
            "WHERE es.user.id = :userId " +
            "AND e.group.id = :groupId " +
+           "AND e.status = 'APPROVED' " +
            "AND e.expenseDate BETWEEN :start AND :end")
     BigDecimal sumMemberShareInGroupForMonth(
             @Param("userId") UUID userId,
@@ -31,9 +32,10 @@ public interface ExpenseSplitRepository extends JpaRepository<ExpenseSplit, UUID
             @Param("start") LocalDate start,
             @Param("end") LocalDate end);
 
-    /** All splits for a group's expenses in a month (for settlement calculation) */
+    /** All splits for a group's expenses in a month (APPROVED only, for settlement calculation) */
     @Query("SELECT es FROM ExpenseSplit es JOIN es.expense e " +
            "WHERE e.group.id = :groupId " +
+           "AND e.status = 'APPROVED' " +
            "AND e.expenseDate BETWEEN :start AND :end")
     List<ExpenseSplit> findByGroupAndMonth(
             @Param("groupId") UUID groupId,

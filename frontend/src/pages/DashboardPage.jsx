@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import {
   DollarSign, TrendingUp, Plus, Calendar, ArrowUpRight,
   Users, Target, Wallet, AlertTriangle, ScanLine, CreditCard,
-  ArrowDownRight, TrendingDown, ChevronRight,
+  ArrowDownRight, TrendingDown, ChevronRight, Sparkles, PieChart as PieIcon,
 } from 'lucide-react';
 import { useExpense } from '../context/ExpenseContext';
 import { useAuth } from '../context/AuthContext';
 import { expensesApi } from '../services/api';
+import { SummaryCard } from '../components/ui/SummaryCard';
+import { InsightCard } from '../components/ui/InsightCard';
 
 const getGreeting = () => {
   const h = new Date().getHours();
@@ -14,56 +16,6 @@ const getGreeting = () => {
   if (h < 17) return 'Good afternoon';
   return 'Good evening';
 };
-
-const StatCard = ({ label, value, sub, icon: Icon, accent, onClick, loading, trend, trendUp }) => (
-  <div
-    className={`card${onClick ? ' card-interactive' : ''}`}
-    onClick={onClick}
-    style={{ padding: '22px', cursor: onClick ? 'pointer' : 'default' }}
-  >
-    {loading ? (
-      <>
-        <div className="skeleton" style={{ height: '13px', width: '55%', marginBottom: '14px' }} />
-        <div className="skeleton" style={{ height: '32px', width: '70%', marginBottom: '8px' }} />
-        <div className="skeleton" style={{ height: '11px', width: '45%' }} />
-      </>
-    ) : (
-      <>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-          <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
-          {Icon && (
-            <div style={{
-              width: '36px', height: '36px', borderRadius: '10px',
-              background: accent ? `${accent}15` : 'var(--bg-surface)',
-              border: `1px solid ${accent ? `${accent}25` : 'var(--border)'}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <Icon size={17} color={accent || 'var(--text-muted)'} />
-            </div>
-          )}
-        </div>
-        <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.03em', lineHeight: 1 }}>
-          {value}
-        </div>
-        {(sub || trend) && (
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            {trend && (
-              <span style={{
-                display: 'inline-flex', alignItems: 'center', gap: '2px',
-                color: trendUp ? 'var(--green)' : 'var(--red)',
-                fontWeight: 700,
-              }}>
-                {trendUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                {trend}
-              </span>
-            )}
-            {sub && <span>{sub}</span>}
-          </div>
-        )}
-      </>
-    )}
-  </div>
-);
 
 export const DashboardPage = () => {
   const {
@@ -75,6 +27,7 @@ export const DashboardPage = () => {
 
   const [summary, setSummary] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
+  const [prevSummary, setPrevSummary] = useState(null);
 
   useEffect(() => {
     const fetchSummary = async () => {
@@ -88,17 +41,39 @@ export const DashboardPage = () => {
     fetchSummary();
   }, [currentMonth, expenses.length]);
 
+  useEffect(() => {
+    const fetchPrevSummary = async () => {
+      try {
+        const now = new Date();
+        const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const prevKey = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`;
+        const data = await expensesApi.summary(prevKey);
+        setPrevSummary(data);
+      } catch { setPrevSummary(null); }
+    };
+    fetchPrevSummary();
+  }, [currentMonth]);
+
   const recentExpenses = expenses.slice(0, 5);
   const monthLabel = new Date(currentMonth + '-01').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
   const totalSpent = summary?.totalSpent ?? expenses.reduce((s, e) => s + (e.amount || 0), 0);
   const remaining = personalBudget.overallLimit > 0 ? Math.max(personalBudget.overallLimit - (personalBudget.spent || 0), 0) : null;
+
+  const prevTotalSpent = prevSummary?.totalSpent ?? 0;
+  const spendChange = prevTotalSpent > 0 ? ((totalSpent - prevTotalSpent) / prevTotalSpent * 100) : null;
+  const spendTrendUp = spendChange !== null && spendChange > 0;
+
+  const topCategory = summary?.categoryBreakdown?.[0];
+  const insightText = topCategory && summary?.totalSpent > 0
+    ? `Your ${topCategory.categoryName} spending is ₹${topCategory.total.toLocaleString('en-IN')} this month, representing ${((topCategory.total / summary.totalSpent) * 100).toFixed(1)}% of your total spending.`
+    : null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
       {/* Hero Section */}
       <div style={{
-        padding: '32px 28px',
+        padding: '36px 32px',
         borderRadius: 'var(--r-2xl)',
         background: 'linear-gradient(135deg, #050505 0%, #141414 50%, #0a0a0a 100%)',
         position: 'relative',
@@ -107,54 +82,96 @@ export const DashboardPage = () => {
       }}>
         {/* Subtle glow */}
         <div style={{
-          position: 'absolute', top: '-50%', right: '-20%',
-          width: '400px', height: '400px',
+          position: 'absolute', top: '-60%', right: '-15%',
+          width: '450px', height: '450px',
           background: 'radial-gradient(circle, rgba(183,255,0,0.06), transparent 65%)',
           borderRadius: '50%', pointerEvents: 'none',
         }} />
+        <div style={{
+          position: 'absolute', bottom: '-40%', left: '-10%',
+          width: '300px', height: '300px',
+          background: 'radial-gradient(circle, rgba(139,92,246,0.04), transparent 65%)',
+          borderRadius: '50%', pointerEvents: 'none',
+        }} />
 
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <p style={{ fontSize: '0.88rem', color: '#737373', fontWeight: 500, marginBottom: '6px' }}>
-            {getGreeting()}, {currentUser?.fullName?.split(' ')[0] || 'there'}
-          </p>
-          <h1 style={{
-            fontSize: 'clamp(1.5rem, 3vw, 2rem)',
-            fontWeight: 800, color: '#ffffff',
-            letterSpacing: '-0.03em', marginBottom: '8px', lineHeight: 1.2,
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '20px' }}>
+          <div>
+            <p style={{ fontSize: '0.88rem', color: '#737373', fontWeight: 500, marginBottom: '6px' }}>
+              {getGreeting()}, {currentUser?.fullName?.split(' ')[0] || 'there'}
+            </p>
+            <h1 style={{
+              fontSize: 'clamp(1.5rem, 3vw, 2.1rem)',
+              fontWeight: 800, color: '#ffffff',
+              letterSpacing: '-0.03em', marginBottom: '8px', lineHeight: 1.2,
+            }}>
+              Your money, clearly understood.
+            </h1>
+            <p style={{ fontSize: '0.88rem', color: '#737373', maxWidth: '500px', lineHeight: 1.6, marginBottom: '24px' }}>
+              Track your spending. Stay within your budget. Make smarter financial decisions.
+            </p>
+
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <button
+                className="btn btn-primary"
+                onClick={() => setIsAddModalOpen(true)}
+                style={{ fontSize: '0.85rem' }}
+              >
+                <Plus size={15} /> Add Expense
+              </button>
+              <button
+                className="btn"
+                onClick={() => setActiveTab('scan')}
+                style={{
+                  fontSize: '0.85rem',
+                  background: 'rgba(255,255,255,0.08)',
+                  color: '#e5e5e5',
+                  border: '1px solid #333',
+                }}
+              >
+                <ScanLine size={15} /> Scan Receipt
+              </button>
+            </div>
+          </div>
+
+          {/* Hero quick stat */}
+          <div style={{
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 'var(--r-xl)',
+            padding: '20px 24px',
+            minWidth: '180px',
+            textAlign: 'right',
           }}>
-            Your money, clearly understood.
-          </h1>
-          <p style={{ fontSize: '0.88rem', color: '#737373', maxWidth: '500px', lineHeight: 1.6, marginBottom: '24px' }}>
-            Track your spending. Stay within your budget. Make smarter financial decisions.
-          </p>
-
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            <button
-              className="btn btn-primary"
-              onClick={() => setIsAddModalOpen(true)}
-              style={{ fontSize: '0.85rem' }}
-            >
-              <Plus size={15} /> Add Expense
-            </button>
-            <button
-              className="btn"
-              onClick={() => setActiveTab('scan')}
-              style={{
-                fontSize: '0.85rem',
-                background: 'rgba(255,255,255,0.08)',
-                color: '#e5e5e5',
-                border: '1px solid #333',
-              }}
-            >
-              <ScanLine size={15} /> Scan Receipt
-            </button>
+            <p style={{ fontSize: '0.72rem', color: '#737373', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
+              Total Spending
+            </p>
+            <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.03em', lineHeight: 1 }}>
+              {summaryLoading ? (
+                <span style={{ display: 'inline-block', width: '100px', height: '28px' }} className="skeleton" />
+              ) : (
+                `₹${totalSpent.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+              )}
+            </div>
+            {spendChange !== null && (
+              <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-end' }}>
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '2px',
+                  color: spendTrendUp ? '#ef4444' : '#22c55e',
+                  fontWeight: 700, fontSize: '0.78rem',
+                }}>
+                  {spendTrendUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                  {Math.abs(spendChange).toFixed(1)}%
+                </span>
+                <span style={{ fontSize: '0.72rem', color: '#737373' }}>vs last month</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Summary Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }} className="responsive-grid">
-        <StatCard
+        <SummaryCard
           label="Total Spending"
           value={`₹${totalSpent.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
           sub={summaryLoading ? 'Loading...' : `${summary?.categoryBreakdown?.length || 0} categories`}
@@ -163,7 +180,7 @@ export const DashboardPage = () => {
           loading={summaryLoading}
         />
 
-        <StatCard
+        <SummaryCard
           label="Monthly Budget"
           value={personalBudget.overallLimit > 0
             ? `₹${personalBudget.overallLimit.toLocaleString('en-IN')}`
@@ -178,7 +195,7 @@ export const DashboardPage = () => {
         />
 
         {remaining !== null && (
-          <StatCard
+          <SummaryCard
             label="Remaining"
             value={`₹${remaining.toLocaleString('en-IN')}`}
             sub={`${Math.max(100 - (personalBudget.percentUsed || 0), 0).toFixed(0)}% available`}
@@ -188,7 +205,7 @@ export const DashboardPage = () => {
           />
         )}
 
-        <StatCard
+        <SummaryCard
           label="Transactions"
           value={`${expenses.length}`}
           sub={`in ${monthLabel}`}
@@ -227,14 +244,25 @@ export const DashboardPage = () => {
         </div>
       )}
 
+      {/* AI Insight */}
+      {insightText && (
+        <InsightCard
+          description={insightText}
+          onAction={() => setActiveTab('analytics')}
+          actionLabel="View Analytics"
+        />
+      )}
+
       {/* Recent + Categories */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '16px' }} className="responsive-grid-2">
 
         {/* Category Breakdown */}
         <div className="card" style={{ padding: '22px' }}>
-          <h3 style={{ fontSize: '0.95rem', color: 'var(--text-primary)', marginBottom: '18px', fontWeight: 700 }}>
-            Where your money goes
-          </h3>
+          <div className="section-header">
+            <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <PieIcon size={16} color="var(--accent)" /> Where your money goes
+            </h3>
+          </div>
           {summaryLoading ? (
             Array.from({ length: 4 }).map((_, i) => (
               <div key={i} style={{ marginBottom: '16px' }}>
@@ -283,8 +311,8 @@ export const DashboardPage = () => {
 
         {/* Recent Transactions */}
         <div className="card" style={{ padding: '22px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
-            <h3 style={{ fontSize: '0.95rem', color: 'var(--text-primary)', fontWeight: 700 }}>Recent Expenses</h3>
+          <div className="section-header">
+            <h3 className="section-title">Recent Expenses</h3>
             <button className="btn btn-ghost btn-sm" onClick={() => setActiveTab('expenses')} style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
               View All <ArrowUpRight size={12} />
             </button>
@@ -350,8 +378,8 @@ export const DashboardPage = () => {
       {/* Groups Quick View */}
       {groups.length > 0 && (
         <div className="card" style={{ padding: '22px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '0.95rem', color: 'var(--text-primary)', fontWeight: 700 }}>Your Groups</h3>
+          <div className="section-header">
+            <h3 className="section-title">Your Groups</h3>
             <button className="btn btn-ghost btn-sm" onClick={() => setActiveTab('groups')} style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
               Manage <ArrowUpRight size={12} />
             </button>
@@ -360,11 +388,12 @@ export const DashboardPage = () => {
             {groups.map(grp => (
               <div
                 key={grp.id}
-                className="card-interactive"
+                className="card-interactive card-hover-lift"
                 onClick={() => { setActiveGroupId(grp.id); setActiveTab('group-detail'); }}
                 style={{
                   padding: '16px', borderRadius: 'var(--r-lg)',
                   background: 'var(--bg-surface)', border: '1px solid var(--border)',
+                  cursor: 'pointer',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>

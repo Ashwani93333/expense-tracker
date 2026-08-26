@@ -141,6 +141,7 @@ export const ExpenseProvider = ({ children }) => {
           expenseDate: formData.expenseDate,
           categoryId: formData.categoryId,
           receiptUrl: formData.receiptUrl || null,
+          receiptHash: formData.receiptHash || null,
         };
         newExpense = await expensesApi.create(payload);
       }

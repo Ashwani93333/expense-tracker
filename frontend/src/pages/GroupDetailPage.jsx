@@ -37,9 +37,10 @@ const MiniProgress = ({ pct, status }) => (
 
 const SettlementRow = ({ from, to, amount }) => (
   <div style={{
-    display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px',
-    borderRadius: 'var(--r-md)', background: 'var(--bg-surface)',
+    display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px',
+    borderRadius: 'var(--r-lg)', background: 'var(--bg-surface)',
     border: '1px solid var(--border)', marginBottom: '8px',
+    transition: 'var(--t-fast)',
   }}>
     <div style={{ flex: 1 }}>
       <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#ef4444' }}>{from}</span>
@@ -110,7 +111,7 @@ export const GroupDetailPage = () => {
       await expensesApi.review(exp.id, { action, note: action === 'REJECT' ? rejectNote.trim() : null });
       showToast(action === 'APPROVE'
         ? 'Payment verified — it now counts toward budgets and settlements.'
-        : 'Payment rejected. The member has been notified.');
+        : 'Payment rejected and moved to the member\u2019s personal expenses.');
       setRejectingId(null);
       setRejectNote('');
       await fetchGroupData();
@@ -168,23 +169,23 @@ export const GroupDetailPage = () => {
       </div>
 
       {/* Group Header Card */}
-      <div className="card" style={{ padding: '22px 24px' }}>
+      <div className="card" style={{ padding: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
           <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
             <div style={{
-              width: '48px', height: '48px', borderRadius: '14px',
+              width: '52px', height: '52px', borderRadius: '14px',
               background: '#050505', color: '#B7FF00',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '1.4rem', flexShrink: 0, fontWeight: 800, border: '1px solid #1a1a1a',
+              fontSize: '1.5rem', flexShrink: 0, fontWeight: 800, border: '1px solid #1a1a1a',
             }}>
               {grp.name?.charAt(0)}
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                <h2 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', fontWeight: 800, margin: 0 }}>{grp.name}</h2>
+                <h2 style={{ fontSize: '1.3rem', color: 'var(--text-primary)', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>{grp.name}</h2>
                 <GroupRoleBadge role={userRole} />
               </div>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>{grp.description}</p>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>{grp.description}</p>
             </div>
           </div>
 
@@ -311,7 +312,7 @@ export const GroupDetailPage = () => {
               onClick={() => setActiveSubTab(tab.id)}
               style={{
                 display: 'flex', alignItems: 'center', gap: '6px',
-                padding: '8px 14px', border: 'none', borderRadius: 'var(--r-sm)',
+                padding: '8px 16px', border: 'none', borderRadius: 'var(--r-sm)',
                 background: active ? 'rgba(183,255,0,0.12)' : 'transparent',
                 color: active ? '#B7FF00' : '#737373',
                 fontWeight: active ? 700 : 500, fontSize: '0.83rem',
@@ -459,12 +460,16 @@ export const GroupDetailPage = () => {
           ) : (
             groupExpenses.map(exp => (
               <div key={exp.id} style={{
-                padding: '12px 14px', borderRadius: 'var(--r-md)', marginBottom: '8px',
+                padding: '12px 14px', borderRadius: 'var(--r-lg)', marginBottom: '8px',
                 background: exp.status === 'PENDING' ? 'rgba(245,158,11,0.04)'
                   : exp.status === 'REJECTED' ? 'rgba(239,68,68,0.04)' : 'var(--bg-surface)',
                 border: `1px solid ${exp.status === 'PENDING' ? 'rgba(245,158,11,0.15)'
                   : exp.status === 'REJECTED' ? 'rgba(239,68,68,0.15)' : 'var(--border)'}`,
-              }}>
+                transition: 'var(--t-fast)',
+              }}
+                onMouseEnter={e => { if (exp.status === 'APPROVED') e.currentTarget.style.borderColor = 'var(--border-accent)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = exp.status === 'PENDING' ? 'rgba(245,158,11,0.15)' : exp.status === 'REJECTED' ? 'rgba(239,68,68,0.15)' : 'var(--border)'; }}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>

@@ -46,8 +46,8 @@ public class SettlementService {
 
         LocalDate[] range = parseMonthRange(monthParam);
         List<ExpenseSplit> splits = splitRepository.findByGroupAndMonth(groupId, range[0], range[1]);
-        List<Expense> expenses = expenseRepository.findByGroupIdAndExpenseDateBetweenOrderByExpenseDateDesc(
-                groupId, range[0], range[1]);
+        List<Expense> expenses = expenseRepository.findByGroupIdAndStatusAndExpenseDateBetweenOrderByExpenseDateDesc(
+                groupId, "APPROVED", range[0], range[1]);
 
         // paidBy map: expenseId → paidBy user
         Map<UUID, UUID> paidByMap = new HashMap<>();

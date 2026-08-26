@@ -4,6 +4,8 @@ import { useExpense } from '../context/ExpenseContext';
 import { GroupCard } from '../components/groups/GroupCard';
 import { CreateGroupModal } from '../components/groups/CreateGroupModal';
 import { JoinGroupModal } from '../components/groups/JoinGroupModal';
+import { PageHeader } from '../components/ui/PageHeader';
+import { EmptyState } from '../components/ui/EmptyState';
 
 export const GroupsPage = () => {
   const {
@@ -32,27 +34,22 @@ export const GroupsPage = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
       {/* Header */}
-      <div className="card" style={{ padding: '22px 24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-              <span className="badge" style={{ background: '#050505', color: '#B7FF00' }}><Users size={11} /> Groups</span>
-            </div>
-            <h2 style={{ fontSize: '1.3rem', color: 'var(--text-primary)', marginBottom: '4px', fontWeight: 800 }}>Groups & Shared Budgets</h2>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-              Create shared expense pools, split bills, and track who owes whom.
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+      <PageHeader
+        icon={Users}
+        badge="Groups"
+        title="Groups & Shared Budgets"
+        subtitle="Create shared expense pools, split bills, and track who owes whom."
+        actions={
+          <>
             <button className="btn btn-secondary btn-sm" onClick={() => setIsJoinGroupModalOpen(true)}>
               <Key size={14} /> Join via Code
             </button>
             <button className="btn btn-primary btn-sm" onClick={() => setIsCreateGroupModalOpen(true)}>
               <Plus size={14} /> Create Group
             </button>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Stat Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
@@ -117,25 +114,17 @@ export const GroupsPage = () => {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="card" style={{ padding: '60px 24px', textAlign: 'center' }}>
-          <Users size={40} color="var(--text-faint)" style={{ marginBottom: '12px' }} />
-          <h4 style={{ color: 'var(--text-primary)', marginBottom: '6px', fontWeight: 700 }}>
-            {searchQuery ? 'No groups match your search' : 'No groups yet'}
-          </h4>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '16px' }}>
-            {searchQuery ? 'Try a different search term.' : 'Create a group to start splitting expenses with others.'}
-          </p>
-          {!searchQuery && (
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-              <button className="btn btn-secondary btn-sm" onClick={() => setIsJoinGroupModalOpen(true)}>
-                <Key size={14} /> Join via Code
-              </button>
-              <button className="btn btn-primary btn-sm" onClick={() => setIsCreateGroupModalOpen(true)}>
-                <Plus size={14} /> Create Group
-              </button>
-            </div>
-          )}
-        </div>
+        <EmptyState
+          icon={Users}
+          title={searchQuery ? 'No groups match your search' : 'No groups yet'}
+          description={searchQuery ? 'Try a different search term.' : 'Create a group to start splitting expenses with others.'}
+          actions={
+            !searchQuery ? [
+              { label: 'Join via Code', icon: Key, onClick: () => setIsJoinGroupModalOpen(true) },
+              { label: 'Create Group', icon: Plus, onClick: () => setIsCreateGroupModalOpen(true), primary: true },
+            ] : []
+          }
+        />
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
           {filtered.map(group => (

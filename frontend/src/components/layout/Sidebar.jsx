@@ -64,8 +64,8 @@ export const Sidebar = () => {
     <aside className="desktop-sidebar" style={{
       width: 'var(--sidebar-width)',
       flexShrink: 0,
-      background: '#050505',
-      borderRight: '1px solid #1a1a1a',
+      background: '#ffffff',
+      borderRight: '1px solid #e5e5e5',
       display: 'flex',
       flexDirection: 'column',
       padding: '20px 12px',
@@ -80,7 +80,7 @@ export const Sidebar = () => {
         <div key={section.label} style={{ marginBottom: '24px' }}>
           {/* Section Label */}
           <div style={{
-            fontSize: '0.65rem', fontWeight: 700, color: '#525252',
+            fontSize: '0.65rem', fontWeight: 700, color: '#737373',
             textTransform: 'uppercase', letterSpacing: '0.1em',
             paddingLeft: '12px', marginBottom: '6px',
           }}>
@@ -103,7 +103,7 @@ export const Sidebar = () => {
                   padding: '10px 12px', borderRadius: 'var(--r-md)', width: '100%',
                   border: 'none', marginBottom: '2px',
                   background: active ? 'rgba(183, 255, 0, 0.12)' : 'transparent',
-                  color: active ? 'var(--accent)' : '#737373',
+                  color: active ? '#1a1a1a' : '#404040',
                   fontWeight: active ? 600 : 500,
                   fontSize: '0.855rem',
                   cursor: 'pointer',
@@ -113,21 +113,21 @@ export const Sidebar = () => {
                 }}
                 onMouseEnter={e => {
                   if (!active) {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-                    e.currentTarget.style.color = '#d4d4d4';
+                    e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
+                    e.currentTarget.style.color = '#1a1a1a';
                   }
                 }}
                 onMouseLeave={e => {
                   if (!active) {
                     e.currentTarget.style.background = 'transparent';
-                    e.currentTarget.style.color = '#737373';
+                    e.currentTarget.style.color = '#404040';
                   }
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <Icon
                     size={17}
-                    color={active ? 'var(--accent)' : item.highlight ? 'var(--accent)' : 'inherit'}
+                    color={active ? '#1a1a1a' : item.highlight ? 'var(--accent)' : 'inherit'}
                     style={{ flexShrink: 0 }}
                   />
                   <span>{item.label}</span>
@@ -147,8 +147,8 @@ export const Sidebar = () => {
                   <span style={{
                     fontSize: '0.68rem', fontWeight: 700,
                     padding: '2px 7px', borderRadius: '99px',
-                    background: active ? 'rgba(183,255,0,0.2)' : 'rgba(255,255,255,0.08)',
-                    color: active ? 'var(--accent)' : '#737373',
+                    background: active ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.06)',
+                    color: active ? '#1a1a1a' : '#737373',
                   }}>
                     {badge}
                   </span>

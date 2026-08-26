@@ -4,6 +4,8 @@ import { useExpense } from '../context/ExpenseContext';
 import { useAuth } from '../context/AuthContext';
 import { budgetsApi } from '../services/api';
 import { CategoryIcon } from '../components/categories/categoryIcons';
+import { PageHeader } from '../components/ui/PageHeader';
+import { StatusBadge } from '../components/ui/StatusBadge';
 
 const statusColor = (s) => ({
   OK:        '#22c55e',
@@ -87,17 +89,12 @@ export const BudgetSettingsPage = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
       {/* Header */}
-      <div className="card" style={{ padding: '22px 24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-              <span className="badge" style={{ background: '#050505', color: '#B7FF00' }}><Target size={11} /> Personal Budgets</span>
-            </div>
-            <h2 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', marginBottom: '4px', fontWeight: 800 }}>Budget Settings</h2>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-              Set monthly spending limits. Alerts fire at 80% (Warning) and 100% (Exceeded).
-            </p>
-          </div>
+      <PageHeader
+        icon={Target}
+        badge="Personal Budgets"
+        title="Budget Settings"
+        subtitle="Stay ahead of your spending. Set monthly spending limits and get alerts."
+        actions={
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <select
               value={month}
@@ -111,8 +108,8 @@ export const BudgetSettingsPage = () => {
               <RefreshCw size={14} />
             </button>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Overall Budget Card */}
       <div className="card" style={{ padding: '24px' }}>
@@ -124,13 +121,7 @@ export const BudgetSettingsPage = () => {
             </p>
           </div>
           {overallBudget && (
-            <span style={{
-              padding: '4px 12px', borderRadius: '99px', fontSize: '0.78rem', fontWeight: 700,
-              background: `${statusColor(overallBudget.status)}15`,
-              color: statusColor(overallBudget.status),
-            }}>
-              {statusLabel(overallBudget.status)}
-            </span>
+            <StatusBadge status={overallBudget.status} size="md" />
           )}
         </div>
 
@@ -153,6 +144,7 @@ export const BudgetSettingsPage = () => {
               <div className="progress-fill" style={{
                 width: `${Math.min(overallBudget.percentUsed || 0, 100)}%`,
                 background: statusColor(overallBudget.status),
+                borderRadius: 'var(--r-full)',
               }} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
@@ -205,9 +197,13 @@ export const BudgetSettingsPage = () => {
             const pct = catBudget?.percentUsed || 0;
             return (
               <div key={cat.id} style={{
-                marginBottom: '14px', padding: '14px 16px', borderRadius: 'var(--r-lg)',
+                marginBottom: '14px', padding: '16px 18px', borderRadius: 'var(--r-xl)',
                 background: 'var(--bg-surface)', border: '1px solid var(--border)',
-              }}>
+                transition: 'var(--t-fast)',
+              }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-accent)'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+              >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <CategoryIcon icon={cat.icon} size={16} color={cat.color || '#737373'} />
@@ -229,8 +225,8 @@ export const BudgetSettingsPage = () => {
                       <span>₹{(catBudget.spent || 0).toFixed(2)} spent</span>
                       <span>of ₹{catBudget.budgetLimit?.toFixed(2)}</span>
                     </div>
-                    <div className="progress-track" style={{ height: '5px', marginBottom: '10px' }}>
-                      <div className="progress-fill" style={{ width: `${Math.min(pct, 100)}%`, background: statusColor(catBudget.status) }} />
+                    <div className="progress-track" style={{ height: '6px', marginBottom: '10px' }}>
+                      <div className="progress-fill" style={{ width: `${Math.min(pct, 100)}%`, background: statusColor(catBudget.status), borderRadius: 'var(--r-full)' }} />
                     </div>
                   </>
                 )}

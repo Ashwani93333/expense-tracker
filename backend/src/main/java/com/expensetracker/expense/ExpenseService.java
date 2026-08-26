@@ -76,6 +76,17 @@ public class ExpenseService {
         expense.setDescription(req.getDescription());
         expense.setExpenseDate(req.getExpenseDate());
         expense.setReceiptUrl(req.getReceiptUrl());
+        expense.setReceiptHash(req.getReceiptHash());
+
+        // ── Duplicate receipt check ─────────────────────────────────────────
+        if (req.getReceiptHash() != null && !req.getReceiptHash().isBlank()) {
+            boolean alreadyExists = expenseRepository.existsByUserIdAndReceiptHash(
+                    currentUser.getId(), req.getReceiptHash());
+            if (alreadyExists) {
+                throw new BadRequestException(
+                    "This receipt has already been uploaded. A duplicate expense was not created.");
+            }
+        }
 
         applyCategoryClassification(expense, currentUser, req);
 
@@ -291,6 +302,20 @@ public class ExpenseService {
         expense.setReviewedBy(reviewer);
         expense.setReviewedAt(OffsetDateTime.now());
         expense.setReviewNote(approved ? null : note.trim());
+
+        if (!approved) {
+            // On rejection: convert to personal expense.
+            // Remove from group, delete splits, mark as APPROVED so it
+            // appears in the user's personal expense list (they did spend it).
+            expense.setGroup(null);
+            expense.setSplitType(null);
+            expense.setPaidBy(null);
+            expense.setStatus(STATUS_APPROVED);
+
+            // Delete all splits — the expense is no longer shared
+            splitRepository.deleteByExpenseId(expense.getId());
+        }
+
         Expense saved = expenseRepository.save(expense);
 
         User owner = saved.getUser();
@@ -310,8 +335,9 @@ public class ExpenseService {
             notificationService.createNotification(
                     owner,
                     "EXPENSE_REJECTED",
-                    "Payment rejected",
-                    reviewer.getFullName() + " rejected your payment of " + amount + " Reason: " + note.trim(),
+                    "Payment rejected — moved to personal expenses",
+                    reviewer.getFullName() + " rejected your group payment of " + amount + ". Reason: " + note.trim()
+                            + " The expense has been moved to your personal expenses.",
                     saved.getId(),
                     "EXPENSE");
         }

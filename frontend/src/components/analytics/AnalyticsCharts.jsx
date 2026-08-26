@@ -1,10 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { TrendingUp, PieChart as PieIcon, Award, Calendar, RefreshCw } from 'lucide-react';
+import { TrendingUp, PieChart as PieIcon, Award, Calendar, RefreshCw, Sparkles } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 import { expensesApi } from '../../services/api';
+import { PageHeader } from '../ui/PageHeader';
+import { InsightCard } from '../ui/InsightCard';
 
 const PALETTE = ['#B7FF00', '#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6', '#ec4899'];
+
+const CustomCenterLabel = ({ viewBox, totalSpent }) => {
+  const { cx, cy } = viewBox;
+  return (
+    <g>
+      <text x={cx} y={cy - 8} textAnchor="middle" dominantBaseline="central" style={{ fontSize: '1.4rem', fontWeight: 800, fill: 'var(--text-primary)', letterSpacing: '-0.03em' }}>
+        ₹{totalSpent.toLocaleString('en-IN')}
+      </text>
+      <text x={cx} y={cy + 14} textAnchor="middle" dominantBaseline="central" style={{ fontSize: '0.72rem', fontWeight: 600, fill: 'var(--text-muted)' }}>
+        spent
+      </text>
+    </g>
+  );
+};
 
 export const AnalyticsCharts = () => {
   const { expenses, currentMonth, setCurrentMonth } = useExpense();
@@ -70,18 +86,21 @@ export const AnalyticsCharts = () => {
 
   const tooltipStyle = { background: '#fff', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '0.8rem', boxShadow: 'var(--shadow-md)' };
 
+  const topCat = categoryPieData[0];
+  const insightText = topCat && totalSpent > 0
+    ? `Your ${topCat.name} spending is ₹${topCat.value.toLocaleString('en-IN')} this month, representing ${((topCat.value / totalSpent) * 100).toFixed(1)}% of your total spending.`
+    : null;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
       {/* Header with month picker */}
-      <div className="card" style={{ padding: '22px 24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <span className="badge" style={{ background: '#050505', color: '#B7FF00' }}><TrendingUp size={11} /> Analytics</span>
-            </div>
-            <h2 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', fontWeight: 800, margin: 0 }}>Spending Analytics</h2>
-          </div>
+      <PageHeader
+        icon={TrendingUp}
+        badge="Analytics"
+        title="Spending Analytics"
+        subtitle="Understand where your money goes."
+        actions={
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <input
               type="month"
@@ -90,9 +109,12 @@ export const AnalyticsCharts = () => {
               className="input-field"
               style={{ fontSize: '0.83rem', cursor: 'pointer', maxWidth: '180px' }}
             />
+            <button className="btn btn-secondary btn-sm" onClick={() => {}} title="Refresh">
+              <RefreshCw size={14} />
+            </button>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Summary Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
@@ -180,12 +202,13 @@ export const AnalyticsCharts = () => {
             </div>
           ) : (
             <>
-              <ResponsiveContainer width="100%" height={220}>
+              <ResponsiveContainer width="100%" height={240}>
                 <PieChart>
-                  <Pie data={categoryPieData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={2} dataKey="value" stroke="none">
+                  <Pie data={categoryPieData} cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={2} dataKey="value" stroke="none">
                     {categoryPieData.map((entry, i) => (
                       <Cell key={i} fill={entry.color} />
                     ))}
+                    <CustomCenterLabel totalSpent={totalSpent} />
                   </Pie>
                   <Tooltip contentStyle={tooltipStyle} formatter={val => [`₹${Number(val).toFixed(2)}`, 'Spent']} />
                 </PieChart>
@@ -227,6 +250,7 @@ export const AnalyticsCharts = () => {
                 <div key={item.merchant} style={{
                   display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px',
                   borderRadius: 'var(--r-lg)', background: 'var(--bg-surface)', border: '1px solid var(--border)',
+                  transition: 'var(--t-fast)',
                 }}>
                   <span style={{
                     fontWeight: 800, fontSize: '0.85rem',
@@ -245,6 +269,14 @@ export const AnalyticsCharts = () => {
             })}
           </div>
         </div>
+      )}
+
+      {/* AI Insight */}
+      {insightText && (
+        <InsightCard
+          description={insightText}
+          actionLabel="View Dashboard"
+        />
       )}
     </div>
   );

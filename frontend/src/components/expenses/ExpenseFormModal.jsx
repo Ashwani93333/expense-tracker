@@ -151,10 +151,10 @@ export const ExpenseFormModal = () => {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
           <div>
-            <h3 style={{ fontSize: '1.1rem', color: 'var(--text-primary)', fontWeight: 800 }}>
-              {isGroupExpense ? 'Log Group Expense' : 'Add Personal Expense'}
+            <h3 style={{ fontSize: '1.15rem', color: 'var(--text-primary)', fontWeight: 800, letterSpacing: '-0.02em' }}>
+              {isGroupExpense ? 'Log Group Expense' : 'Add Expense'}
             </h3>
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
               {isGroupExpense ? 'Split this expense with your group members' : 'Record a personal transaction'}
             </p>
           </div>
@@ -172,7 +172,8 @@ export const ExpenseFormModal = () => {
               style={{
                 background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)',
                 cursor: 'pointer', color: 'var(--text-muted)',
-                width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'var(--t-fast)',
               }}
             >
               <X size={16} />
@@ -292,8 +293,8 @@ export const ExpenseFormModal = () => {
                     <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#525252', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Share</span>
                   </div>
                   {splits.map(sp => (
-                    <div key={sp.userId} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'center', padding: '9px 14px', borderBottom: '1px solid var(--border)' }}>
-                      <span style={{ fontSize: '0.83rem', color: 'var(--text-primary)', fontWeight: 500 }}>
+                    <div key={sp.userId} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid var(--border)' }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 500 }}>
                         {sp.userName}
                         {sp.userId === currentUser?.id && <span className="badge" style={{ marginLeft: '6px', fontSize: '0.62rem', background: '#050505', color: '#B7FF00' }}>You</span>}
                       </span>
