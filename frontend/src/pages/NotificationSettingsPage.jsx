@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Loader2, RefreshCw, Save, AlertTriangle, Wallet, Target, BarChart3, Mail, Inbox, Tag, X, Plus } from 'lucide-react';
+import { Bell, Loader2, RefreshCw, Save, AlertTriangle, Wallet, Target, BarChart3, Mail, Inbox, Tag, X, Plus, DollarSign, Calendar, CheckCircle } from 'lucide-react';
 import { useExpense } from '../context/ExpenseContext';
 import { usersApi, categoryLimitsApi, categoriesApi } from '../services/api';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -17,6 +17,9 @@ const DEFAULT_SETTINGS = {
   totalExpenditureThresholds: [],
   totalExpenditureThresholdType: 'AMOUNT',
   monthlySummaryEnabled: true,
+  budgetUpdateEnabled: true,
+  expiryDateUpdateEnabled: true,
+  paymentApprovalEnabled: true,
 };
 
 const parseList = (raw) => raw
@@ -352,6 +355,49 @@ export const NotificationSettingsPage = () => {
                   <span className="toggle-slider" />
                 </label>
               </div>
+            </div>
+          </div>
+
+          {/* Group Notifications */}
+          <div className="card" style={{ padding: '24px' }}>
+            <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700, marginBottom: '6px' }}>Group Notifications</h3>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '18px' }}>
+              Choose which group-related events you want to be notified about.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {[
+                { key: 'budgetUpdateEnabled', label: 'Budget Updates', desc: 'When a group budget is set or updated.', icon: Target },
+                { key: 'expiryDateUpdateEnabled', label: 'Expiry Date Updates', desc: 'When a group expiry date is changed.', icon: Calendar },
+                { key: 'paymentApprovalEnabled', label: 'Payment Approve/Reject', desc: 'When your group payment is approved or rejected.', icon: CheckCircle },
+              ].map(item => {
+                const Icon = item.icon;
+                return (
+                  <div key={item.key} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
+                    padding: '14px 16px', borderRadius: 'var(--r-lg)',
+                    background: 'var(--bg-surface)', border: '1px solid var(--border)',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '9px', background: '#050505', border: '1px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Icon size={16} color="#B7FF00" />
+                      </div>
+                      <div>
+                        <h4 style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 700, margin: 0 }}>{item.label}</h4>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>{item.desc}</p>
+                      </div>
+                    </div>
+                    <label className="toggle">
+                      <input
+                        type="checkbox"
+                        checked={boolVal(item.key)}
+                        onChange={() => toggle(item.key)}
+                      />
+                      <span className="toggle-slider" />
+                    </label>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

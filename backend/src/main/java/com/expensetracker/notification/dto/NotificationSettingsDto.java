@@ -21,6 +21,9 @@ public class NotificationSettingsDto {
     private List<Integer> totalExpenditureThresholds;
     private String totalExpenditureThresholdType;
     private Boolean monthlySummaryEnabled;
+    private Boolean budgetUpdateEnabled;
+    private Boolean expiryDateUpdateEnabled;
+    private Boolean paymentApprovalEnabled;
     private OffsetDateTime updatedAt;
 
     public static NotificationSettingsDto fromEntity(UserNotificationSettings s) {
@@ -38,6 +41,9 @@ public class NotificationSettingsDto {
         dto.setTotalExpenditureThresholds(s.getTotalExpenditureThresholds());
         dto.setTotalExpenditureThresholdType(s.getTotalExpenditureThresholdType());
         dto.setMonthlySummaryEnabled(s.getMonthlySummaryEnabled());
+        dto.setBudgetUpdateEnabled(s.getBudgetUpdateEnabled());
+        dto.setExpiryDateUpdateEnabled(s.getExpiryDateUpdateEnabled());
+        dto.setPaymentApprovalEnabled(s.getPaymentApprovalEnabled());
         dto.setUpdatedAt(s.getUpdatedAt());
         return dto;
     }
@@ -68,6 +74,12 @@ public class NotificationSettingsDto {
     public void setTotalExpenditureThresholdType(String totalExpenditureThresholdType) { this.totalExpenditureThresholdType = totalExpenditureThresholdType; }
     public Boolean getMonthlySummaryEnabled() { return monthlySummaryEnabled; }
     public void setMonthlySummaryEnabled(Boolean monthlySummaryEnabled) { this.monthlySummaryEnabled = monthlySummaryEnabled; }
+    public Boolean getBudgetUpdateEnabled() { return budgetUpdateEnabled; }
+    public void setBudgetUpdateEnabled(Boolean budgetUpdateEnabled) { this.budgetUpdateEnabled = budgetUpdateEnabled; }
+    public Boolean getExpiryDateUpdateEnabled() { return expiryDateUpdateEnabled; }
+    public void setExpiryDateUpdateEnabled(Boolean expiryDateUpdateEnabled) { this.expiryDateUpdateEnabled = expiryDateUpdateEnabled; }
+    public Boolean getPaymentApprovalEnabled() { return paymentApprovalEnabled; }
+    public void setPaymentApprovalEnabled(Boolean paymentApprovalEnabled) { this.paymentApprovalEnabled = paymentApprovalEnabled; }
     public OffsetDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(OffsetDateTime updatedAt) { this.updatedAt = updatedAt; }
 }

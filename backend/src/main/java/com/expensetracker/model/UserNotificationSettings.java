@@ -67,6 +67,15 @@ public class UserNotificationSettings {
     @Column(name = "monthly_summary_enabled")
     private Boolean monthlySummaryEnabled = false;
 
+    @Column(name = "budget_update_enabled")
+    private Boolean budgetUpdateEnabled = true;
+
+    @Column(name = "expiry_date_update_enabled")
+    private Boolean expiryDateUpdateEnabled = true;
+
+    @Column(name = "payment_approval_enabled")
+    private Boolean paymentApprovalEnabled = true;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
@@ -109,6 +118,12 @@ public class UserNotificationSettings {
     public void setTotalExpenditureThresholdType(String totalExpenditureThresholdType) { this.totalExpenditureThresholdType = totalExpenditureThresholdType; }
     public Boolean getMonthlySummaryEnabled() { return monthlySummaryEnabled; }
     public void setMonthlySummaryEnabled(Boolean monthlySummaryEnabled) { this.monthlySummaryEnabled = monthlySummaryEnabled; }
+    public Boolean getBudgetUpdateEnabled() { return budgetUpdateEnabled; }
+    public void setBudgetUpdateEnabled(Boolean budgetUpdateEnabled) { this.budgetUpdateEnabled = budgetUpdateEnabled; }
+    public Boolean getExpiryDateUpdateEnabled() { return expiryDateUpdateEnabled; }
+    public void setExpiryDateUpdateEnabled(Boolean expiryDateUpdateEnabled) { this.expiryDateUpdateEnabled = expiryDateUpdateEnabled; }
+    public Boolean getPaymentApprovalEnabled() { return paymentApprovalEnabled; }
+    public void setPaymentApprovalEnabled(Boolean paymentApprovalEnabled) { this.paymentApprovalEnabled = paymentApprovalEnabled; }
     public OffsetDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
     public OffsetDateTime getUpdatedAt() { return updatedAt; }
@@ -136,5 +151,17 @@ public class UserNotificationSettings {
 
     public boolean isMonthlySummaryEnabled() {
         return Boolean.TRUE.equals(monthlySummaryEnabled);
+    }
+
+    public boolean isBudgetUpdateEnabled() {
+        return Boolean.TRUE.equals(budgetUpdateEnabled);
+    }
+
+    public boolean isExpiryDateUpdateEnabled() {
+        return Boolean.TRUE.equals(expiryDateUpdateEnabled);
+    }
+
+    public boolean isPaymentApprovalEnabled() {
+        return Boolean.TRUE.equals(paymentApprovalEnabled);
     }
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, CheckCheck, X, AlertTriangle, Users, DollarSign, TrendingUp, Info } from 'lucide-react';
+import { Bell, CheckCheck, X, AlertTriangle, Users, DollarSign, TrendingUp, Info, Calendar, CheckCircle, XCircle } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 
 const notifIconMap = {
@@ -15,6 +15,10 @@ const notifIconMap = {
   GROUP_BUDGET_THRESHOLD_REACHED:   { icon: AlertTriangle, bg: 'rgba(245,158,11,0.08)', color: '#f59e0b' },
   GROUP_BUDGET_EXCEEDED:            { icon: AlertTriangle, bg: 'rgba(239,68,68,0.08)', color: '#ef4444' },
   MONTHLY_SUMMARY:                  { icon: TrendingUp,    bg: 'rgba(183,255,0,0.08)', color: '#B7FF00' },
+  BUDGET_UPDATED:                   { icon: TrendingUp,    bg: 'rgba(34,197,94,0.08)', color: '#22c55e' },
+  EXPIRY_DATE_UPDATED:              { icon: Calendar,      bg: 'rgba(59,130,246,0.08)', color: '#3b82f6' },
+  EXPENSE_APPROVED:                 { icon: CheckCircle,   bg: 'rgba(34,197,94,0.08)', color: '#22c55e' },
+  EXPENSE_REJECTED:                 { icon: XCircle,       bg: 'rgba(239,68,68,0.08)', color: '#ef4444' },
 };
 
 const timeAgo = (isoStr) => {

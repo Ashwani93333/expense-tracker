@@ -53,6 +53,9 @@ class NotificationSettingsServiceTest {
         assertThat(dto.getCategoryBudgetThresholds()).containsExactly(80, 100);
         assertThat(dto.getTotalExpenditureEnabled()).isFalse();
         assertThat(dto.getMonthlySummaryEnabled()).isFalse();
+        assertThat(dto.getBudgetUpdateEnabled()).isTrue();
+        assertThat(dto.getExpiryDateUpdateEnabled()).isTrue();
+        assertThat(dto.getPaymentApprovalEnabled()).isTrue();
         verify(settingsRepository).save(any(UserNotificationSettings.class));
     }
 
@@ -87,6 +90,24 @@ class NotificationSettingsServiceTest {
         assertThat(dto.getTotalExpenditureThresholds()).containsExactly(2500, 10000);
         assertThat(dto.getTotalExpenditureEnabled()).isTrue();
         assertThat(dto.getEmailNotifications()).isTrue();
+    }
+
+    @Test
+    void updateSettingsHandlesGroupNotificationToggles() {
+        UserNotificationSettings existing = new UserNotificationSettings();
+        existing.setUser(user());
+        when(settingsRepository.findByUserId(userId)).thenReturn(Optional.of(existing));
+
+        UpdateNotificationSettingsRequest req = new UpdateNotificationSettingsRequest();
+        req.setBudgetUpdateEnabled(false);
+        req.setExpiryDateUpdateEnabled(false);
+        req.setPaymentApprovalEnabled(true);
+
+        NotificationSettingsDto dto = service.updateSettings(userId, req);
+
+        assertThat(dto.getBudgetUpdateEnabled()).isFalse();
+        assertThat(dto.getExpiryDateUpdateEnabled()).isFalse();
+        assertThat(dto.getPaymentApprovalEnabled()).isTrue();
     }
 
     @Test

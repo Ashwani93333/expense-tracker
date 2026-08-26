@@ -5,6 +5,7 @@ import com.expensetracker.exception.AccessDeniedException;
 import com.expensetracker.exception.ResourceNotFoundException;
 import com.expensetracker.model.*;
 import com.expensetracker.notification.NotificationService;
+import com.expensetracker.notification.NotificationSettingsService;
 import com.expensetracker.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,7 @@ public class GroupBudgetService {
     private final ExpenseRepository expenseRepository;
     private final ExpenseSplitRepository splitRepository;
     private final NotificationService notificationService;
+    private final NotificationSettingsService notificationSettingsService;
 
     public GroupBudgetService(
             GroupBudgetRepository groupBudgetRepository,
@@ -35,7 +37,8 @@ public class GroupBudgetService {
             UserRepository userRepository,
             ExpenseRepository expenseRepository,
             ExpenseSplitRepository splitRepository,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            NotificationSettingsService notificationSettingsService) {
         this.groupBudgetRepository = groupBudgetRepository;
         this.memberBudgetRepository = memberBudgetRepository;
         this.groupMemberRepository = groupMemberRepository;
@@ -44,6 +47,7 @@ public class GroupBudgetService {
         this.expenseRepository = expenseRepository;
         this.splitRepository = splitRepository;
         this.notificationService = notificationService;
+        this.notificationSettingsService = notificationSettingsService;
     }
 
     @Transactional
@@ -62,13 +66,20 @@ public class GroupBudgetService {
         budget.setSetBy(admin);
         GroupBudget saved = groupBudgetRepository.save(budget);
 
-        // Notify all members
-        groupMemberRepository.findByGroupIdAndStatus(groupId, "ACTIVE").forEach(gm ->
-                notificationService.createNotification(
-                        gm.getUser(), "GROUP_BUDGET_SET",
-                        "Group budget updated",
-                        "The budget for '" + group.getName() + "' has been set to ₹" + totalBudget,
-                        group.getId(), "GROUP"));
+        // Notify all members based on their notification settings
+        groupMemberRepository.findByGroupIdAndStatus(groupId, "ACTIVE").forEach(gm -> {
+            var settings = notificationSettingsService.getSettings(gm.getUser().getId());
+            boolean inAppEnabled = settings.getInAppNotifications() && settings.getBudgetUpdateEnabled();
+            boolean emailEnabled = settings.getEmailNotifications() && settings.getBudgetUpdateEnabled();
+            if (inAppEnabled || emailEnabled) {
+                String title = "Group budget updated";
+                String message = "The budget for '" + group.getName() + "' has been set to ₹" + totalBudget;
+                notificationService.dispatchNotification(
+                        gm.getUser(), inAppEnabled, emailEnabled,
+                        "BUDGET_UPDATED", title, message,
+                        group.getId(), "GROUP");
+            }
+        });
 
         return buildGroupBudgetStatus(group, saved, month);
     }

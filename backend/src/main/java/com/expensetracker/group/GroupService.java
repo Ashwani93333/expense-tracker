@@ -11,6 +11,7 @@ import com.expensetracker.model.GroupInvite;
 import com.expensetracker.model.GroupMember;
 import com.expensetracker.model.User;
 import com.expensetracker.notification.NotificationService;
+import com.expensetracker.notification.NotificationSettingsService;
 import com.expensetracker.repository.ExpenseGroupRepository;
 import com.expensetracker.repository.GroupInviteRepository;
 import com.expensetracker.repository.GroupMemberRepository;
@@ -35,6 +36,7 @@ public class GroupService {
     private final GroupInviteRepository inviteRepository;
     private final GroupRoleGuard roleGuard;
     private final NotificationService notificationService;
+    private final NotificationSettingsService notificationSettingsService;
     private final EmailService emailService;
 
     @Value("${app.frontend.base-url:http://localhost:5173}")
@@ -46,12 +48,14 @@ public class GroupService {
             GroupInviteRepository inviteRepository,
             GroupRoleGuard roleGuard,
             NotificationService notificationService,
+            NotificationSettingsService notificationSettingsService,
             EmailService emailService) {
         this.groupRepository = groupRepository;
         this.memberRepository = memberRepository;
         this.inviteRepository = inviteRepository;
         this.roleGuard = roleGuard;
         this.notificationService = notificationService;
+        this.notificationSettingsService = notificationSettingsService;
         this.emailService = emailService;
     }
 
@@ -115,11 +119,33 @@ public class GroupService {
         roleGuard.requireAdmin(groupId, user.getId());
         ExpenseGroup group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new ResourceNotFoundException("Group not found: " + groupId));
+        
+        boolean expiryDateChanged = req.getExpiresAt() != null && !req.getExpiresAt().equals(group.getExpiresAt());
+        
         if (req.getName() != null) group.setName(req.getName().trim());
         if (req.getDescription() != null) group.setDescription(req.getDescription());
         if (req.getExpiresAt() != null) group.setExpiresAt(req.getExpiresAt());
         ExpenseGroup saved = groupRepository.save(group);
         long count = memberRepository.countByGroupIdAndStatus(groupId, "ACTIVE");
+        
+        // Notify members if expiry date was updated
+        if (expiryDateChanged) {
+            memberRepository.findByGroupIdAndStatus(groupId, "ACTIVE").forEach(gm -> {
+                var settings = notificationSettingsService.getSettings(gm.getUser().getId());
+                boolean inAppEnabled = settings.getInAppNotifications() && settings.getExpiryDateUpdateEnabled();
+                boolean emailEnabled = settings.getEmailNotifications() && settings.getExpiryDateUpdateEnabled();
+                if (inAppEnabled || emailEnabled) {
+                    String title = "Group expiry date updated";
+                    String message = "The expiry date for '" + group.getName() + "' has been updated to " + 
+                            (saved.getExpiresAt() != null ? saved.getExpiresAt().toLocalDate().toString() : "no expiry");
+                    notificationService.dispatchNotification(
+                            gm.getUser(), inAppEnabled, emailEnabled,
+                            "EXPIRY_DATE_UPDATED", title, message,
+                            group.getId(), "GROUP");
+                }
+            });
+        }
+        
         return GroupDto.fromEntity(saved, count, "ADMIN");
     }
 

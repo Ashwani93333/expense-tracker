@@ -37,6 +37,9 @@ public class UpdateNotificationSettingsRequest {
     private String totalExpenditureThresholdType;
 
     private Boolean monthlySummaryEnabled;
+    private Boolean budgetUpdateEnabled;
+    private Boolean expiryDateUpdateEnabled;
+    private Boolean paymentApprovalEnabled;
 
     public Boolean getInAppNotifications() { return inAppNotifications; }
     public void setInAppNotifications(Boolean inAppNotifications) { this.inAppNotifications = inAppNotifications; }
@@ -62,4 +65,10 @@ public class UpdateNotificationSettingsRequest {
     public void setTotalExpenditureThresholdType(String totalExpenditureThresholdType) { this.totalExpenditureThresholdType = totalExpenditureThresholdType; }
     public Boolean getMonthlySummaryEnabled() { return monthlySummaryEnabled; }
     public void setMonthlySummaryEnabled(Boolean monthlySummaryEnabled) { this.monthlySummaryEnabled = monthlySummaryEnabled; }
+    public Boolean getBudgetUpdateEnabled() { return budgetUpdateEnabled; }
+    public void setBudgetUpdateEnabled(Boolean budgetUpdateEnabled) { this.budgetUpdateEnabled = budgetUpdateEnabled; }
+    public Boolean getExpiryDateUpdateEnabled() { return expiryDateUpdateEnabled; }
+    public void setExpiryDateUpdateEnabled(Boolean expiryDateUpdateEnabled) { this.expiryDateUpdateEnabled = expiryDateUpdateEnabled; }
+    public Boolean getPaymentApprovalEnabled() { return paymentApprovalEnabled; }
+    public void setPaymentApprovalEnabled(Boolean paymentApprovalEnabled) { this.paymentApprovalEnabled = paymentApprovalEnabled; }
 }

@@ -75,6 +75,19 @@ public class EmailNotificationService {
         } + (budgetName == null ? "" : " — " + budgetName);
     }
 
+    /** Sends a generic notification email for budget updates, expiry date updates, and payment approve/reject. */
+    public void sendGenericNotificationEmail(User user, String type, String title, String message) {
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            log.debug("User {} has no email; skipping generic notification email", user.getId());
+            return;
+        }
+        try {
+            emailService.sendGenericNotificationEmail(user.getEmail(), user.getFullName(), title, message);
+        } catch (RuntimeException e) {
+            log.warn("Generic notification email failed for user {}; continuing", user.getId(), e);
+        }
+    }
+
     /** Data payload for a budget alert email (personal, group, or category). */
     public static class BudgetAlertEmail {
         public String budgetName;

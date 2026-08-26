@@ -57,6 +57,22 @@ public class NotificationService {
         }
     }
 
+    /**
+     * Dispatches a notification through in-app and/or email channels based on user settings.
+     * Used for budget updates, expiry date updates, and payment approve/reject notifications.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void dispatchNotification(User user, boolean inAppEnabled, boolean emailEnabled,
+                                     String type, String title, String message,
+                                     UUID referenceId, String referenceType) {
+        if (inAppEnabled) {
+            inAppNotificationService.createNotification(user, type, title, message, referenceId, referenceType);
+        }
+        if (emailEnabled) {
+            emailNotificationService.sendGenericNotificationEmail(user, type, title, message);
+        }
+    }
+
     @Transactional(readOnly = true)
     public List<NotificationDto> getNotificationsForUser(UUID userId) {
         return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId)

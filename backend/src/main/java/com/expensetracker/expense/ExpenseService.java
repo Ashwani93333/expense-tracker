@@ -14,6 +14,7 @@ import com.expensetracker.expense.dto.UpdateExpenseRequest;
 import com.expensetracker.group.GroupRoleGuard;
 import com.expensetracker.model.*;
 import com.expensetracker.notification.NotificationService;
+import com.expensetracker.notification.NotificationSettingsService;
 import com.expensetracker.repository.*;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -44,6 +45,7 @@ public class ExpenseService {
     private final ApplicationEventPublisher eventPublisher;
     private final GroupRoleGuard groupRoleGuard;
     private final NotificationService notificationService;
+    private final NotificationSettingsService notificationSettingsService;
 
     public ExpenseService(
             ExpenseRepository expenseRepository,
@@ -55,7 +57,8 @@ public class ExpenseService {
             ExpenseCategoryClassifier categoryClassifier,
             ApplicationEventPublisher eventPublisher,
             GroupRoleGuard groupRoleGuard,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            NotificationSettingsService notificationSettingsService) {
         this.expenseRepository = expenseRepository;
         this.groupRepository = groupRepository;
         this.groupMemberRepository = groupMemberRepository;
@@ -66,6 +69,7 @@ public class ExpenseService {
         this.eventPublisher = eventPublisher;
         this.groupRoleGuard = groupRoleGuard;
         this.notificationService = notificationService;
+        this.notificationSettingsService = notificationSettingsService;
     }
 
     @Transactional
@@ -320,9 +324,15 @@ public class ExpenseService {
 
         User owner = saved.getUser();
         String amount = "₹" + saved.getAmount() + " for \"" + saved.getDescription() + "\"";
+        
+        // Get user's notification settings
+        var settings = notificationSettingsService.getSettings(owner.getId());
+        boolean inAppEnabled = settings.getInAppNotifications() && settings.getPaymentApprovalEnabled();
+        boolean emailEnabled = settings.getEmailNotifications() && settings.getPaymentApprovalEnabled();
+        
         if (approved) {
-            notificationService.createNotification(
-                    owner,
+            notificationService.dispatchNotification(
+                    owner, inAppEnabled, emailEnabled,
                     "EXPENSE_APPROVED",
                     "Payment approved",
                     reviewer.getFullName() + " approved your payment of " + amount + ".",
@@ -332,8 +342,8 @@ public class ExpenseService {
             eventPublisher.publishEvent(new ExpenseCreatedEvent(
                     owner.getId(), groupId, saved.getExpenseDate()));
         } else {
-            notificationService.createNotification(
-                    owner,
+            notificationService.dispatchNotification(
+                    owner, inAppEnabled, emailEnabled,
                     "EXPENSE_REJECTED",
                     "Payment rejected — moved to personal expenses",
                     reviewer.getFullName() + " rejected your group payment of " + amount + ". Reason: " + note.trim()

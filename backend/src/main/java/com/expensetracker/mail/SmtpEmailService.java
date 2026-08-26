@@ -83,6 +83,12 @@ public class SmtpEmailService implements EmailService {
                 templateService.renderGroupInvite(data));
     }
 
+    @Override
+    public boolean sendGenericNotificationEmail(String to, String recipientName, String subject, String message) {
+        String html = templateService.renderGenericNotification(recipientName, subject, message);
+        return sendHtml(to, subject, html);
+    }
+
     private boolean sendHtml(String to, String subject, String html) {
         try {
             MimeMessage message = mailSender.createMimeMessage();

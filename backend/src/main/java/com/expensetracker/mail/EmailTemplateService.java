@@ -80,6 +80,14 @@ public class EmailTemplateService {
         return templateEngine.process("mail/group-invite", context);
     }
 
+    public String renderGenericNotification(String recipientName, String subject, String message) {
+        Context context = commonContext();
+        context.setVariable("recipientName", recipientName);
+        context.setVariable("subject", subject);
+        context.setVariable("message", message);
+        return templateEngine.process("mail/generic-notification", context);
+    }
+
     private static Context commonContext() {
         Context context = new Context();
         context.setVariable("appName", "Expense Tracker");

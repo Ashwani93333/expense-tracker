@@ -159,6 +159,9 @@ CREATE TABLE IF NOT EXISTS user_notification_settings (
     total_expenditure_thresholds    TEXT,
     total_expenditure_threshold_type VARCHAR(10) DEFAULT 'AMOUNT',
     monthly_summary_enabled         BOOLEAN DEFAULT FALSE,
+    budget_update_enabled           BOOLEAN DEFAULT TRUE,
+    expiry_date_update_enabled      BOOLEAN DEFAULT TRUE,
+    payment_approval_enabled        BOOLEAN DEFAULT TRUE,
     created_at                      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at                      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uk_user_notification_settings_user UNIQUE (user_id)
@@ -248,6 +251,11 @@ ALTER TABLE groups ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP WITH TIME ZONE;
 ALTER TABLE user_notification_settings ADD COLUMN IF NOT EXISTS overall_budget_threshold_type VARCHAR(10) DEFAULT 'PERCENTAGE';
 ALTER TABLE user_notification_settings ADD COLUMN IF NOT EXISTS category_budget_threshold_type VARCHAR(10) DEFAULT 'PERCENTAGE';
 ALTER TABLE user_notification_settings ADD COLUMN IF NOT EXISTS total_expenditure_threshold_type VARCHAR(10) DEFAULT 'AMOUNT';
+
+-- Group notification settings.
+ALTER TABLE user_notification_settings ADD COLUMN IF NOT EXISTS budget_update_enabled BOOLEAN DEFAULT TRUE;
+ALTER TABLE user_notification_settings ADD COLUMN IF NOT EXISTS expiry_date_update_enabled BOOLEAN DEFAULT TRUE;
+ALTER TABLE user_notification_settings ADD COLUMN IF NOT EXISTS payment_approval_enabled BOOLEAN DEFAULT TRUE;
 
 -- ================= BACKWARD-COMPATIBLE BUDGET EVENT MIGRATION =================
 -- Upgrade pre-existing budget_notification_events tables (created by an older

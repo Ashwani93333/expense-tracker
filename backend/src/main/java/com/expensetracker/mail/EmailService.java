@@ -37,6 +37,13 @@ public interface EmailService {
      */
     boolean sendGroupInviteEmail(String to, GroupInviteEmailData data);
 
+    /**
+     * Generic notification email for budget updates, expiry date updates, and payment approve/reject.
+     *
+     * @return true when the mail sender accepted the message
+     */
+    boolean sendGenericNotificationEmail(String to, String recipientName, String subject, String message);
+
     /** Reusable value object for budget alert emails. */
     class BudgetAlertEmailData {
         public String title;

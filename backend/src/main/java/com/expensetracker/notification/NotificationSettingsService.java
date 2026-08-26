@@ -78,6 +78,15 @@ public class NotificationSettingsService {
         if (req.getMonthlySummaryEnabled() != null) {
             settings.setMonthlySummaryEnabled(req.getMonthlySummaryEnabled());
         }
+        if (req.getBudgetUpdateEnabled() != null) {
+            settings.setBudgetUpdateEnabled(req.getBudgetUpdateEnabled());
+        }
+        if (req.getExpiryDateUpdateEnabled() != null) {
+            settings.setExpiryDateUpdateEnabled(req.getExpiryDateUpdateEnabled());
+        }
+        if (req.getPaymentApprovalEnabled() != null) {
+            settings.setPaymentApprovalEnabled(req.getPaymentApprovalEnabled());
+        }
 
         return NotificationSettingsDto.fromEntity(settingsRepository.save(settings));
     }
