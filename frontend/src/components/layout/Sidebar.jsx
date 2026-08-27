@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   LayoutDashboard,
   ReceiptText,
@@ -11,8 +11,13 @@ import {
   BellRing,
   Wallet,
   Settings,
+  Download,
+  FileText,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
+import { ExportModal } from '../exports/ExportModal';
 
 const NAV_SECTIONS = [
   {
@@ -50,10 +55,23 @@ const NAV_SECTIONS = [
   },
 ];
 
+const EXPORT_OPTIONS = [
+  { id: 'personal', label: 'Personal Expenses', icon: FileText, description: 'Export your personal expense data' },
+  { id: 'group', label: 'Group Expenses', icon: Users, description: 'Export group expense reports' },
+];
+
 export const Sidebar = () => {
   const { activeTab, setActiveTab, groups } = useExpense();
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  const [exportType, setExportType] = useState('personal');
+  const [isExportExpanded, setIsExportExpanded] = useState(false);
 
   const isActive = (id) => activeTab === id || (id === 'groups' && activeTab === 'group-detail');
+
+  const handleExportClick = (type) => {
+    setExportType(type);
+    setIsExportOpen(true);
+  };
 
   const getBadge = (key) => {
     if (key === 'groups') return groups.length || null;
@@ -69,11 +87,10 @@ export const Sidebar = () => {
       display: 'flex',
       flexDirection: 'column',
       padding: '20px 12px',
-      minHeight: 'calc(100vh - var(--header-height))',
+      height: 'calc(100vh - var(--header-height))',
       position: 'sticky',
       top: 'var(--header-height)',
       alignSelf: 'flex-start',
-      overflowY: 'auto',
     }}>
 
       {NAV_SECTIONS.map(section => (
@@ -97,6 +114,7 @@ export const Sidebar = () => {
               <button
                 key={item.id}
                 id={`nav-${item.id}`}
+                className={`sidebar-nav-item ${active ? 'active' : ''}`}
                 onClick={() => setActiveTab(item.id)}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -110,6 +128,7 @@ export const Sidebar = () => {
                   transition: 'var(--t-fast)',
                   fontFamily: 'var(--font)',
                   textAlign: 'left',
+                  position: 'relative',
                 }}
                 onMouseEnter={e => {
                   if (!active) {
@@ -128,9 +147,9 @@ export const Sidebar = () => {
                   <Icon
                     size={17}
                     color={active ? '#1a1a1a' : item.highlight ? 'var(--accent)' : 'inherit'}
-                    style={{ flexShrink: 0 }}
+                    className="sidebar-icon"
                   />
-                  <span>{item.label}</span>
+                  <span className="sidebar-label">{item.label}</span>
                   {item.highlight && !active && (
                     <span style={{
                       fontSize: '0.58rem', fontWeight: 800,
@@ -159,6 +178,106 @@ export const Sidebar = () => {
         </div>
       ))}
 
+      {/* Export Section */}
+      <div style={{ marginBottom: '24px' }}>
+        <div style={{
+          fontSize: '0.65rem', fontWeight: 700, color: '#737373',
+          textTransform: 'uppercase', letterSpacing: '0.1em',
+          paddingLeft: '12px', marginBottom: '6px',
+        }}>
+          Export
+        </div>
+
+        {/* Export Toggle Button */}
+        <button
+          onClick={() => setIsExportExpanded(!isExportExpanded)}
+          className={`sidebar-nav-item ${isExportExpanded ? 'active' : ''}`}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '10px 12px', borderRadius: 'var(--r-md)', width: '100%',
+            border: 'none', marginBottom: '2px',
+            background: isExportExpanded ? 'rgba(183, 255, 0, 0.12)' : 'transparent',
+            color: isExportExpanded ? '#1a1a1a' : '#404040',
+            fontWeight: isExportExpanded ? 600 : 500,
+            fontSize: '0.855rem',
+            cursor: 'pointer',
+            transition: 'var(--t-fast)',
+            fontFamily: 'var(--font)',
+            textAlign: 'left',
+            position: 'relative',
+          }}
+          onMouseEnter={e => {
+            if (!isExportExpanded) {
+              e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
+              e.currentTarget.style.color = '#1a1a1a';
+            }
+          }}
+          onMouseLeave={e => {
+            if (!isExportExpanded) {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = '#404040';
+            }
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Download size={17} color={isExportExpanded ? '#1a1a1a' : 'inherit'} className="sidebar-icon" />
+            <span className="sidebar-label">Export Data</span>
+          </div>
+          <ChevronRight
+            size={14}
+            style={{
+              transform: isExportExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+              transition: 'transform 0.2s ease',
+              color: '#a3a3a3',
+            }}
+          />
+        </button>
+
+        {/* Export Sub-Items */}
+        {isExportExpanded && (
+          <div style={{ paddingLeft: '8px', marginTop: '4px' }}>
+            {EXPORT_OPTIONS.map(option => {
+              const Icon = option.icon;
+              return (
+                <button
+                  key={option.id}
+                  onClick={() => handleExportClick(option.id)}
+                  className="sidebar-nav-item"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    padding: '8px 12px', borderRadius: 'var(--r-md)', width: '100%',
+                    border: 'none', marginBottom: '2px',
+                    background: 'transparent',
+                    color: '#404040',
+                    fontWeight: 500,
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    transition: 'var(--t-fast)',
+                    fontFamily: 'var(--font)',
+                    textAlign: 'left',
+                    position: 'relative',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
+                    e.currentTarget.style.color = '#1a1a1a';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.color = '#404040';
+                  }}
+                >
+                  <Icon size={15} color="#737373" className="sidebar-icon" />
+                  <div className="sidebar-label">
+                    <div style={{ fontWeight: 600 }}>{option.label}</div>
+                    <div style={{ fontSize: '0.7rem', color: '#a3a3a3', marginTop: '1px' }}>{option.description}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {/* Bottom spacer */}
       <div style={{ flex: 1 }} />
 
@@ -176,6 +295,13 @@ export const Sidebar = () => {
           API · JWT auth
         </p>
       </div>
+
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={isExportOpen}
+        onClose={() => setIsExportOpen(false)}
+        exportType={exportType}
+      />
     </aside>
   );
 };

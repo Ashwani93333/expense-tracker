@@ -97,10 +97,10 @@ const AppContent = () => {
   const { activeTab, toastMessage } = useExpense();
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-page)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg-page)', overflow: 'hidden' }}>
       <Navbar />
 
-      <div style={{ display: 'flex', flex: 1, width: '100%' }}>
+      <div style={{ display: 'flex', flex: 1, width: '100%', overflow: 'hidden' }}>
         <Sidebar />
 
         <main style={{
@@ -109,6 +109,7 @@ const AppContent = () => {
           paddingBottom: 'calc(28px + 70px)',
           minWidth: 0,
           overflowX: 'hidden',
+          overflowY: 'auto',
           maxWidth: '1200px',
         }}
           className="main-content"

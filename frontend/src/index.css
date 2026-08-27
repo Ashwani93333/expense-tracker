@@ -738,7 +738,66 @@ select.input-field {
   width: 10px; height: 10px; border-radius: 50%;
 }
 
-/* ─── Mobile Bottom Nav ─────────────────────────────────────────────────────── */
+/* ─── Sidebar Independent Scroll ─────────────────────────────────────────────── */
+html, body {
+  overflow: hidden;
+  height: 100vh;
+}
+
+.desktop-sidebar {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #d4d4d4 transparent;
+}
+
+.desktop-sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.desktop-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.desktop-sidebar::-webkit-scrollbar-thumb {
+  background: #d4d4d4;
+  border-radius: 99px;
+}
+
+.desktop-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #a3a3a3;
+}
+
+/* ─── Sidebar Item Icon Visibility ───────────────────────────────────────────── */
+.sidebar-nav-item {
+  position: relative;
+}
+
+.sidebar-nav-item .sidebar-icon {
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  position: absolute;
+  left: 12px;
+}
+
+.sidebar-nav-item:hover .sidebar-icon,
+.sidebar-nav-item.active .sidebar-icon {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.sidebar-nav-item .sidebar-label {
+  opacity: 1;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.sidebar-nav-item:hover .sidebar-label,
+.sidebar-nav-item.active .sidebar-label {
+  transform: translateX(20px);
+}
+
+/* Mobile Bottom Nav ─────────────────────────────────────────────────────── */
 .mobile-nav {
   display: none;
   position: fixed;
