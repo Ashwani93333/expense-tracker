@@ -1,6 +1,8 @@
 package com.expensetracker.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -15,6 +17,8 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(UserAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleUserAlreadyExists(UserAlreadyExistsException ex, HttpServletRequest request) {
@@ -80,9 +84,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleValidationErrors(MethodArgumentNotValidException ex, HttpServletRequest request) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach((error) -> {
-            String fieldName = ((FieldError) error).getField();
-            String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
+            if (error instanceof FieldError fieldError) {
+                errors.put(fieldError.getField(), error.getDefaultMessage());
+            } else {
+                errors.put(error.getObjectName(), error.getDefaultMessage());
+            }
         });
 
         ErrorResponse error = ErrorResponse.builder()
@@ -98,11 +104,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex, HttpServletRequest request) {
+        log.error("Unhandled exception on {}: {}", request.getRequestURI(), ex.getMessage(), ex);
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(OffsetDateTime.now())
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .error(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase())
-                .message(ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred")
+                .message("An unexpected error occurred")
                 .path(request.getRequestURI())
                 .build();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);

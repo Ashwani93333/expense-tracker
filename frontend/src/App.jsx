@@ -16,6 +16,7 @@ import { AnalyticsCharts } from './components/analytics/AnalyticsCharts';
 import { CategoriesManager } from './components/categories/CategoriesManager';
 import { ExpenseFormModal } from './components/expenses/ExpenseFormModal';
 import { NotificationDrawer } from './components/notifications/NotificationDrawer';
+import { ExportModal } from './components/exports/ExportModal';
 import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
 
 const Toast = ({ message, type = 'success' }) => {
@@ -94,7 +95,7 @@ const AuthLoader = () => (
 );
 
 const AppContent = () => {
-  const { activeTab, toastMessage } = useExpense();
+  const { activeTab, toastMessage, isExportModalOpen, setIsExportModalOpen, exportModalType } = useExpense();
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg-page)', overflow: 'hidden' }}>
@@ -130,6 +131,11 @@ const AppContent = () => {
 
       <ExpenseFormModal />
       <NotificationDrawer />
+      <ExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        exportType={exportModalType}
+      />
 
       {toastMessage && (
         <div className="toast-container" style={{ position: 'fixed', bottom: '90px', right: '24px', zIndex: 9999, animation: 'slideIn 0.3s ease' }}>

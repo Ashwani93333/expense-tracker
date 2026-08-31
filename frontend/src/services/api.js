@@ -1,6 +1,7 @@
 // ─── Expense Tracker API Client ───────────────────────────────────────────────
 // Base URL: http://localhost:8080
 // Auth: JWT Bearer token stored in localStorage
+import { toQueryParams } from '../utils/dateFilter';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 const TOKEN_KEY = 'expense_tracker_token';
@@ -82,12 +83,13 @@ export const categoriesApi = {
 
 // ─── Personal Expenses API ────────────────────────────────────────────────────
 export const expensesApi = {
-  list: (month) => request('GET', '/api/expenses', null, { month }),
+  // filter: { mode, month, year, dateFrom, dateTo } OR a plain { month: 'YYYY-MM' }
+  list: (filter) => request('GET', '/api/expenses', null, toQueryParams(filter)),
   get: (id) => request('GET', `/api/expenses/${id}`),
   create: (payload) => request('POST', '/api/expenses', payload),
   update: (id, payload) => request('PUT', `/api/expenses/${id}`, payload),
   delete: (id) => request('DELETE', `/api/expenses/${id}`),
-  summary: (month) => request('GET', '/api/expenses/summary', null, { month }),
+  summary: (filter) => request('GET', '/api/expenses/summary', null, toQueryParams(filter)),
   updateSplits: (id, splits) => request('PATCH', `/api/expenses/${id}/splits`, splits),
   settleSplit: (expenseId, userId) => request('PATCH', `/api/expenses/${expenseId}/splits/${userId}/settle`),
   review: (id, payload) => request('PATCH', `/api/expenses/${id}/approval`, payload),
@@ -113,23 +115,23 @@ export const groupsApi = {
   removeMember: (id, userId) => request('DELETE', `/api/groups/${id}/members/${userId}`),
   updateMemberRole: (id, userId, payload) => request('PATCH', `/api/groups/${id}/members/${userId}/role`, payload),
   // Group Expenses
-  listExpenses: (id, month, status) => request('GET', `/api/groups/${id}/expenses`, null, { month, status }),
+  listExpenses: (id, filter, status) => request('GET', `/api/groups/${id}/expenses`, null, { ...toQueryParams(filter), status }),
   createExpense: (id, payload) => request('POST', `/api/groups/${id}/expenses`, payload),
-  // Group Budget
+  // Group Budget (setting is always monthly)
   setBudget: (id, month, payload) => request('PUT', `/api/groups/${id}/budget`, payload, { month }),
-  getBudgetStatus: (id, month) => request('GET', `/api/groups/${id}/budget/status`, null, { month }),
+  getBudgetStatus: (id, filter) => request('GET', `/api/groups/${id}/budget/status`, null, toQueryParams(filter)),
   setMemberBudget: (id, userId, month, payload) => request('PUT', `/api/groups/${id}/members/${userId}/budget`, payload, { month }),
-  getMemberBudgets: (id, month) => request('GET', `/api/groups/${id}/members/budgets`, null, { month }),
+  getMemberBudgets: (id, filter) => request('GET', `/api/groups/${id}/members/budgets`, null, toQueryParams(filter)),
   // Group Reports
-  getSettlements: (id, month) => request('GET', `/api/groups/${id}/settlements`, null, { month }),
-  getMonthlyReport: (id, month) => request('GET', `/api/groups/${id}/reports/monthly`, null, { month }),
-  getAnalytics: (id, month) => request('GET', `/api/groups/${id}/reports/analytics`, null, { month }),
+  getSettlements: (id, filter) => request('GET', `/api/groups/${id}/settlements`, null, toQueryParams(filter)),
+  getMonthlyReport: (id, filter) => request('GET', `/api/groups/${id}/reports/monthly`, null, toQueryParams(filter)),
+  getAnalytics: (id, filter) => request('GET', `/api/groups/${id}/reports/analytics`, null, toQueryParams(filter)),
 };
 
 // ─── Personal Budgets API ─────────────────────────────────────────────────────
 export const budgetsApi = {
   set: (month, payload) => request('PUT', '/api/users/me/budget', payload, { month }),
-  getStatus: (month) => request('GET', '/api/users/me/budget/status', null, { month }),
+  getStatus: (filter) => request('GET', '/api/users/me/budget/status', null, toQueryParams(filter)),
 };
 
 // ─── Category Expense Limits API ──────────────────────────────────────────────

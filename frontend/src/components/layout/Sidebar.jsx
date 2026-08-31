@@ -17,7 +17,6 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
-import { ExportModal } from '../exports/ExportModal';
 
 const NAV_SECTIONS = [
   {
@@ -61,16 +60,14 @@ const EXPORT_OPTIONS = [
 ];
 
 export const Sidebar = () => {
-  const { activeTab, setActiveTab, groups } = useExpense();
-  const [isExportOpen, setIsExportOpen] = useState(false);
-  const [exportType, setExportType] = useState('personal');
+  const { activeTab, setActiveTab, groups, setIsExportModalOpen, setExportModalType } = useExpense();
   const [isExportExpanded, setIsExportExpanded] = useState(false);
 
   const isActive = (id) => activeTab === id || (id === 'groups' && activeTab === 'group-detail');
 
   const handleExportClick = (type) => {
-    setExportType(type);
-    setIsExportOpen(true);
+    setExportModalType(type);
+    setIsExportModalOpen(true);
   };
 
   const getBadge = (key) => {
@@ -84,6 +81,7 @@ export const Sidebar = () => {
       flexShrink: 0,
       background: '#ffffff',
       borderRight: '1px solid #e5e5e5',
+      boxShadow: '4px 0 24px -4px rgba(0,0,0,0.06)',
       display: 'flex',
       flexDirection: 'column',
       padding: '20px 12px',
@@ -295,13 +293,6 @@ export const Sidebar = () => {
           API · JWT auth
         </p>
       </div>
-
-      {/* Export Modal */}
-      <ExportModal
-        isOpen={isExportOpen}
-        onClose={() => setIsExportOpen(false)}
-        exportType={exportType}
-      />
     </aside>
   );
 };

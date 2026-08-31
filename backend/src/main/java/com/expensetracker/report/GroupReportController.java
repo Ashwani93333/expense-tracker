@@ -29,8 +29,12 @@ public class GroupReportController {
     public ResponseEntity<List<SettlementSummaryDto>> getSettlements(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable UUID id,
-            @RequestParam(required = false) String month) {
-        return ResponseEntity.ok(settlementService.computeSettlements(principal.getId(), id, month));
+            @RequestParam(required = false) String month,
+            @RequestParam(required = false) String year,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo) {
+        return ResponseEntity.ok(settlementService.computeSettlements(principal.getId(), id,
+                month, year, dateFrom, dateTo));
     }
 
     /** GET /api/groups/{id}/reports/monthly?month=2026-08 */
@@ -38,8 +42,12 @@ public class GroupReportController {
     public ResponseEntity<GroupMonthlyReportDto> getMonthlyReport(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable UUID id,
-            @RequestParam(required = false) String month) {
-        return ResponseEntity.ok(groupReportService.getMonthlyReport(principal.getId(), id, month));
+            @RequestParam(required = false) String month,
+            @RequestParam(required = false) String year,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo) {
+        return ResponseEntity.ok(groupReportService.getMonthlyReport(principal.getId(), id,
+                month, year, dateFrom, dateTo));
     }
 
     /** GET /api/groups/{id}/reports/analytics?month=2026-08 */
@@ -47,7 +55,11 @@ public class GroupReportController {
     public ResponseEntity<GroupAnalyticsDto> getAnalytics(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable UUID id,
-            @RequestParam(required = false) String month) {
-        return ResponseEntity.ok(groupReportService.getAnalytics(principal.getId(), id, month));
+            @RequestParam(required = false) String month,
+            @RequestParam(required = false) String year,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo) {
+        return ResponseEntity.ok(groupReportService.getAnalytics(principal.getId(), id,
+                month, year, dateFrom, dateTo));
     }
 }

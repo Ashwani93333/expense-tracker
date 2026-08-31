@@ -2,6 +2,7 @@ package com.expensetracker.budget;
 
 import com.expensetracker.budget.dto.BudgetStatusResponse;
 import com.expensetracker.budget.dto.SetBudgetRequest;
+import com.expensetracker.common.DateRangeResolver;
 import com.expensetracker.exception.ResourceNotFoundException;
 import com.expensetracker.model.Category;
 import com.expensetracker.model.User;
@@ -14,8 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.YearMonth;
+import java.util.*;
 
 @Service
 public class BudgetService {
@@ -62,25 +63,69 @@ public class BudgetService {
     }
 
     @Transactional(readOnly = true)
-    public List<BudgetStatusResponse> getPersonalBudgetStatus(User user, String monthParam) {
-        LocalDate month = parseMonth(monthParam);
-        LocalDate start = month.withDayOfMonth(1);
-        LocalDate end = month.withDayOfMonth(month.lengthOfMonth());
+    public List<BudgetStatusResponse> getPersonalBudgetStatus(User user, String monthParam,
+                                                              String year, String dateFrom, String dateTo) {
+        LocalDate[] range = DateRangeResolver.resolve(monthParam, year, dateFrom, dateTo);
+        LocalDate start = range[0];
+        LocalDate end = range[1];
 
-        List<UserBudget> budgets = userBudgetRepository.findByUserIdAndMonth(user.getId(), month);
-        List<BudgetStatusResponse> responses = new ArrayList<>();
-
-        for (UserBudget b : budgets) {
-            BigDecimal spent;
-            if (b.getCategory() == null) {
-                spent = expenseRepository.sumPersonalExpensesForMonth(user.getId(), start, end);
-            } else {
-                spent = expenseRepository.sumPersonalExpensesByCategoryForMonth(
-                        user.getId(), b.getCategory().getId(), start, end);
+        // Single full month → return that month's budgets verbatim (id preserved).
+        boolean fullMonth = start.getDayOfMonth() == 1
+                && end.getDayOfMonth() == end.lengthOfMonth()
+                && YearMonth.from(start).equals(YearMonth.from(end));
+        if (fullMonth) {
+            LocalDate month = start;
+            List<UserBudget> budgets = userBudgetRepository.findByUserIdAndMonth(user.getId(), month);
+            List<BudgetStatusResponse> responses = new ArrayList<>();
+            for (UserBudget b : budgets) {
+                BigDecimal spent;
+                if (b.getCategory() == null) {
+                    spent = expenseRepository.sumPersonalExpensesForMonth(user.getId(), start, end);
+                } else {
+                    spent = expenseRepository.sumPersonalExpensesByCategoryForMonth(
+                            user.getId(), b.getCategory().getId(), start, end);
+                }
+                responses.add(BudgetStatusResponse.of(b.getId(), month, b.getBudgetLimit(), spent,
+                        b.getCategory() != null ? b.getCategory().getId() : null,
+                        b.getCategory() != null ? b.getCategory().getName() : null));
             }
-            responses.add(BudgetStatusResponse.of(b.getId(), month, b.getBudgetLimit(), spent,
-                    b.getCategory() != null ? b.getCategory().getId() : null,
-                    b.getCategory() != null ? b.getCategory().getName() : null));
+            return responses;
+        }
+
+        // Aggregated view for year / custom range: sum monthly budgets per budget
+        // slot, spent reflects the whole range.
+        Map<UUID, BigDecimal> limits = new LinkedHashMap<>();
+        Map<UUID, String> categoryNames = new LinkedHashMap<>();
+        BigDecimal overallLimit = BigDecimal.ZERO;
+        boolean hasOverall = false;
+
+        YearMonth ym = YearMonth.from(start);
+        YearMonth endYm = YearMonth.from(end);
+        while (!ym.isAfter(endYm)) {
+            List<UserBudget> budgets = userBudgetRepository.findByUserIdAndMonth(user.getId(), ym.atDay(1));
+            for (UserBudget b : budgets) {
+                if (b.getCategory() == null) {
+                    overallLimit = overallLimit.add(b.getBudgetLimit());
+                    hasOverall = true;
+                } else {
+                    UUID catId = b.getCategory().getId();
+                    limits.merge(catId, b.getBudgetLimit(), BigDecimal::add);
+                    categoryNames.put(catId, b.getCategory().getName());
+                }
+            }
+            ym = ym.plusMonths(1);
+        }
+
+        List<BudgetStatusResponse> responses = new ArrayList<>();
+        if (hasOverall) {
+            BigDecimal spent = expenseRepository.sumPersonalExpensesForMonth(user.getId(), start, end);
+            responses.add(BudgetStatusResponse.of(null, start, overallLimit, spent, null, null));
+        }
+        for (Map.Entry<UUID, BigDecimal> e : limits.entrySet()) {
+            BigDecimal spent = expenseRepository.sumPersonalExpensesByCategoryForMonth(
+                    user.getId(), e.getKey(), start, end);
+            responses.add(BudgetStatusResponse.of(null, start, e.getValue(), spent,
+                    e.getKey(), categoryNames.get(e.getKey())));
         }
         return responses;
     }

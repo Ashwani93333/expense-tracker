@@ -74,20 +74,6 @@ export const ReceiptScanner = () => {
 
   const fileInputRef = useRef(null);
 
-  const simulateScanSteps = (callback) => {
-    let step = 0;
-    const total = SCAN_STEPS.length;
-    const interval = setInterval(() => {
-      step++;
-      setScanStep(step);
-      setScanProgress(Math.round((step / total) * 100));
-      if (step >= total - 1) {
-        clearInterval(interval);
-        setTimeout(callback, 400);
-      }
-    }, 600);
-  };
-
   const handleFileUpload = async (file) => {
     if (!file) return;
     setError('');
@@ -159,10 +145,20 @@ export const ReceiptScanner = () => {
     setScanStep(0);
     setScanProgress(0);
 
-    simulateScanSteps(() => {
-      const cat = categories.find(c => c.name?.includes(template.categoryName.split(' ')[0])) || categories[0];
-      applyScannedData({ ...template, categoryId: cat?.id });
-    });
+    let step = 0;
+    const total = SCAN_STEPS.length;
+    const interval = setInterval(() => {
+      step++;
+      setScanStep(step);
+      setScanProgress(Math.round((step / total) * 100));
+      if (step >= total - 1) {
+        clearInterval(interval);
+        setTimeout(() => {
+          const cat = categories.find(c => c.name?.includes(template.categoryName.split(' ')[0])) || categories[0];
+          applyScannedData({ ...template, categoryId: cat?.id });
+        }, 400);
+      }
+    }, 600);
   };
 
   const handleConfirm = async () => {

@@ -41,9 +41,12 @@ public class ExpenseController {
     @GetMapping
     public ResponseEntity<List<ExpenseDto>> listExpenses(
             @AuthenticationPrincipal UserPrincipal principal,
-            @RequestParam(required = false) String month) {
+            @RequestParam(required = false) String month,
+            @RequestParam(required = false) String year,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo) {
         User user = resolveUser(principal);
-        return ResponseEntity.ok(expenseService.getPersonalExpenses(user, month));
+        return ResponseEntity.ok(expenseService.getPersonalExpenses(user, month, year, dateFrom, dateTo));
     }
 
     @GetMapping("/{id}")
@@ -73,11 +76,14 @@ public class ExpenseController {
     }
 
     @GetMapping("/summary")
-    public ResponseEntity<Map<String, Object>> getMonthlySummary(
+    public ResponseEntity<Map<String, Object>> getSummary(
             @AuthenticationPrincipal UserPrincipal principal,
-            @RequestParam(required = false) String month) {
+            @RequestParam(required = false) String month,
+            @RequestParam(required = false) String year,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo) {
         User user = resolveUser(principal);
-        return ResponseEntity.ok(expenseService.getMonthlySummary(user, month));
+        return ResponseEntity.ok(expenseService.getMonthlySummary(user, month, year, dateFrom, dateTo));
     }
 
     @PatchMapping("/{id}/splits")

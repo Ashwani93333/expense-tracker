@@ -1,6 +1,7 @@
 package com.expensetracker.budget;
 
 import com.expensetracker.budget.dto.*;
+import com.expensetracker.common.DateRangeResolver;
 import com.expensetracker.exception.AccessDeniedException;
 import com.expensetracker.exception.ResourceNotFoundException;
 import com.expensetracker.model.*;
@@ -12,8 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -81,20 +84,17 @@ public class GroupBudgetService {
             }
         });
 
-        return buildGroupBudgetStatus(group, saved, month);
+        return buildGroupBudgetStatus(group, month, month);
     }
 
     @Transactional(readOnly = true)
-    public GroupBudgetStatusResponse getGroupBudgetStatus(User user, UUID groupId, String monthParam) {
+    public GroupBudgetStatusResponse getGroupBudgetStatus(User user, UUID groupId, String monthParam,
+                                                          String year, String dateFrom, String dateTo) {
         requireMember(groupId, user.getId());
         ExpenseGroup group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new ResourceNotFoundException("Group not found: " + groupId));
-        LocalDate month = BudgetService.parseMonth(monthParam);
-
-        GroupBudget budget = groupBudgetRepository.findByGroupIdAndMonth(groupId, month)
-                .orElseThrow(() -> new ResourceNotFoundException("No budget set for this group/month"));
-
-        return buildGroupBudgetStatus(group, budget, month);
+        LocalDate[] range = DateRangeResolver.resolve(monthParam, year, dateFrom, dateTo);
+        return buildGroupBudgetStatus(group, range[0], range[1]);
     }
 
     @Transactional
@@ -127,29 +127,44 @@ public class GroupBudgetService {
     }
 
     @Transactional(readOnly = true)
-    public List<MemberBudgetDto> getMemberBudgets(User user, UUID groupId, String monthParam) {
+    public List<MemberBudgetDto> getMemberBudgets(User user, UUID groupId, String monthParam,
+                                                  String year, String dateFrom, String dateTo) {
         requireMember(groupId, user.getId());
-        LocalDate month = BudgetService.parseMonth(monthParam);
-        List<GroupMemberBudget> caps = memberBudgetRepository.findByGroupIdAndMonth(groupId, month);
+        LocalDate[] range = DateRangeResolver.resolve(monthParam, year, dateFrom, dateTo);
+        LocalDate start = range[0];
+        LocalDate end = range[1];
 
+        List<GroupMember> members = groupMemberRepository.findByGroupIdAndStatus(groupId, "ACTIVE");
         List<MemberBudgetDto> result = new ArrayList<>();
-        for (GroupMemberBudget cap : caps) {
-            result.add(buildMemberBudgetDto(cap, groupId, month));
+        for (GroupMember gm : members) {
+            BigDecimal spent = splitRepository.sumMemberShareInGroupForMonth(gm.getUser().getId(), groupId, start, end);
+            BigDecimal cap = sumMemberBudgetOverRange(groupId, gm.getUser().getId(), start, end);
+            MemberBudgetDto dto = new MemberBudgetDto();
+            dto.setUserId(gm.getUser().getId());
+            dto.setUserName(gm.getUser().getFullName());
+            dto.setMonth(start);
+            if (cap != null) {
+                dto.setBudgetLimit(cap);
+                dto.setSpent(spent);
+                dto.setRemaining(cap.subtract(spent));
+                double mPct = cap.compareTo(BigDecimal.ZERO) == 0 ? 0.0
+                        : spent.doubleValue() / cap.doubleValue() * 100.0;
+                dto.setPercentUsed(Math.round(mPct * 10.0) / 10.0);
+                dto.setStatus(mPct >= 100 ? "EXCEEDED" : mPct >= 80 ? "WARNING" : "OK");
+            } else {
+                dto.setSpent(spent);
+            }
+            result.add(dto);
         }
         return result;
     }
 
     // --- private helpers ---
 
-    private GroupBudgetStatusResponse buildGroupBudgetStatus(ExpenseGroup group, GroupBudget budget, LocalDate month) {
-        LocalDate start = month.withDayOfMonth(1);
-        LocalDate end = month.withDayOfMonth(month.lengthOfMonth());
-
+    /** Builds a status response for an arbitrary (possibly multi-month) range. */
+    private GroupBudgetStatusResponse buildGroupBudgetStatus(ExpenseGroup group, LocalDate start, LocalDate end) {
+        BigDecimal totalBudget = sumGroupBudgetOverRange(group.getId(), start, end);
         BigDecimal spent = expenseRepository.sumGroupExpensesForMonth(group.getId(), start, end);
-        BigDecimal totalBudget = budget.getTotalBudget();
-        BigDecimal remaining = totalBudget.subtract(spent);
-        double pct = totalBudget.compareTo(BigDecimal.ZERO) == 0 ? 0.0
-                : spent.doubleValue() / totalBudget.doubleValue() * 100.0;
 
         // Build per-member breakdown
         List<GroupMember> members = groupMemberRepository.findByGroupIdAndStatus(group.getId(), "ACTIVE");
@@ -160,32 +175,74 @@ public class GroupBudgetService {
             MemberBudgetDto mdto = new MemberBudgetDto();
             mdto.setUserId(gm.getUser().getId());
             mdto.setUserName(gm.getUser().getFullName());
-            mdto.setMonth(month);
+            mdto.setMonth(start);
             mdto.setSpent(memberSpent);
 
-            memberBudgetRepository.findByGroupIdAndUserIdAndMonth(group.getId(), gm.getUser().getId(), month)
-                    .ifPresent(cap -> {
-                        mdto.setBudgetLimit(cap.getBudgetLimit());
-                        mdto.setRemaining(cap.getBudgetLimit().subtract(memberSpent));
-                        double mPct = cap.getBudgetLimit().compareTo(BigDecimal.ZERO) == 0 ? 0.0
-                                : memberSpent.doubleValue() / cap.getBudgetLimit().doubleValue() * 100.0;
-                        mdto.setPercentUsed(Math.round(mPct * 10.0) / 10.0);
-                        mdto.setStatus(mPct >= 100 ? "EXCEEDED" : mPct >= 80 ? "WARNING" : "OK");
-                    });
+            BigDecimal cap = sumMemberBudgetOverRange(group.getId(), gm.getUser().getId(), start, end);
+            if (cap != null) {
+                mdto.setBudgetLimit(cap);
+                mdto.setRemaining(cap.subtract(memberSpent));
+                double mPct = cap.compareTo(BigDecimal.ZERO) == 0 ? 0.0
+                        : memberSpent.doubleValue() / cap.doubleValue() * 100.0;
+                mdto.setPercentUsed(Math.round(mPct * 10.0) / 10.0);
+                mdto.setStatus(mPct >= 100 ? "EXCEEDED" : mPct >= 80 ? "WARNING" : "OK");
+            }
             memberBreakdown.add(mdto);
         }
 
         GroupBudgetStatusResponse resp = new GroupBudgetStatusResponse();
         resp.setGroupId(group.getId());
         resp.setGroupName(group.getName());
-        resp.setMonth(month);
-        resp.setTotalBudget(totalBudget);
+        resp.setMonth(start);
+        if (totalBudget != null) {
+            BigDecimal remaining = totalBudget.subtract(spent);
+            double pct = totalBudget.compareTo(BigDecimal.ZERO) == 0 ? 0.0
+                    : spent.doubleValue() / totalBudget.doubleValue() * 100.0;
+            resp.setTotalBudget(totalBudget);
+            resp.setRemaining(remaining);
+            resp.setPercentUsed(Math.round(pct * 10.0) / 10.0);
+            resp.setStatus(pct >= 100 ? "EXCEEDED" : pct >= 80 ? "WARNING" : "OK");
+        } else {
+            resp.setStatus("NO_BUDGET");
+        }
         resp.setTotalSpent(spent);
-        resp.setRemaining(remaining);
-        resp.setPercentUsed(Math.round(pct * 10.0) / 10.0);
-        resp.setStatus(pct >= 100 ? "EXCEEDED" : pct >= 80 ? "WARNING" : "OK");
         resp.setMemberBreakdown(memberBreakdown);
         return resp;
+    }
+
+    /** Sums the overall group budget across every month in the range (null if none set). */
+    private BigDecimal sumGroupBudgetOverRange(UUID groupId, LocalDate start, LocalDate end) {
+        BigDecimal total = BigDecimal.ZERO;
+        boolean found = false;
+        YearMonth ym = YearMonth.from(start);
+        YearMonth endYm = YearMonth.from(end);
+        while (!ym.isAfter(endYm)) {
+            Optional<GroupBudget> b = groupBudgetRepository.findByGroupIdAndMonth(groupId, ym.atDay(1));
+            if (b.isPresent()) {
+                total = total.add(b.get().getTotalBudget());
+                found = true;
+            }
+            ym = ym.plusMonths(1);
+        }
+        return found ? total : null;
+    }
+
+    /** Sums a member's monthly budget cap across every month in the range (null if none set). */
+    private BigDecimal sumMemberBudgetOverRange(UUID groupId, UUID userId, LocalDate start, LocalDate end) {
+        BigDecimal total = BigDecimal.ZERO;
+        boolean found = false;
+        YearMonth ym = YearMonth.from(start);
+        YearMonth endYm = YearMonth.from(end);
+        while (!ym.isAfter(endYm)) {
+            Optional<GroupMemberBudget> b = memberBudgetRepository
+                    .findByGroupIdAndUserIdAndMonth(groupId, userId, ym.atDay(1));
+            if (b.isPresent()) {
+                total = total.add(b.get().getBudgetLimit());
+                found = true;
+            }
+            ym = ym.plusMonths(1);
+        }
+        return found ? total : null;
     }
 
     private MemberBudgetDto buildMemberBudgetDto(GroupMemberBudget cap, UUID groupId, LocalDate month) {

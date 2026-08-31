@@ -2,6 +2,8 @@ package com.expensetracker.expense.ocr;
 
 import com.expensetracker.security.UserPrincipal;
 import com.expensetracker.storage.StorageService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +18,8 @@ import java.security.NoSuchAlgorithmException;
 @RestController
 @RequestMapping("/api/expenses/receipt")
 public class ReceiptAnalysisController {
+
+    private static final Logger log = LoggerFactory.getLogger(ReceiptAnalysisController.class);
 
     private final StorageService storageService;
     private final ReceiptAnalysisService receiptAnalysisService;
@@ -40,6 +44,7 @@ public class ReceiptAnalysisController {
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            log.error("Receipt analysis failed for user {}: {}", principal.getId(), e.getMessage(), e);
             return ResponseEntity.internalServerError().build();
         }
     }

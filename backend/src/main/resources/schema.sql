@@ -236,8 +236,11 @@ ALTER TABLE expenses ADD COLUMN IF NOT EXISTS category_source VARCHAR(20);
 ALTER TABLE expenses ADD COLUMN IF NOT EXISTS category_confidence DOUBLE PRECISION;
 
 -- Receipt deduplication: SHA-256 hash of the receipt file.
+-- PostgreSQL partial-index WHERE clause is omitted so the same DDL also runs
+-- on H2 (test profile). NULL hashes remain unindexed-equivalent because NULLs
+-- are always distinct in a unique index.
 ALTER TABLE expenses ADD COLUMN IF NOT EXISTS receipt_hash VARCHAR(64);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_expenses_receipt_hash ON expenses(receipt_hash) WHERE receipt_hash IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_expenses_receipt_hash ON expenses(receipt_hash);
 
 -- Invite email delivery tracking.
 ALTER TABLE group_invites ADD COLUMN IF NOT EXISTS email_status VARCHAR(20);

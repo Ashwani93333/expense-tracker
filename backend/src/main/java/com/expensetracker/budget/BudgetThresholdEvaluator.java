@@ -303,6 +303,7 @@ public class BudgetThresholdEvaluator {
                     + " on " + catName + " this month, exceeding your limit of "
                     + MoneyFormatter.format(limit.getLimitAmount()) + ".";
             UserNotificationSettings settings = settingsRepository.findByUserId(user.getId()).orElse(null);
+            if (settings == null) continue;
             dispatchIfNotSent(user, settings, type, title, message, limit.getId(), limit.getCategory().getId(),
                     null, start, limit.getLimitAmount().intValue(), true,
                     catName, limit.getLimitAmount(), spent,

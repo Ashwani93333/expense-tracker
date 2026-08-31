@@ -5,6 +5,7 @@ import { useExpense } from '../../context/ExpenseContext';
 import { expensesApi } from '../../services/api';
 import { PageHeader } from '../ui/PageHeader';
 import { InsightCard } from '../ui/InsightCard';
+import { DateFilterBar } from '../layout/DateFilterBar';
 
 const PALETTE = ['#B7FF00', '#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6', '#ec4899'];
 
@@ -23,7 +24,7 @@ const CustomCenterLabel = ({ viewBox, totalSpent }) => {
 };
 
 export const AnalyticsCharts = () => {
-  const { expenses, currentMonth, setCurrentMonth } = useExpense();
+  const { expenses, dateFilter, setDateFilter } = useExpense();
 
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -32,7 +33,7 @@ export const AnalyticsCharts = () => {
     const fetchSummary = async () => {
       setLoading(true);
       try {
-        const data = await expensesApi.summary(currentMonth);
+        const data = await expensesApi.summary(dateFilter);
         setSummary(data);
       } catch {
         setSummary(null);
@@ -41,7 +42,7 @@ export const AnalyticsCharts = () => {
       }
     };
     fetchSummary();
-  }, [currentMonth, expenses.length]);
+  }, [dateFilter, expenses.length]);
 
   const categoryPieData = summary?.categoryBreakdown?.length > 0
     ? summary.categoryBreakdown.map((c, i) => ({ name: c.categoryName, value: c.total, color: PALETTE[i % PALETTE.length] }))
@@ -88,13 +89,15 @@ export const AnalyticsCharts = () => {
 
   const topCat = categoryPieData[0];
   const insightText = topCat && totalSpent > 0
-    ? `Your ${topCat.name} spending is ₹${topCat.value.toLocaleString('en-IN')} this month, representing ${((topCat.value / totalSpent) * 100).toFixed(1)}% of your total spending.`
+    ? `Your ${topCat.name} spending is ₹${topCat.value.toLocaleString('en-IN')} in this period, representing ${((topCat.value / totalSpent) * 100).toFixed(1)}% of your total spending.`
     : null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
-      {/* Header with month picker */}
+      {/* Header with date filter */}
+      <DateFilterBar />
+
       <PageHeader
         icon={TrendingUp}
         badge="Analytics"
@@ -102,14 +105,7 @@ export const AnalyticsCharts = () => {
         subtitle="Understand where your money goes."
         actions={
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <input
-              type="month"
-              value={currentMonth}
-              onChange={e => setCurrentMonth(e.target.value)}
-              className="input-field"
-              style={{ fontSize: '0.83rem', cursor: 'pointer', maxWidth: '180px' }}
-            />
-            <button className="btn btn-secondary btn-sm" onClick={() => {}} title="Refresh">
+            <button className="btn btn-secondary btn-sm" onClick={() => setDateFilter(prev => ({ ...prev }))} title="Refresh">
               <RefreshCw size={14} />
             </button>
           </div>

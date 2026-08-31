@@ -1,6 +1,5 @@
 import React from 'react';
 import { Plus, ScanLine } from 'lucide-react';
-import { useExpense } from '../../context/ExpenseContext';
 
 export const EmptyState = ({
   icon: Icon,

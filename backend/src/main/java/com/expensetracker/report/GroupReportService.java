@@ -1,5 +1,6 @@
 package com.expensetracker.report;
 
+import com.expensetracker.common.DateRangeResolver;
 import com.expensetracker.exception.AccessDeniedException;
 import com.expensetracker.exception.ResourceNotFoundException;
 import com.expensetracker.model.*;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -41,18 +43,18 @@ public class GroupReportService {
     }
 
     @Transactional(readOnly = true)
-    public GroupMonthlyReportDto getMonthlyReport(UUID userId, UUID groupId, String monthParam) {
+    public GroupMonthlyReportDto getMonthlyReport(UUID userId, UUID groupId, String monthParam,
+                                                  String year, String dateFrom, String dateTo) {
         requireMember(groupId, userId);
         ExpenseGroup group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new ResourceNotFoundException("Group not found: " + groupId));
 
-        LocalDate month = parseMonth(monthParam);
-        LocalDate start = month.withDayOfMonth(1);
-        LocalDate end = month.withDayOfMonth(month.lengthOfMonth());
+        LocalDate[] range = DateRangeResolver.resolve(monthParam, year, dateFrom, dateTo);
+        LocalDate start = range[0];
+        LocalDate end = range[1];
 
         BigDecimal totalSpent = expenseRepository.sumGroupExpensesForMonth(groupId, start, end);
-        BigDecimal totalBudget = groupBudgetRepository.findByGroupIdAndMonth(groupId, month)
-                .map(GroupBudget::getTotalBudget).orElse(null);
+        BigDecimal totalBudget = sumGroupBudgetOverRange(groupId, start, end);
 
         // Category breakdown
         List<Object[]> catRows = expenseRepository.categoryBreakdownGroup(groupId, start, end);
@@ -82,13 +84,13 @@ public class GroupReportService {
             m.put("userId", gm.getUser().getId().toString());
             m.put("userName", gm.getUser().getFullName());
             m.put("spent", memberSpent);
-            memberBudgetRepository.findByGroupIdAndUserIdAndMonth(groupId, gm.getUser().getId(), month)
-                    .ifPresent(cap -> {
-                        m.put("budgetLimit", cap.getBudgetLimit());
-                        double pct = cap.getBudgetLimit().compareTo(BigDecimal.ZERO) == 0 ? 0.0
-                                : memberSpent.doubleValue() / cap.getBudgetLimit().doubleValue() * 100;
-                        m.put("pctUsed", Math.round(pct * 10.0) / 10.0);
-                    });
+            BigDecimal cap = sumMemberBudgetOverRange(groupId, gm.getUser().getId(), start, end);
+            if (cap != null) {
+                m.put("budgetLimit", cap);
+                double pct = cap.compareTo(BigDecimal.ZERO) == 0 ? 0.0
+                        : memberSpent.doubleValue() / cap.doubleValue() * 100;
+                m.put("pctUsed", Math.round(pct * 10.0) / 10.0);
+            }
             memberBreakdown.add(m);
         }
 
@@ -124,7 +126,7 @@ public class GroupReportService {
         GroupMonthlyReportDto dto = new GroupMonthlyReportDto();
         dto.setGroupId(groupId);
         dto.setGroupName(group.getName());
-        dto.setMonth(month);
+        dto.setMonth(start);
         dto.setTotalSpent(totalSpent);
         dto.setTotalBudget(totalBudget);
         dto.setBudgetPercentUsed(budgetPct);
@@ -136,14 +138,15 @@ public class GroupReportService {
     }
 
     @Transactional(readOnly = true)
-    public GroupAnalyticsDto getAnalytics(UUID userId, UUID groupId, String monthParam) {
+    public GroupAnalyticsDto getAnalytics(UUID userId, UUID groupId, String monthParam,
+                                          String year, String dateFrom, String dateTo) {
         requireMember(groupId, userId);
         ExpenseGroup group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new ResourceNotFoundException("Group not found: " + groupId));
 
-        LocalDate month = parseMonth(monthParam);
-        LocalDate start = month.withDayOfMonth(1);
-        LocalDate end = month.withDayOfMonth(month.lengthOfMonth());
+        LocalDate[] range = DateRangeResolver.resolve(monthParam, year, dateFrom, dateTo);
+        LocalDate start = range[0];
+        LocalDate end = range[1];
 
         BigDecimal totalSpent = expenseRepository.sumGroupExpensesForMonth(groupId, start, end);
 
@@ -197,7 +200,7 @@ public class GroupReportService {
         GroupAnalyticsDto dto = new GroupAnalyticsDto();
         dto.setGroupId(groupId);
         dto.setGroupName(group.getName());
-        dto.setMonth(month);
+        dto.setMonth(start);
         dto.setTotalSpent(totalSpent);
         dto.setCategoryBreakdown(categoryBreakdown);
         dto.setDailyTrend(dailyTrend);
@@ -211,9 +214,38 @@ public class GroupReportService {
         }
     }
 
-    private LocalDate parseMonth(String monthParam) {
-        if (monthParam == null || monthParam.isBlank()) return LocalDate.now().withDayOfMonth(1);
-        String[] parts = monthParam.split("-");
-        return LocalDate.of(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), 1);
+    /** Sums the (monthly) overall group budget across every month in the range. */
+    private BigDecimal sumGroupBudgetOverRange(UUID groupId, LocalDate start, LocalDate end) {
+        BigDecimal total = BigDecimal.ZERO;
+        boolean found = false;
+        YearMonth ym = YearMonth.from(start);
+        YearMonth endYm = YearMonth.from(end);
+        while (!ym.isAfter(endYm)) {
+            Optional<GroupBudget> b = groupBudgetRepository.findByGroupIdAndMonth(groupId, ym.atDay(1));
+            if (b.isPresent()) {
+                total = total.add(b.get().getTotalBudget());
+                found = true;
+            }
+            ym = ym.plusMonths(1);
+        }
+        return found ? total : null;
+    }
+
+    /** Sums a member's (monthly) budget cap across every month in the range. */
+    private BigDecimal sumMemberBudgetOverRange(UUID groupId, UUID userId, LocalDate start, LocalDate end) {
+        BigDecimal total = BigDecimal.ZERO;
+        boolean found = false;
+        YearMonth ym = YearMonth.from(start);
+        YearMonth endYm = YearMonth.from(end);
+        while (!ym.isAfter(endYm)) {
+            Optional<GroupMemberBudget> b = memberBudgetRepository
+                    .findByGroupIdAndUserIdAndMonth(groupId, userId, ym.atDay(1));
+            if (b.isPresent()) {
+                total = total.add(b.get().getBudgetLimit());
+                found = true;
+            }
+            ym = ym.plusMonths(1);
+        }
+        return found ? total : null;
     }
 }

@@ -36,9 +36,12 @@ public class BudgetController {
     @GetMapping("/budget/status")
     public ResponseEntity<List<BudgetStatusResponse>> getPersonalBudgetStatus(
             @AuthenticationPrincipal UserPrincipal principal,
-            @RequestParam(required = false) String month) {
+            @RequestParam(required = false) String month,
+            @RequestParam(required = false) String year,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo) {
         User user = resolveUser(principal);
-        return ResponseEntity.ok(budgetService.getPersonalBudgetStatus(user, month));
+        return ResponseEntity.ok(budgetService.getPersonalBudgetStatus(user, month, year, dateFrom, dateTo));
     }
 
     private User resolveUser(UserPrincipal principal) {

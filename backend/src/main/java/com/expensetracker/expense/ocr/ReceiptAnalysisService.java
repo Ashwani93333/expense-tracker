@@ -79,7 +79,11 @@ public class ReceiptAnalysisService {
             .block();
 
         JsonNode root = objectMapper.readTree(response);
-        JsonNode messageContent = root.path("candidates").get(0).path("content").path("parts").get(0).path("text");
+        JsonNode candidates = root.path("candidates");
+        if (!candidates.isArray() || candidates.isEmpty()) {
+            throw new RuntimeException("Gemini returned no candidates. Response may be blocked or invalid.");
+        }
+        JsonNode messageContent = candidates.get(0).path("content").path("parts").get(0).path("text");
         
         String jsonString = messageContent.asText();
         // Sometimes Gemini wraps JSON in markdown blocks even with responseMimeType
@@ -93,7 +97,11 @@ public class ReceiptAnalysisService {
         result.setMerchantName(resultNode.path("merchantName").asText(null));
         
         if (resultNode.hasNonNull("totalAmount")) {
-            result.setTotalAmount(new BigDecimal(resultNode.path("totalAmount").asText()));
+            try {
+                result.setTotalAmount(new BigDecimal(resultNode.path("totalAmount").asText()));
+            } catch (NumberFormatException e) {
+                // Non-numeric amount from AI — leave as null
+            }
         }
         
         if (resultNode.hasNonNull("date")) {

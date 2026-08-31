@@ -1,15 +1,14 @@
 import React from 'react';
-import { Trophy, Crown, TrendingUp } from 'lucide-react';
+import { Trophy, Crown } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
+import { getCurrentMonth } from '../../utils/dateFilter';
 
-export const TopSpendersCard = ({ groupId }) => {
-  const { groups, expenses } = useExpense();
-  const currentMonth = '2026-08';
+export const TopSpendersCard = ({ groupId, groupExpenses = [] }) => {
+  const { groups } = useExpense();
+  const currentMonth = getCurrentMonth();
 
   const grp = groups.find(g => g.id === groupId);
   if (!grp) return null;
-
-  const groupExpenses = expenses.filter(e => e.groupId === groupId && e.date.startsWith(currentMonth));
   const groupTotalSpent = groupExpenses.reduce((sum, e) => sum + e.amount, 0);
 
   const memberSpendMap = {};
@@ -39,7 +38,7 @@ export const TopSpendersCard = ({ groupId }) => {
           <Trophy size={18} color="#f59e0b" />
           <h3 style={{ fontSize: '1.05rem', color: 'var(--text-primary)', margin: 0, fontWeight: 700 }}>Top Spenders</h3>
         </div>
-        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>August 2026</span>
+        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{currentMonth}</span>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -85,7 +84,7 @@ export const TopSpendersCard = ({ groupId }) => {
 
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                ${spender.spent.toFixed(2)}
+                ₹{spender.spent.toFixed(2)}
               </div>
             </div>
           </div>

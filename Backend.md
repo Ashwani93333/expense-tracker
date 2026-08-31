@@ -24,6 +24,7 @@ com.expensetracker
 ├── storage/         FileSystemStorageService (receipt uploads under /uploads)
 ├── mail/            SmtpEmailService, EmailTemplateService (Thymeleaf), MoneyFormatter
 ├── security/        SecurityConfig, JwtAuthFilter, JwtUtils, CustomUserDetailsService, UserPrincipal
+├── common/          DateRangeResolver — resolves month/year/custom-range params into [start,end]
 ├── system/          health & info endpoints
 ├── exception/       GlobalExceptionHandler + typed exceptions (AccessDenied, BadRequest,
 │                    ResourceNotFound, UserAlreadyExists) → ErrorResponse JSON
@@ -80,13 +81,30 @@ Schema bootstrap: `resources/schema.sql` (`CREATE TABLE IF NOT EXISTS`, runs alw
 | Auth | `POST /api/auth/signup · login · logout`, `GET /api/auth/me` |
 | Users | `GET/PUT/DELETE /api/users/me`, notification settings, category limits |
 | Categories | CRUD under `/api/categories` |
-| Expenses | `POST/GET /api/expenses`, `GET/PUT/DELETE /api/expenses/{id}`, summary, `PATCH .../splits[/{userId}/settle]`, `POST /api/expenses/receipt/analyze`, **`PATCH /api/expenses/{id}/approval`** |
-| Groups | CRUD `/api/groups`, invites (`POST /{id}/invites`, resend, preview `/invites/{token}`), `POST /join`, members (remove, role, leave), **`GET /{id}/expenses?month&status`** |
-| Budgets | Personal `PUT/GET /api/users/me/budget(/status)`, group `PUT /api/groups/{id}/budget`, member caps |
-| Reports | `GET /api/groups/{id}/settlements · reports/monthly · reports/analytics` |
-| Notifications | `GET /api/notifications`, unread-count, mark read/read-all |
+| Expenses | `POST/GET /api/expenses`, `GET/PUT/DELETE /api/expenses/{id}`, summary, `PATCH .../splits[/{userId}/settle]`, `POST /api/expenses/receipt/analyze`, **`PATCH /api/expenses/{id}/approval`** — list/summary accept `month|year|dateFrom&dateTo` |
+| Groups | CRUD `/api/groups`, invites (`POST /{id}/invites`, resend, preview `/invites/{token}`), `POST /join`, members (remove, role, leave), **`GET /{id}/expenses?month|year|dateFrom&dateTo&status`** |
+| Budgets | Personal `PUT/GET /api/users/me/budget(/status)`, group `PUT /api/groups/{id}/budget`, member caps — **GET (status) endpoints accept `month|year|dateFrom&dateTo`** |
+| Reports | `GET /api/groups/{id}/settlements · reports/monthly · reports/analytics` — all accept `month|year|dateFrom&dateTo` |
 
 All errors return a consistent `{message, status, ...}` body via `GlobalExceptionHandler`.
+
+## 4.1 Date Filtering (month / year / custom range)
+
+Every read endpoint that aggregates spend (personal/groups expense lists, monthly summary, group reports/settlements/analytics, personal & group & member budget status) accepts the same three query-param shapes; `DateRangeResolver.resolve(month, year, dateFrom, dateTo)` turns them into a `[start, end]` `LocalDate` range:
+
+| Mode | Params | Priority order (first match wins) |
+|---|---|---|
+| Custom range | `dateFrom` + `dateTo` (both `YYYY-MM-DD`) | 1 — both required together |
+| Year | `year` (`YYYY`) | 2 — range = Jan 1st → Dec 31st |
+| Month | `month` (`YYYY-MM`) | 3 — range = 1st → last day |
+| Current month | *(none)* | 4 (default) |
+
+**Rules**
+* `dateFrom` without `dateTo` (or vice versa) → `400 Bad Request`.
+* `dateTo < dateFrom` → `400 Bad Request`.
+* `month`/`year` not in `YYYY-MM`/`YYYY` format → `400 Bad Request`.
+
+**Budget aggregation** — budgets are *always stored per month* (`user_budgets`, `group_budgets`, `group_member_budgets` keyed by month). For a full-month view the response returns the verbatim monthly rows (real `budgetId`). For year/custom ranges the status endpoints **sum the monthly limits across every month the range overlaps** and return one aggregated row per scope (`budgetId`/member caps aggregated with no single-budget id). `GroupBudgetService.getGroupBudgetStatus` returns a `NO_BUDGET` status object (null `totalBudget`) instead of throwing when no budget exists in range.
 
 ## 5. Approval Workflow (group payment verification)
 

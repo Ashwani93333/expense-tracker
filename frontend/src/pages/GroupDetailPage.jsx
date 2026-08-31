@@ -9,6 +9,8 @@ import { useAuth } from '../context/AuthContext';
 import { groupsApi, expensesApi } from '../services/api';
 import { InviteMemberModal } from '../components/groups/InviteMemberModal';
 import { GroupRoleBadge } from '../components/groups/GroupRoleBadge';
+import { DateFilterBar } from '../components/layout/DateFilterBar';
+import { describeFilter } from '../utils/dateFilter';
 
 const statusColor = (s) => ({ OK: '#22c55e', WARNING: '#f59e0b', EXCEEDED: '#ef4444' }[s] || '#737373');
 
@@ -57,7 +59,7 @@ export const GroupDetailPage = () => {
     setIsAddModalOpen, isInviteModalOpen, setIsInviteModalOpen,
     leaveGroup, removeMember, updateMemberRole, updateGroupInfo,
     updateGroupBudget, updateMemberBudgetCap,
-    currentMonth, showToast, dataVersion,
+    dateFilter, showToast, dataVersion,
   } = useExpense();
   const { currentUser } = useAuth();
 
@@ -85,10 +87,10 @@ export const GroupDetailPage = () => {
     try {
       const [detail, budget, settles, rep, exps] = await Promise.allSettled([
         groupsApi.get(grp.id),
-        groupsApi.getBudgetStatus(grp.id, currentMonth),
-        groupsApi.getSettlements(grp.id, currentMonth),
-        groupsApi.getMonthlyReport(grp.id, currentMonth),
-        groupsApi.listExpenses(grp.id, currentMonth),
+        groupsApi.getBudgetStatus(grp.id, dateFilter),
+        groupsApi.getSettlements(grp.id, dateFilter),
+        groupsApi.getMonthlyReport(grp.id, dateFilter),
+        groupsApi.listExpenses(grp.id, dateFilter),
       ]);
       if (detail.status   === 'fulfilled') setGroupDetail(detail.value);
       if (budget.status   === 'fulfilled') setBudgetStatus(budget.value);
@@ -99,7 +101,7 @@ export const GroupDetailPage = () => {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchGroupData(); }, [activeGroupId, currentMonth, dataVersion]);
+  useEffect(() => { fetchGroupData(); }, [activeGroupId, dateFilter, dataVersion]);
 
   const reviewExpense = async (exp, action) => {
     if (action === 'REJECT' && !rejectNote.trim()) {
@@ -167,6 +169,9 @@ export const GroupDetailPage = () => {
           </button>
         </div>
       </div>
+
+      {/* Date filter bar */}
+      <DateFilterBar />
 
       {/* Group Header Card */}
       <div className="card" style={{ padding: '24px' }}>
@@ -342,7 +347,7 @@ export const GroupDetailPage = () => {
           ) : (
             <div className="card" style={{ padding: '22px' }}>
               <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700, marginBottom: '16px' }}>
-                Category Breakdown · {currentMonth}
+                Category Breakdown · {describeFilter(dateFilter)}
               </h3>
               {report?.categoryBreakdown?.length > 0 ? report.categoryBreakdown.map(cat => {
                 const pct = report.totalSpent > 0 ? (cat.total / report.totalSpent * 100) : 0;
@@ -361,7 +366,7 @@ export const GroupDetailPage = () => {
                 );
               }) : (
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', padding: '20px 0' }}>
-                  No expenses logged for this month.
+                  No expenses logged for this period.
                 </p>
               )}
             </div>
@@ -440,7 +445,7 @@ export const GroupDetailPage = () => {
       {activeSubTab === 'expenses' && (
         <div className="card" style={{ padding: '22px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', alignItems: 'center' }}>
-            <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700 }}>Group Expenses · {currentMonth}</h3>
+            <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700 }}>Group Expenses · {describeFilter(dateFilter)}</h3>
             <button className="btn btn-primary btn-sm" onClick={() => setIsAddModalOpen(true)}>
               <Plus size={14} /> Add Expense
             </button>
@@ -452,7 +457,7 @@ export const GroupDetailPage = () => {
           ) : groupExpenses.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
               <DollarSign size={32} color="var(--text-faint)" style={{ marginBottom: '8px' }} />
-              <p style={{ color: 'var(--text-muted)' }}>No group expenses this month.</p>
+              <p style={{ color: 'var(--text-muted)' }}>No group expenses in this period.</p>
               <button className="btn btn-primary btn-sm" style={{ marginTop: '12px' }} onClick={() => setIsAddModalOpen(true)}>
                 Log First Expense
               </button>
@@ -629,7 +634,7 @@ export const GroupDetailPage = () => {
       {activeSubTab === 'settlements' && (
         <div className="card" style={{ padding: '22px' }}>
           <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700, marginBottom: '16px' }}>
-            Who Owes Whom · {currentMonth}
+            Who Owes Whom · {describeFilter(dateFilter)}
           </h3>
           {loading ? (
             Array.from({ length: 3 }).map((_, i) => (
@@ -639,7 +644,7 @@ export const GroupDetailPage = () => {
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
               <CheckCircle2 size={36} color="#22c55e" style={{ marginBottom: '10px' }} />
               <p style={{ color: '#22c55e', fontWeight: 600 }}>All settled up!</p>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '4px' }}>No outstanding balances this month.</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '4px' }}>No outstanding balances this period.</p>
             </div>
           ) : (
             settlements.map((s, i) => (
@@ -660,9 +665,9 @@ export const GroupDetailPage = () => {
           {/* Group Budget */}
           <div className="card" style={{ padding: '22px' }}>
             <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700, marginBottom: '16px' }}>
-              Group Budget · {currentMonth}
+              Group Budget · {describeFilter(dateFilter)}
             </h3>
-            {budgetStatus ? (
+            {budgetStatus?.totalBudget != null ? (
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
@@ -677,7 +682,7 @@ export const GroupDetailPage = () => {
                 </div>
               </>
             ) : (
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No budget set for this month.</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No budget set for this period.</p>
             )}
 
             {isAdmin && (

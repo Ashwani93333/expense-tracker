@@ -1,11 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { X, Download, FileText, Users, Calendar, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { X, Download, FileText, Users, ChevronDown, FileSpreadsheet, FileType, FileJson, Check } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
-import { groupsApi } from '../../services/api';
+import { groupsApi, expensesApi } from '../../services/api';
+import { DateFilterBar } from '../layout/DateFilterBar';
+import { describeFilter } from '../../utils/dateFilter';
+import {
+  toSlug, getAmount, categoryTotals, paymentTotals,
+  buildExpenseRows, exportToCSV, exportToJSON, exportToExcel,
+} from '../../utils/exportFormats';
 
-const generatePersonalPDF = (expenses, categories, month, currentUser) => {
-  const monthDate = new Date(month + '-01');
-  const monthLabel = monthDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+const FORMATS = [
+  { id: 'pdf', label: 'PDF', icon: FileText, hint: 'Print / Save as PDF' },
+  { id: 'xlsx', label: 'Excel (.xlsx)', icon: FileSpreadsheet, hint: 'Workbook with sheets' },
+  { id: 'csv', label: 'CSV', icon: FileType, hint: 'Plain spreadsheet table' },
+  { id: 'json', label: 'JSON', icon: FileJson, hint: 'Raw structured data' },
+];
+
+const pct = (amt, total) => (total > 0 ? Number(((amt / total) * 100).toFixed(1)) : 0);
+
+const generatePersonalPDF = (expenses, categories, periodLabel, currentUser) => {
   const total = expenses.reduce((s, e) => s + (e.amount || 0), 0);
 
   const categoryBreakdown = {};
@@ -30,7 +43,7 @@ const generatePersonalPDF = (expenses, categories, month, currentUser) => {
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Personal Expenses - ${monthLabel}</title>
+  <title>Personal Expenses - ${periodLabel}</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -64,7 +77,7 @@ const generatePersonalPDF = (expenses, categories, month, currentUser) => {
 <body>
   <div class="header">
     <h1>Personal Expense Report</h1>
-    <p>${monthLabel}${currentUser ? ' · ' + (currentUser.name || currentUser.email || '') : ''}</p>
+    <p>${periodLabel}${currentUser ? ' · ' + (currentUser.name || currentUser.email || '') : ''}</p>
   </div>
 
   <div class="summary">
@@ -140,9 +153,7 @@ const generatePersonalPDF = (expenses, categories, month, currentUser) => {
   setTimeout(() => printWindow.print(), 500);
 };
 
-const generateGroupPDF = (groupExpenses, groupName, month, members) => {
-  const monthDate = new Date(month + '-01');
-  const monthLabel = monthDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+const generateGroupPDF = (groupExpenses, groupName, periodLabel, members) => {
   const total = groupExpenses.reduce((s, e) => s + (e.amount || 0), 0);
 
   const categoryBreakdown = {};
@@ -174,7 +185,7 @@ const generateGroupPDF = (groupExpenses, groupName, month, members) => {
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>${groupName} Expenses - ${monthLabel}</title>
+  <title>${groupName} Expenses - ${periodLabel}</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -207,7 +218,7 @@ const generateGroupPDF = (groupExpenses, groupName, month, members) => {
 <body>
   <div class="header">
     <h1>Group Expense Report</h1>
-    <p>${groupName} · ${monthLabel}</p>
+    <p>${groupName} · ${periodLabel}</p>
   </div>
 
   <div class="summary">
@@ -306,49 +317,141 @@ const generateGroupPDF = (groupExpenses, groupName, month, members) => {
 };
 
 export const ExportModal = ({ isOpen, onClose, exportType = 'personal', initialGroupId = null }) => {
-  const { expenses, categories, groups, currentMonth, currentUser } = useExpense();
-  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
+  const { categories, groups, dateFilter, currentUser } = useExpense();
   const [selectedGroupId, setSelectedGroupId] = useState(initialGroupId || (groups.length > 0 ? groups[0].id : null));
   const [groupExpenses, setGroupExpenses] = useState([]);
-  const [isLoadingGroup, setIsLoadingGroup] = useState(false);
+  const [personalExpenses, setPersonalExpenses] = useState([]);
+  const [format, setFormat] = useState('pdf');
+  const [isLoadingData, setIsLoadingData] = useState(false);
 
-  useEffect(() => {
-    if (exportType === 'group' && selectedGroupId && isOpen) {
-      fetchGroupExpenses();
-    }
-  }, [selectedGroupId, selectedMonth, exportType, isOpen]);
-
-  useEffect(() => {
-    if (initialGroupId) setSelectedGroupId(initialGroupId);
-  }, [initialGroupId]);
-
-  const fetchGroupExpenses = async () => {
-    if (!selectedGroupId) return;
-    setIsLoadingGroup(true);
+  const fetchPersonalExpenses = useCallback(async () => {
+    setIsLoadingData(true);
     try {
-      const data = await groupsApi.listExpenses(selectedGroupId, selectedMonth);
+      const data = await expensesApi.list(dateFilter);
+      setPersonalExpenses(data || []);
+    } catch (err) {
+      console.error('Failed to fetch personal expenses:', err);
+      setPersonalExpenses([]);
+    } finally {
+      setIsLoadingData(false);
+    }
+  }, [dateFilter]);
+
+  const fetchGroupExpenses = useCallback(async () => {
+    if (!selectedGroupId) return;
+    setIsLoadingData(true);
+    try {
+      const data = await groupsApi.listExpenses(selectedGroupId, dateFilter);
       setGroupExpenses(data || []);
     } catch (err) {
       console.error('Failed to fetch group expenses:', err);
       setGroupExpenses([]);
     } finally {
-      setIsLoadingGroup(false);
+      setIsLoadingData(false);
     }
-  };
+  }, [selectedGroupId, dateFilter]);
 
-  const handleExport = () => {
+  useEffect(() => {
+    if (!isOpen) return;
     if (exportType === 'personal') {
-      generatePersonalPDF(expenses, categories, selectedMonth, currentUser);
+      fetchPersonalExpenses();
     } else {
-      const group = groups.find(g => g.id === selectedGroupId);
-      generateGroupPDF(groupExpenses, group?.name || 'Group', selectedMonth, group?.members);
+      fetchGroupExpenses();
     }
+  }, [dateFilter, selectedGroupId, exportType, isOpen]);
+
+  useEffect(() => {
+    if (initialGroupId) setSelectedGroupId(initialGroupId);
+  }, [initialGroupId]);
+
+  const handleExport = async () => {
+    const periodLabel = describeFilter(dateFilter);
+    const group = groups.find(g => g.id === selectedGroupId);
+    const isGroup = exportType === 'group';
+    const expenses = isGroup ? groupExpenses : personalExpenses;
+    const baseName = `${
+      isGroup ? `group-expenses-${toSlug(group?.name)}` : 'personal-expenses'
+    }-${toSlug(periodLabel)}`;
+
+    if (format === 'pdf') {
+      if (isGroup) {
+        generateGroupPDF(expenses, group?.name || 'Group', periodLabel, group?.members);
+      } else {
+        generatePersonalPDF(expenses, categories, periodLabel, currentUser);
+      }
+      return;
+    }
+
+    const total = expenses.reduce((s, e) => s + getAmount(e), 0);
+    const cats = categoryTotals(expenses);
+    const rows = buildExpenseRows(expenses, isGroup);
+
+    if (format === 'csv') {
+      exportToCSV(`${baseName}.csv`, rows);
+      return;
+    }
+
+    if (format === 'json') {
+      exportToJSON(`${baseName}.json`, {
+        type: exportType,
+        period: periodLabel,
+        filter: dateFilter,
+        generatedOn: new Date().toISOString(),
+        summary: {
+          total, transactions: expenses.length, categories: cats.length,
+        },
+        categoryBreakdown: cats.map(([name, amt]) => ({ category: name, amount: amt })),
+        paymentBreakdown: isGroup
+          ? paymentTotals(expenses).map(([name, amt]) => ({ member: name, amount: amt }))
+          : undefined,
+        expenses,
+      });
+      return;
+    }
+
+    const memberCount = isGroup ? (group?.members?.length || 1) : 0;
+    const stats = isGroup
+      ? [
+          ['Total Expenses', Number(total.toFixed(2))],
+          ['Transactions', expenses.length],
+          ['Members', memberCount],
+          ['Avg / Person', Number((total / (memberCount || 1)).toFixed(2))],
+        ]
+      : [
+          ['Total Expenses', Number(total.toFixed(2))],
+          ['Transactions', expenses.length],
+          ['Categories', cats.length],
+          ['Avg / Transaction', Number(expenses.length ? (total / expenses.length).toFixed(2) : 0)],
+        ];
+
+    const tables = [{
+      name: 'Category Breakdown',
+      columns: ['Category', 'Amount', '% of Total'],
+      rows: cats.map(([name, amt]) => [name, Number(amt.toFixed(2)), pct(amt, total)]),
+    }];
+    if (isGroup) {
+      tables.push({
+        name: 'Payment Summary',
+        columns: ['Member', 'Total Paid', '% of Total'],
+        rows: paymentTotals(expenses).map(([name, amt]) => [name, Number(amt.toFixed(2)), pct(amt, total)]),
+      });
+    }
+
+    await exportToExcel(`${baseName}.xlsx`, {
+      title: isGroup ? `Group Expense Report — ${group?.name || 'Group'}` : 'Personal Expense Report',
+      subtitle: `${periodLabel}${!isGroup && currentUser ? ' · ' + (currentUser.name || currentUser.email || '') : ''}`,
+      stats,
+      tables,
+      expenseColumns: isGroup
+        ? ['Date', 'Description', 'Category', 'Paid By', 'Split Type', 'Amount', 'Splits']
+        : ['Date', 'Description', 'Category', 'Amount'],
+      expenseRows: rows,
+    });
   };
 
   if (!isOpen) return null;
 
-  const monthDate = new Date(selectedMonth + '-01');
-  const monthLabel = monthDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  const monthLabel = describeFilter(dateFilter);
 
   return (
     <div style={{
@@ -384,7 +487,7 @@ export const ExportModal = ({ isOpen, onClose, exportType = 'personal', initialG
               <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#1a1a1a', margin: 0 }}>
                 Export {exportType === 'personal' ? 'Personal' : 'Group'} Expenses
               </h3>
-              <p style={{ fontSize: '12px', color: '#737373', margin: 0 }}>Download as PDF for printing</p>
+              <p style={{ fontSize: '12px', color: '#737373', margin: 0 }}>Choose a format and download your report</p>
             </div>
           </div>
           <button
@@ -403,26 +506,12 @@ export const ExportModal = ({ isOpen, onClose, exportType = 'personal', initialG
 
         {/* Body */}
         <div style={{ padding: '24px' }}>
-          {/* Month Selector */}
+          {/* Period Selector */}
           <div style={{ marginBottom: '20px' }}>
             <label style={{ fontSize: '12px', fontWeight: 600, color: '#525252', display: 'block', marginBottom: '6px' }}>
-              Select Month
+              Select Period
             </label>
-            <div style={{ position: 'relative' }}>
-              <Calendar size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#a3a3a3' }} />
-              <input
-                type="month"
-                value={selectedMonth}
-                onChange={e => setSelectedMonth(e.target.value)}
-                style={{
-                  width: '100%', padding: '10px 12px 10px 36px',
-                  border: '1px solid #e5e5e5', borderRadius: '8px',
-                  fontSize: '13px', fontWeight: 500, color: '#1a1a1a',
-                  background: '#fafafa', fontFamily: 'var(--font)',
-                  outline: 'none',
-                }}
-              />
-            </div>
+            <DateFilterBar />
           </div>
 
           {/* Group Selector (only for group export) */}
@@ -454,6 +543,41 @@ export const ExportModal = ({ isOpen, onClose, exportType = 'personal', initialG
             </div>
           )}
 
+          {/* Format Selector */}
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 600, color: '#525252', display: 'block', marginBottom: '6px' }}>
+              Export Format
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              {FORMATS.map(f => {
+                const Icon = f.icon;
+                const active = format === f.id;
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => setFormat(f.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '8px',
+                      padding: '10px 12px', borderRadius: '10px', cursor: 'pointer',
+                      border: active ? '1.5px solid #1a1a1a' : '1px solid #e5e5e5',
+                      background: active ? '#f7f7f7' : '#fafafa',
+                      color: '#1a1a1a', fontFamily: 'var(--font)',
+                      fontSize: '12px', fontWeight: 600, textAlign: 'left',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <Icon size={15} color={active ? '#1a1a1a' : '#a3a3a3'} />
+                    <span style={{ flex: 1 }}>{f.label}</span>
+                    {active && <Check size={14} color="#1a1a1a" />}
+                  </button>
+                );
+              })}
+            </div>
+            <p style={{ fontSize: '11px', color: '#a3a3a3', marginTop: '6px' }}>
+              {FORMATS.find(f => f.id === format)?.hint}
+            </p>
+          </div>
+
           {/* Preview Stats */}
           <div style={{
             padding: '16px', background: '#fafafa', borderRadius: '10px',
@@ -470,16 +594,16 @@ export const ExportModal = ({ isOpen, onClose, exportType = 'personal', initialG
               <div>
                 <div style={{ fontSize: '11px', color: '#a3a3a3' }}>Expenses</div>
                 <div style={{ fontSize: '13px', fontWeight: 600, color: '#1a1a1a' }}>
-                  {exportType === 'personal' ? expenses.length : (isLoadingGroup ? '...' : groupExpenses.length)}
+                  {isLoadingData ? '...' : (exportType === 'personal' ? personalExpenses.length : groupExpenses.length)}
                 </div>
               </div>
               <div>
                 <div style={{ fontSize: '11px', color: '#a3a3a3' }}>Total</div>
                 <div style={{ fontSize: '13px', fontWeight: 600, color: '#1a1a1a' }}>
-                  ₹{(exportType === 'personal'
-                    ? expenses.reduce((s, e) => s + (e.amount || 0), 0)
+                  {isLoadingData ? '...' : `₹${(exportType === 'personal'
+                    ? personalExpenses.reduce((s, e) => s + (e.amount || 0), 0)
                     : groupExpenses.reduce((s, e) => s + (e.amount || 0), 0)
-                  ).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  ).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
                 </div>
               </div>
             </div>
@@ -488,22 +612,22 @@ export const ExportModal = ({ isOpen, onClose, exportType = 'personal', initialG
           {/* Export Button */}
           <button
             onClick={handleExport}
-            disabled={exportType === 'group' && isLoadingGroup}
+            disabled={isLoadingData}
             style={{
               width: '100%', padding: '12px',
               background: exportType === 'personal' ? '#050505' : '#6366f1',
               color: exportType === 'personal' ? '#B7FF00' : '#fff',
               border: 'none', borderRadius: '10px',
               fontSize: '13px', fontWeight: 700,
-              cursor: exportType === 'group' && isLoadingGroup ? 'not-allowed' : 'pointer',
+              cursor: isLoadingData ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
               fontFamily: 'var(--font)',
-              opacity: exportType === 'group' && isLoadingGroup ? 0.7 : 1,
+              opacity: isLoadingData ? 0.7 : 1,
               transition: 'var(--t-fast)',
             }}
           >
             <Download size={15} />
-            {exportType === 'group' && isLoadingGroup ? 'Loading expenses...' : 'Export as PDF'}
+            {isLoadingData ? 'Loading expenses...' : `Download ${FORMATS.find(f => f.id === format)?.label || 'report'}`}
           </button>
         </div>
       </div>

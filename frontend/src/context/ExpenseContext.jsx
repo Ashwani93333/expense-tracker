@@ -8,14 +8,14 @@ import {
   notificationsApi,
   usersApi,
 } from '../services/api';
+import {
+  getCurrentMonth,
+  toQueryParams,
+  isInFilterRange,
+  activeMonth,
+} from '../utils/dateFilter';
 
 const ExpenseContext = createContext(null);
-
-// Helper: get current month string like "2026-08"
-const getCurrentMonth = () => {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-};
 
 export const ExpenseProvider = ({ children }) => {
   const { currentUser, isAuthenticated } = useAuth();
@@ -37,9 +37,22 @@ export const ExpenseProvider = ({ children }) => {
   // ─── UI State ───────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState('dashboard');
   const [activeGroupId, setActiveGroupId] = useState(null);
-  const [currentMonth, setCurrentMonth] = useState(getCurrentMonth());
+  // `month` is always kept populated (used for always-monthly budget setting).
+  const [dateFilter, setDateFilter] = useState({
+    mode: 'month',
+    month: getCurrentMonth(),
+    year: new Date().getFullYear(),
+    dateFrom: null,
+    dateTo: null,
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+
+  // Backward-compatible month helpers
+  const currentMonth = dateFilter.month;
+  const setCurrentMonth = useCallback((m) => {
+    setDateFilter(prev => ({ ...prev, mode: 'month', month: m }));
+  }, []);
 
   // Modals & Drawers
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -48,6 +61,8 @@ export const ExpenseProvider = ({ children }) => {
   const [isJoinGroupModalOpen, setIsJoinGroupModalOpen] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [exportModalType, setExportModalType] = useState('personal');
 
   // ─── Toast Helper ───────────────────────────────────────────────────────────
   const showToast = (message, type = 'success') => {
@@ -63,11 +78,12 @@ export const ExpenseProvider = ({ children }) => {
     if (!isAuthenticated) return;
     setIsLoading(true);
     try {
+      const params = toQueryParams(dateFilter);
       const [cats, grps, notifs, budgetStatus] = await Promise.allSettled([
         categoriesApi.list(),
         groupsApi.list(),
         notificationsApi.list(),
-        budgetsApi.getStatus(currentMonth),
+        budgetsApi.getStatus(params),
       ]);
 
       if (cats.status === 'fulfilled') setCategories(cats.value || []);
@@ -82,14 +98,14 @@ export const ExpenseProvider = ({ children }) => {
       if (budgetStatus.status === 'fulfilled') setPersonalBudgetStatus(budgetStatus.value || []);
 
       // Fetch expenses separately
-      const expList = await expensesApi.list(currentMonth);
+      const expList = await expensesApi.list(params);
       setExpenses(expList || []);
     } catch (err) {
       console.error('Failed to fetch initial data:', err);
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated, currentMonth]);
+  }, [isAuthenticated, dateFilter]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -102,7 +118,7 @@ export const ExpenseProvider = ({ children }) => {
       setNotifications([]);
       setPersonalBudgetStatus([]);
     }
-  }, [isAuthenticated, currentMonth]);
+  }, [isAuthenticated, fetchAll]);
 
   // ─── Unread Count Refresh ────────────────────────────────────────────────────
   const refreshUnreadCount = useCallback(async () => {
@@ -146,11 +162,11 @@ export const ExpenseProvider = ({ children }) => {
         newExpense = await expensesApi.create(payload);
       }
 
-      // Only prepend optimistically if it belongs to the month being viewed,
+      // Only prepend optimistically if it belongs to the period being viewed,
       // otherwise the refetch below would silently remove it again.
       const savedDate = newExpense?.expenseDate || formData.expenseDate || '';
-      const inCurrentMonth = savedDate.startsWith(currentMonth);
-      if (inCurrentMonth) {
+      const inCurrentPeriod = isInFilterRange(savedDate, dateFilter);
+      if (inCurrentPeriod) {
         setExpenses(prev => [newExpense, ...prev]);
       }
       // Instantly refresh all data to update charts, budgets, and dashboard
@@ -159,10 +175,10 @@ export const ExpenseProvider = ({ children }) => {
       let msg = newExpense?.status === 'PENDING'
         ? `Payment of ₹${parseFloat(formData.amount).toFixed(2)} submitted — a group admin will verify it shortly.`
         : `Expense "₹${parseFloat(formData.amount).toFixed(2)}" added successfully!`;
-      if (savedDate && !inCurrentMonth) {
+      if (savedDate && !inCurrentPeriod) {
         const [y, m] = savedDate.split('-').map(Number);
         const label = new Date(y, m - 1, 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
-        msg = `Added ₹${parseFloat(formData.amount).toFixed(2)} under ${label} (receipt date) — switch months to view it.`;
+        msg = `Added ₹${parseFloat(formData.amount).toFixed(2)} under ${label} (receipt date) — switch the date range to view it.`;
       }
       showToast(msg);
       return newExpense;
@@ -311,7 +327,7 @@ export const ExpenseProvider = ({ children }) => {
   // ─── Group Budget ────────────────────────────────────────────────────────────
   const updateGroupBudget = async (groupId, budgetLimit) => {
     try {
-      await groupsApi.setBudget(groupId, currentMonth, { budgetLimit: parseFloat(budgetLimit) });
+      await groupsApi.setBudget(groupId, activeMonth(dateFilter), { budgetLimit: parseFloat(budgetLimit) });
       bumpDataVersion();
       showToast(`Group budget updated to ₹${parseFloat(budgetLimit).toFixed(2)}.`);
     } catch (err) {
@@ -322,7 +338,7 @@ export const ExpenseProvider = ({ children }) => {
   // ─── Member Budget Cap ───────────────────────────────────────────────────────
   const updateMemberBudgetCap = async (groupId, userId, capAmount) => {
     try {
-      await groupsApi.setMemberBudget(groupId, userId, currentMonth, { budgetLimit: parseFloat(capAmount) });
+      await groupsApi.setMemberBudget(groupId, userId, activeMonth(dateFilter), { budgetLimit: parseFloat(capAmount) });
       bumpDataVersion();
       showToast(`Member budget cap updated to ₹${parseFloat(capAmount).toFixed(2)}.`);
     } catch (err) {
@@ -335,9 +351,10 @@ export const ExpenseProvider = ({ children }) => {
     try {
       const payload = { budgetLimit: parseFloat(budgetLimit) };
       if (categoryId) payload.categoryId = categoryId;
-      await budgetsApi.set(currentMonth, payload);
+      const month = activeMonth(dateFilter);
+      await budgetsApi.set(month, payload);
       // Refresh budget status
-      const status = await budgetsApi.getStatus(currentMonth);
+      const status = await budgetsApi.getStatus({ month });
       setPersonalBudgetStatus(status || []);
       bumpDataVersion();
       showToast(`Budget updated to ₹${parseFloat(budgetLimit).toFixed(2)}.`);
@@ -352,7 +369,7 @@ export const ExpenseProvider = ({ children }) => {
   // ─── Group Settlements ───────────────────────────────────────────────────────
   const calculateGroupSettlements = async (groupId) => {
     try {
-      const settlements = await groupsApi.getSettlements(groupId, currentMonth);
+      const settlements = await groupsApi.getSettlements(groupId, dateFilter);
       return settlements || [];
     } catch (err) {
       console.error('Failed to get settlements:', err);
@@ -462,6 +479,8 @@ export const ExpenseProvider = ({ children }) => {
       unreadNotifCount,
       currentMonth,
       setCurrentMonth,
+      dateFilter,
+      setDateFilter,
       // UI
       activeTab,
       setActiveTab,
@@ -478,6 +497,10 @@ export const ExpenseProvider = ({ children }) => {
       setIsInviteModalOpen,
       isBudgetModalOpen,
       setIsBudgetModalOpen,
+      isExportModalOpen,
+      setIsExportModalOpen,
+      exportModalType,
+      setExportModalType,
       toastMessage,
       // Data version (bumps after every mutation → pages refetch instantly)
       dataVersion,

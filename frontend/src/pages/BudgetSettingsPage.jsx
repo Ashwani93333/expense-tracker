@@ -6,6 +6,8 @@ import { budgetsApi } from '../services/api';
 import { CategoryIcon } from '../components/categories/categoryIcons';
 import { PageHeader } from '../components/ui/PageHeader';
 import { StatusBadge } from '../components/ui/StatusBadge';
+import { DateFilterBar } from '../components/layout/DateFilterBar';
+import { describeFilter, activeMonth } from '../utils/dateFilter';
 
 const statusColor = (s) => ({
   OK:        '#22c55e',
@@ -27,23 +29,10 @@ const statusLabel = (s) => ({
   NO_BUDGET: 'No Limit Set',
 }[s] || s);
 
-const getCurrentMonth = () => {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-};
-
-const MONTHS = Array.from({ length: 6 }, (_, i) => {
-  const d = new Date();
-  d.setMonth(d.getMonth() - i);
-  const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-  return { value: val, label: d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) };
-});
-
 export const BudgetSettingsPage = () => {
-  const { categories, updatePersonalBudget, updateCategoryBudget } = useExpense();
+  const { categories, updatePersonalBudget, updateCategoryBudget, dateFilter } = useExpense();
   const { currentUser } = useAuth();
 
-  const [month, setMonth] = useState(getCurrentMonth());
   const [budgetStatus, setBudgetStatus] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -55,13 +44,13 @@ export const BudgetSettingsPage = () => {
   const fetchBudgetStatus = async () => {
     setLoading(true);
     try {
-      const data = await budgetsApi.getStatus(month);
+      const data = await budgetsApi.getStatus(dateFilter);
       setBudgetStatus(data);
     } catch { setBudgetStatus(null); }
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchBudgetStatus(); }, [month]);
+  useEffect(() => { fetchBudgetStatus(); }, [dateFilter]);
 
   const overallBudget = budgetStatus?.find?.(b => !b.categoryId) ?? null;
   const categoryBudgets = (budgetStatus || []).filter(b => b.categoryId);
@@ -89,6 +78,8 @@ export const BudgetSettingsPage = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
 
       {/* Header */}
+      <DateFilterBar />
+
       <PageHeader
         icon={Target}
         badge="Personal Budgets"
@@ -96,14 +87,6 @@ export const BudgetSettingsPage = () => {
         subtitle="Stay ahead of your spending. Set monthly spending limits and get alerts."
         actions={
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <select
-              value={month}
-              onChange={e => setMonth(e.target.value)}
-              className="input-field"
-              style={{ paddingRight: '30px', fontSize: '0.83rem', cursor: 'pointer', borderRadius: 'var(--r-md)' }}
-            >
-              {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-            </select>
             <button className="btn btn-secondary btn-sm" onClick={fetchBudgetStatus} title="Refresh">
               <RefreshCw size={14} />
             </button>
@@ -117,7 +100,8 @@ export const BudgetSettingsPage = () => {
           <div>
             <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700, marginBottom: '2px' }}>Overall Monthly Limit</h3>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-              Global cap across all categories for {month}
+              Global cap across all categories for {describeFilter(dateFilter)}
+              {dateFilter.mode !== 'month' && ' · budgets are always monthly'}
             </p>
           </div>
           {overallBudget && (
@@ -158,7 +142,7 @@ export const BudgetSettingsPage = () => {
             background: 'var(--bg-surface)', border: '1px dashed var(--border)',
             textAlign: 'center', marginBottom: '16px',
           }}>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No overall budget set for {month}.</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No overall budget set for {describeFilter(dateFilter)}.</p>
           </div>
         )}
 
@@ -176,12 +160,22 @@ export const BudgetSettingsPage = () => {
             {overallBudget ? 'Update' : 'Set Limit'}
           </button>
         </div>
+        {dateFilter.mode !== 'month' && (
+          <p style={{ fontSize: '0.72rem', color: 'var(--text-faint)', marginTop: '10px' }}>
+            Saving applies to{' '}
+            {new Date(activeMonth(dateFilter) + '-01').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}{' '}
+            (budgets are always set per month).
+          </p>
+        )}
       </div>
 
       {/* Category Budgets */}
       <div className="card" style={{ padding: '24px' }}>
         <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700, marginBottom: '6px' }}>Category Budget Caps</h3>
-        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '20px' }}>Set per-category spending limits for {month}.</p>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
+          Set per-category spending limits for {describeFilter(dateFilter)}
+          {dateFilter.mode !== 'month' && ' · budgets are always monthly'}
+        </p>
 
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => (

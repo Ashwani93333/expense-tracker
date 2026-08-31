@@ -157,9 +157,12 @@ public class GroupController {
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable UUID id,
             @RequestParam(required = false) String month,
+            @RequestParam(required = false) String year,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo,
             @RequestParam(required = false) String status) {
         User user = resolveUser(principal);
-        return ResponseEntity.ok(expenseService.getGroupExpenses(user, id, month, status));
+        return ResponseEntity.ok(expenseService.getGroupExpenses(user, id, month, year, dateFrom, dateTo, status));
     }
 
     private User resolveUser(UserPrincipal principal) {

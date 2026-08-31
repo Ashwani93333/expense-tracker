@@ -362,12 +362,14 @@ Scan a receipt image using OCR to automatically extract expense details (amount,
 ---
 
 ### GET `/api/expenses?month=2026-08`
-List personal expenses for a month (excludes group expenses).
+List personal expenses (excludes group expenses) for the selected period.
 
-**Query Parameters**
+**Query Parameters** — exactly one period shape applies; if multiple are sent, priority is `dateFrom+dateTo` → `year` → `month` → current month.
 | Param | Type | Required | Example |
 |-------|------|----------|---------|
 | `month` | String | No (defaults to current month) | `2026-08` |
+| `year` | String | No (year range: Jan 1 → Dec 31) | `2026` |
+| `dateFrom` + `dateTo` | String | No (custom range, both required together) | `2026-08-10`, `2026-08-25` |
 
 **Response** `200 OK`
 ```json
@@ -477,12 +479,11 @@ Delete a personal expense (only owner can delete).
 ---
 
 ### GET `/api/expenses/summary?month=2026-08`
-Monthly summary: total spent + per-category breakdown.
+Period summary: total spent + per-category breakdown. Accepts the same period params as the list endpoint (`month` / `year` / `dateFrom`+`dateTo`).
 
 **Response** `200 OK`
 ```json
 {
-  "month": "2026-08",
   "totalSpent": 12450.00,
   "categoryBreakdown": [
     {
@@ -505,9 +506,13 @@ Monthly summary: total spent + per-category breakdown.
       "categoryName": "Uncategorized",
       "total": 3851.00
     }
-  ]
+  ],
+  "dateFrom": "2026-08-01",
+  "dateTo": "2026-08-31",
+  "label": "August 2026"
 }
 ```
+> `dateFrom`/`dateTo` echo the resolved range; `label` is a human-readable descriptor ("August 2026", "2026", or "10 Aug – 25 Aug 2026") for use in UI headings and export filenames. The legacy `month` field is replaced by these three keys.
 
 ---
 

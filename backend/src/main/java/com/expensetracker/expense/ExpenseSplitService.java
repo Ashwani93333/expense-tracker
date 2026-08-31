@@ -97,6 +97,11 @@ public class ExpenseSplitService {
     }
 
     private void validateSplits(BigDecimal totalAmount, List<SplitRequest> splits, String splitType) {
+        for (SplitRequest s : splits) {
+            if (s.getShareAmount() == null) {
+                throw new BadRequestException("Split share amount cannot be null for user " + s.getUserId());
+            }
+        }
         BigDecimal sum = splits.stream()
                 .map(SplitRequest::getShareAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)

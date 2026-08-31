@@ -9,6 +9,8 @@ import { useAuth } from '../context/AuthContext';
 import { expensesApi } from '../services/api';
 import { SummaryCard } from '../components/ui/SummaryCard';
 import { InsightCard } from '../components/ui/InsightCard';
+import { DateFilterBar } from '../components/layout/DateFilterBar';
+import { describeFilter } from '../utils/dateFilter';
 
 const getGreeting = () => {
   const h = new Date().getHours();
@@ -21,7 +23,7 @@ export const DashboardPage = () => {
   const {
     expenses, personalBudget, groups,
     setIsAddModalOpen, setActiveTab, setActiveGroupId,
-    currentMonth, isLoading,
+    dateFilter, isLoading,
   } = useExpense();
   const { currentUser } = useAuth();
 
@@ -33,29 +35,31 @@ export const DashboardPage = () => {
     const fetchSummary = async () => {
       setSummaryLoading(true);
       try {
-        const data = await expensesApi.summary(currentMonth);
+        const data = await expensesApi.summary(dateFilter);
         setSummary(data);
       } catch { setSummary(null); }
       finally { setSummaryLoading(false); }
     };
     fetchSummary();
-  }, [currentMonth, expenses.length]);
+  }, [dateFilter, expenses.length]);
 
   useEffect(() => {
+    // "vs last month" comparison only makes sense in month mode.
+    if (dateFilter.mode !== 'month') { setPrevSummary(null); return; }
     const fetchPrevSummary = async () => {
       try {
-        const now = new Date();
-        const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const m = dateFilter.month;
+        const prev = new Date(+m.slice(0, 4), +m.slice(5, 7) - 2, 1);
         const prevKey = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`;
-        const data = await expensesApi.summary(prevKey);
+        const data = await expensesApi.summary({ month: prevKey });
         setPrevSummary(data);
       } catch { setPrevSummary(null); }
     };
     fetchPrevSummary();
-  }, [currentMonth]);
+  }, [dateFilter]);
 
   const recentExpenses = expenses.slice(0, 5);
-  const monthLabel = new Date(currentMonth + '-01').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  const periodLabel = describeFilter(dateFilter);
   const totalSpent = summary?.totalSpent ?? expenses.reduce((s, e) => s + (e.amount || 0), 0);
   const remaining = personalBudget.overallLimit > 0 ? Math.max(personalBudget.overallLimit - (personalBudget.spent || 0), 0) : null;
 
@@ -65,11 +69,14 @@ export const DashboardPage = () => {
 
   const topCategory = summary?.categoryBreakdown?.[0];
   const insightText = topCategory && summary?.totalSpent > 0
-    ? `Your ${topCategory.categoryName} spending is ₹${topCategory.total.toLocaleString('en-IN')} this month, representing ${((topCategory.total / summary.totalSpent) * 100).toFixed(1)}% of your total spending.`
+    ? `Your ${topCategory.categoryName} spending is ₹${topCategory.total.toLocaleString('en-IN')} in this period, representing ${((topCategory.total / summary.totalSpent) * 100).toFixed(1)}% of your total spending.`
     : null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+      {/* Date filter bar */}
+      <DateFilterBar />
 
       {/* Hero Section */}
       <div style={{
@@ -208,7 +215,7 @@ export const DashboardPage = () => {
         <SummaryCard
           label="Transactions"
           value={`${expenses.length}`}
-          sub={`in ${monthLabel}`}
+          sub={`in ${periodLabel}`}
           icon={CreditCard}
           accent="#B7FF00"
           loading={isLoading}

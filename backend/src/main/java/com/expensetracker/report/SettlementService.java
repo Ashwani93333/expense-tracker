@@ -1,5 +1,6 @@
 package com.expensetracker.report;
 
+import com.expensetracker.common.DateRangeResolver;
 import com.expensetracker.exception.AccessDeniedException;
 import com.expensetracker.model.Expense;
 import com.expensetracker.model.ExpenseSplit;
@@ -40,11 +41,12 @@ public class SettlementService {
      * 4. We resolve the net balances into minimal transfer pairs.
      */
     @Transactional(readOnly = true)
-    public List<SettlementSummaryDto> computeSettlements(UUID userId, UUID groupId, String monthParam) {
+    public List<SettlementSummaryDto> computeSettlements(UUID userId, UUID groupId, String monthParam,
+                                                          String year, String dateFrom, String dateTo) {
         boolean isMember = groupMemberRepository.existsByGroupIdAndUserIdAndStatus(groupId, userId, "ACTIVE");
         if (!isMember) throw new AccessDeniedException("You are not a member of this group");
 
-        LocalDate[] range = parseMonthRange(monthParam);
+        LocalDate[] range = DateRangeResolver.resolve(monthParam, year, dateFrom, dateTo);
         List<ExpenseSplit> splits = splitRepository.findByGroupAndMonth(groupId, range[0], range[1]);
         List<Expense> expenses = expenseRepository.findByGroupIdAndStatusAndExpenseDateBetweenOrderByExpenseDateDesc(
                 groupId, "APPROVED", range[0], range[1]);
@@ -128,15 +130,5 @@ public class SettlementService {
         }
 
         return result;
-    }
-
-    private LocalDate[] parseMonthRange(String month) {
-        if (month == null || month.isBlank()) {
-            LocalDate now = LocalDate.now();
-            return new LocalDate[]{now.withDayOfMonth(1), now.withDayOfMonth(now.lengthOfMonth())};
-        }
-        String[] parts = month.split("-");
-        LocalDate first = LocalDate.of(Integer.parseInt(parts[0]), Integer.parseInt(parts[1]), 1);
-        return new LocalDate[]{first, first.withDayOfMonth(first.lengthOfMonth())};
     }
 }

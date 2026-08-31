@@ -43,9 +43,12 @@ public class GroupBudgetController {
     public ResponseEntity<GroupBudgetStatusResponse> getGroupBudgetStatus(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable UUID id,
-            @RequestParam(required = false) String month) {
+            @RequestParam(required = false) String month,
+            @RequestParam(required = false) String year,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo) {
         User user = resolveUser(principal);
-        return ResponseEntity.ok(groupBudgetService.getGroupBudgetStatus(user, id, month));
+        return ResponseEntity.ok(groupBudgetService.getGroupBudgetStatus(user, id, month, year, dateFrom, dateTo));
     }
 
     /** PUT /api/groups/{id}/members/{userId}/budget?month=2026-08 — admin sets member cap */
@@ -66,9 +69,12 @@ public class GroupBudgetController {
     public ResponseEntity<List<MemberBudgetDto>> getMemberBudgets(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable UUID id,
-            @RequestParam(required = false) String month) {
+            @RequestParam(required = false) String month,
+            @RequestParam(required = false) String year,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo) {
         User user = resolveUser(principal);
-        return ResponseEntity.ok(groupBudgetService.getMemberBudgets(user, id, month));
+        return ResponseEntity.ok(groupBudgetService.getMemberBudgets(user, id, month, year, dateFrom, dateTo));
     }
 
     private User resolveUser(UserPrincipal principal) {

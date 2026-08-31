@@ -4,6 +4,7 @@ import com.expensetracker.classification.CategoryClassificationInput;
 import com.expensetracker.classification.CategoryClassificationResult;
 import com.expensetracker.classification.ClassificationSource;
 import com.expensetracker.classification.ExpenseCategoryClassifier;
+import com.expensetracker.common.DateRangeResolver;
 import com.expensetracker.exception.AccessDeniedException;
 import com.expensetracker.exception.BadRequestException;
 import com.expensetracker.exception.ResourceNotFoundException;
@@ -112,6 +113,11 @@ public class ExpenseService {
             if (req.getPaidBy() != null) {
                 User paidBy = userRepository.findById(req.getPaidBy())
                         .orElseThrow(() -> new ResourceNotFoundException("Paid-by user not found"));
+                boolean paidByIsMember = groupMemberRepository.existsByGroupIdAndUserIdAndStatus(
+                        group.getId(), paidBy.getId(), "ACTIVE");
+                if (!paidByIsMember) {
+                    throw new BadRequestException("Paid-by user is not an active member of this group");
+                }
                 expense.setPaidBy(paidBy);
             } else {
                 expense.setPaidBy(currentUser);
@@ -171,8 +177,9 @@ public class ExpenseService {
     }
 
     @Transactional(readOnly = true)
-    public List<ExpenseDto> getPersonalExpenses(User user, String month) {
-        LocalDate[] range = parseMonthRange(month);
+    public List<ExpenseDto> getPersonalExpenses(User user, String month, String year,
+                                                String dateFrom, String dateTo) {
+        LocalDate[] range = DateRangeResolver.resolve(month, year, dateFrom, dateTo);
         return expenseRepository.findByUserIdAndGroupIsNullAndExpenseDateBetweenOrderByExpenseDateDesc(
                         user.getId(), range[0], range[1])
                 .stream()
@@ -240,8 +247,9 @@ public class ExpenseService {
     }
 
     @Transactional(readOnly = true)
-    public Map<String, Object> getMonthlySummary(User user, String month) {
-        LocalDate[] range = parseMonthRange(month);
+    public Map<String, Object> getMonthlySummary(User user, String month, String year,
+                                                 String dateFrom, String dateTo) {
+        LocalDate[] range = DateRangeResolver.resolve(month, year, dateFrom, dateTo);
         BigDecimal total = expenseRepository.sumPersonalExpensesForMonth(user.getId(), range[0], range[1]);
         List<Object[]> breakdown = expenseRepository.categoryBreakdownPersonal(user.getId(), range[0], range[1]);
 
@@ -254,18 +262,21 @@ public class ExpenseService {
                 .collect(Collectors.toList());
 
         return Map.of(
-                "month", month,
+                "dateFrom", range[0].toString(),
+                "dateTo", range[1].toString(),
+                "label", DateRangeResolver.describeRange(range[0], range[1]),
                 "totalSpent", total,
                 "categoryBreakdown", categoryList
         );
     }
 
     @Transactional(readOnly = true)
-    public List<ExpenseDto> getGroupExpenses(User user, UUID groupId, String month, String status) {
+    public List<ExpenseDto> getGroupExpenses(User user, UUID groupId, String month, String year,
+                                             String dateFrom, String dateTo, String status) {
         boolean isMember = groupMemberRepository.existsByGroupIdAndUserIdAndStatus(groupId, user.getId(), "ACTIVE");
         if (!isMember) throw new AccessDeniedException("You are not a member of this group");
 
-        LocalDate[] range = parseMonthRange(month);
+        LocalDate[] range = DateRangeResolver.resolve(month, year, dateFrom, dateTo);
         List<Expense> expenses = (status == null || status.isBlank())
                 ? expenseRepository.findByGroupIdAndExpenseDateBetweenOrderByExpenseDateDesc(groupId, range[0], range[1])
                 : expenseRepository.findByGroupIdAndStatusAndExpenseDateBetweenOrderByExpenseDateDesc(
@@ -323,7 +334,8 @@ public class ExpenseService {
         Expense saved = expenseRepository.save(expense);
 
         User owner = saved.getUser();
-        String amount = "₹" + saved.getAmount() + " for \"" + saved.getDescription() + "\"";
+        Integer amountInt = saved.getAmount() != null ? saved.getAmount().intValue() : 0;
+        String amount = "₹" + amountInt + " for \"" + saved.getDescription() + "\"";
         
         // Get user's notification settings
         var settings = notificationSettingsService.getSettings(owner.getId());
@@ -390,19 +402,8 @@ public class ExpenseService {
     }
 
     // ---- helpers ----
+    @Deprecated
     public static LocalDate[] parseMonthRange(String month) {
-        if (month == null || month.isBlank()) {
-            LocalDate now = LocalDate.now();
-            return new LocalDate[]{now.withDayOfMonth(1), now.withDayOfMonth(now.lengthOfMonth())};
-        }
-        // Expected format: YYYY-MM
-        String[] parts = month.split("-");
-        if (parts.length != 2) {
-            throw new BadRequestException("month parameter must be in YYYY-MM format");
-        }
-        int year = Integer.parseInt(parts[0]);
-        int mon = Integer.parseInt(parts[1]);
-        LocalDate first = LocalDate.of(year, mon, 1);
-        return new LocalDate[]{first, first.withDayOfMonth(first.lengthOfMonth())};
+        return DateRangeResolver.parseMonthRange(month);
     }
 }
