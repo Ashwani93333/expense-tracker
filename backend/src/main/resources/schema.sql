@@ -226,6 +226,21 @@ CREATE TABLE IF NOT EXISTS notifications (
     created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- ================= INCOMES =================
+CREATE TABLE IF NOT EXISTS incomes (
+    id              UUID PRIMARY KEY,
+    user_id         UUID NOT NULL REFERENCES users(id),
+    amount          NUMERIC(12,2) NOT NULL,
+    description     TEXT,
+    income_date     DATE NOT NULL,
+    source          VARCHAR(30) NOT NULL,
+    is_recurring    BOOLEAN DEFAULT FALSE,
+    frequency       VARCHAR(20),
+    notes           TEXT,
+    created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- ================= BACKWARD-COMPATIBLE COLUMN ADDITIONS =================
 -- Category classification metadata (keywords as JSON array in TEXT, matching existing TEXT-JSON convention).
 ALTER TABLE categories ADD COLUMN IF NOT EXISTS keywords TEXT;

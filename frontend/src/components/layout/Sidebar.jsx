@@ -15,6 +15,7 @@ import {
   FileText,
   ChevronDown,
   ChevronRight,
+  Briefcase,
 } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 
@@ -30,6 +31,7 @@ const NAV_SECTIONS = [
     label: 'Money',
     items: [
       { id: 'expenses',         label: 'Expenses',      icon: ReceiptText },
+      { id: 'incomes',          label: 'Income',         icon: Briefcase },
       { id: 'budget-settings',  label: 'Budgets',       icon: Target },
       { id: 'categories',       label: 'Categories',    icon: Tag },
     ],

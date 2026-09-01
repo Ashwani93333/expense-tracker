@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Plus, Bell, Search, Wallet, LogOut, User, ChevronDown, ScanLine } from 'lucide-react';
+import { Plus, Bell, Search, Wallet, LogOut, User, ChevronDown, ScanLine, Briefcase } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 import { useAuth } from '../../context/AuthContext';
+import { useIncome } from '../../context/IncomeContext';
 
 export const Navbar = () => {
   const {
@@ -10,6 +11,7 @@ export const Navbar = () => {
     unreadNotifCount,
     setActiveTab,
   } = useExpense();
+  const { openAddIncome } = useIncome();
   const { currentUser, logout } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
@@ -93,6 +95,21 @@ export const Navbar = () => {
           >
             <Plus size={14} />
             Add Expense
+          </button>
+
+          {/* Add Income — desktop only */}
+          <button
+            className="btn btn-sm desktop-only"
+            onClick={openAddIncome}
+            style={{
+              background: 'rgba(34,197,94,0.1)',
+              color: '#22c55e',
+              border: '1px solid rgba(34,197,94,0.2)',
+              gap: '4px',
+            }}
+          >
+            <Briefcase size={14} />
+            Add Income
           </button>
 
           {/* Notifications */}

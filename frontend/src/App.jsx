@@ -1,6 +1,7 @@
 import React from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ExpenseProvider, useExpense } from './context/ExpenseContext';
+import { IncomeProvider, useIncome } from './context/IncomeContext';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
 import { MobileNavigation } from './components/layout/MobileNavigation';
@@ -15,6 +16,8 @@ import { ReceiptScanner } from './components/receipts/ReceiptScanner';
 import { AnalyticsCharts } from './components/analytics/AnalyticsCharts';
 import { CategoriesManager } from './components/categories/CategoriesManager';
 import { ExpenseFormModal } from './components/expenses/ExpenseFormModal';
+import { IncomeFormModal } from './components/incomes/IncomeFormModal';
+import { IncomePage } from './pages/IncomePage';
 import { NotificationDrawer } from './components/notifications/NotificationDrawer';
 import { ExportModal } from './components/exports/ExportModal';
 import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
@@ -117,6 +120,7 @@ const AppContent = () => {
         >
           {activeTab === 'dashboard'      && <DashboardPage />}
           {activeTab === 'expenses'       && <ExpenseTable />}
+          {activeTab === 'incomes'        && <IncomePage />}
           {activeTab === 'groups'         && <GroupsPage />}
           {activeTab === 'group-detail'   && <GroupDetailPage />}
           {activeTab === 'budget-settings'&& <BudgetSettingsPage />}
@@ -130,6 +134,7 @@ const AppContent = () => {
       <MobileNavigation />
 
       <ExpenseFormModal />
+      <IncomeFormModal />
       <NotificationDrawer />
       <ExportModal
         isOpen={isExportModalOpen}
@@ -155,7 +160,9 @@ const AuthGatedApp = () => {
 
   return (
     <ExpenseProvider>
-      <AppContent />
+      <IncomeProvider>
+        <AppContent />
+      </IncomeProvider>
     </ExpenseProvider>
   );
 };

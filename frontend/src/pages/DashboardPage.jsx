@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useExpense } from '../context/ExpenseContext';
 import { useAuth } from '../context/AuthContext';
+import { useIncome } from '../context/IncomeContext';
 import { expensesApi } from '../services/api';
 import { SummaryCard } from '../components/ui/SummaryCard';
 import { InsightCard } from '../components/ui/InsightCard';
@@ -26,6 +27,7 @@ export const DashboardPage = () => {
     dateFilter, isLoading,
   } = useExpense();
   const { currentUser } = useAuth();
+  const { financialOverview, openAddIncome } = useIncome();
 
   const [summary, setSummary] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
@@ -127,6 +129,18 @@ export const DashboardPage = () => {
               </button>
               <button
                 className="btn"
+                onClick={openAddIncome}
+                style={{
+                  fontSize: '0.85rem',
+                  background: 'rgba(34,197,94,0.1)',
+                  color: '#22c55e',
+                  border: '1px solid rgba(34,197,94,0.2)',
+                }}
+              >
+                <Plus size={15} /> Add Income
+              </button>
+              <button
+                className="btn"
                 onClick={() => setActiveTab('scan')}
                 style={{
                   fontSize: '0.85rem',
@@ -220,6 +234,29 @@ export const DashboardPage = () => {
           accent="#B7FF00"
           loading={isLoading}
         />
+
+        {/* Financial Overview Cards */}
+        {financialOverview && (
+          <>
+            <SummaryCard
+              label="Total Income"
+              value={`₹${(financialOverview.totalIncome || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+              sub={`${periodLabel}`}
+              icon={TrendingUp}
+              accent="#22c55e"
+              loading={false}
+              onClick={() => setActiveTab('incomes')}
+            />
+            <SummaryCard
+              label="Net Balance"
+              value={`₹${(financialOverview.netBalance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+              sub={(financialOverview.netBalance || 0) >= 0 ? 'Surplus' : 'Deficit'}
+              icon={(financialOverview.netBalance || 0) >= 0 ? TrendingUp : TrendingDown}
+              accent={(financialOverview.netBalance || 0) >= 0 ? '#22c55e' : '#ef4444'}
+              loading={false}
+            />
+          </>
+        )}
       </div>
 
       {/* Budget Alert */}

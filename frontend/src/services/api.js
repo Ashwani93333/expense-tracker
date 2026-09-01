@@ -100,6 +100,17 @@ export const expensesApi = {
   },
 };
 
+// ─── Incomes API ──────────────────────────────────────────────────────────────
+export const incomesApi = {
+  list: (filter) => request('GET', '/api/incomes', null, toQueryParams(filter)),
+  get: (id) => request('GET', `/api/incomes/${id}`),
+  create: (payload) => request('POST', '/api/incomes', payload),
+  update: (id, payload) => request('PUT', `/api/incomes/${id}`, payload),
+  delete: (id) => request('DELETE', `/api/incomes/${id}`),
+  summary: (filter) => request('GET', '/api/incomes/summary', null, toQueryParams(filter)),
+  overview: (filter) => request('GET', '/api/incomes/overview', null, toQueryParams(filter)),
+};
+
 // ─── Groups API ───────────────────────────────────────────────────────────────
 export const groupsApi = {
   list: () => request('GET', '/api/groups'),
