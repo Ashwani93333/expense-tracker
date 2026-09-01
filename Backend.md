@@ -2,7 +2,43 @@
 
 Java 21 · Spring Boot 3.3.3 · Maven wrapper (`mvnw`). Base package: `com.expensetracker`.
 
-## 1. Module Map
+## 1. Architecture Overview
+
+| Layer | Technology | Role |
+|---|---|---|
+| Runtime | Java 21 + Spring Boot 3.3.3 | Embedded Tomcat, auto-config, dependency injection |
+| Build | Maven (wrapper `mvnw`) | Dependency management, multi-profile packaging |
+| Web | Spring MVC (`spring-boot-starter-web`) | REST controllers, request validation, content negotiation |
+| Security | Spring Security + JJWT 0.12.6 | Stateless JWT filter chain (HS256), BCrypt password hashing |
+| Persistence | Spring Data JPA + Hibernate | Repository pattern, `ddl-auto: update`, schema.sql bootstrap |
+| Database | PostgreSQL (prod) / H2 (test) | Relational storage with JSON converters for enums |
+| Reactive client | Spring WebFlux (`WebClient`) | Gemini AI classification and receipt OCR calls |
+| Email | Spring Mail + Thymeleaf | SMTP delivery, HTML templates for alerts and invites |
+| Code gen | Lombok | `@Data`, `@Builder`, `@Slf4j` — excluded from production jar |
+| Events | `ApplicationEventPublisher` + `@TransactionalEventListener` | Post-commit budget evaluation, idempotent alert dispatch |
+| Scheduling | `@Scheduled` (cron) | Monthly summary job (1st of month at 02:00) |
+| Error handling | `@RestControllerAdvice` + `GlobalExceptionHandler` | Uniform `{message, status, ...}` error responses |
+
+**Design pattern — layered monolith:**
+
+```
+HTTP request
+   │
+   ▼
+Controller (validate DTO, resolve @AuthenticationPrincipal)
+   │
+   ▼
+Service (business logic, transactional, publishes events)
+   │
+   ▼
+Repository (Spring Data JPA interface → Hibernate → PostgreSQL)
+```
+
+* Entities are never exposed directly — DTOs sit at every boundary.
+* Authorization is service-layer driven (`GroupRoleGuard`), not annotation-based.
+* Cross-cutting concerns (validation, security, exceptions) are handled by Spring-managed interceptors and advice.
+
+## 2. Module Map
 
 ```
 com.expensetracker
@@ -35,7 +71,7 @@ com.expensetracker
 
 Layering per feature: **Controller → Service → Repository**, with DTOs at the boundary and entities never exposed directly.
 
-## 2. Security Pipeline
+## 3. Security Pipeline
 
 | Component | Responsibility |
 |---|---|
@@ -49,7 +85,7 @@ Layering per feature: **Controller → Service → Repository**, with DTOs at th
 * Global roles live on `users.role` (`ROLE_USER` default).
 * Per-group authorization goes through **`GroupRoleGuard`**: `requireMember()` (ACTIVE membership) and `requireAdmin()` (ACTIVE + `role=ADMIN`) throw `AccessDeniedException` → mapped to HTTP 403 by `GlobalExceptionHandler`.
 
-## 3. Data Model (key tables)
+## 4. Data Model (key tables)
 
 ```
 users ─────┬──< expenses >──── categories
@@ -74,7 +110,7 @@ expenses:
 
 Schema bootstrap: `resources/schema.sql` (`CREATE TABLE IF NOT EXISTS`, runs always). Existing databases evolve through Hibernate `ddl-auto: update`. Test profile (`h2`) uses H2 in PostgreSQL mode with `ddl-auto: none`.
 
-## 4. REST Surface (summary)
+## 5. REST Surface (summary)
 
 | Area | Endpoints |
 |---|---|
@@ -88,7 +124,7 @@ Schema bootstrap: `resources/schema.sql` (`CREATE TABLE IF NOT EXISTS`, runs alw
 
 All errors return a consistent `{message, status, ...}` body via `GlobalExceptionHandler`.
 
-## 4.1 Date Filtering (month / year / custom range)
+## 5.1 Date Filtering (month / year / custom range)
 
 Every read endpoint that aggregates spend (personal/groups expense lists, monthly summary, group reports/settlements/analytics, personal & group & member budget status) accepts the same three query-param shapes; `DateRangeResolver.resolve(month, year, dateFrom, dateTo)` turns them into a `[start, end]` `LocalDate` range:
 
@@ -106,7 +142,7 @@ Every read endpoint that aggregates spend (personal/groups expense lists, monthl
 
 **Budget aggregation** — budgets are *always stored per month* (`user_budgets`, `group_budgets`, `group_member_budgets` keyed by month). For a full-month view the response returns the verbatim monthly rows (real `budgetId`). For year/custom ranges the status endpoints **sum the monthly limits across every month the range overlaps** and return one aggregated row per scope (`budgetId`/member caps aggregated with no single-budget id). `GroupBudgetService.getGroupBudgetStatus` returns a `NO_BUDGET` status object (null `totalBudget`) instead of throwing when no budget exists in range.
 
-## 5. Approval Workflow (group payment verification)
+## 6. Approval Workflow (group payment verification)
 
 1. **Creation** (`ExpenseService.createExpense`)
    * Personal → `status = APPROVED`.
@@ -119,7 +155,7 @@ Every read endpoint that aggregates spend (personal/groups expense lists, monthl
    * Outcome stored with reviewer + timestamp; owner receives in-app notification (`EXPENSE_APPROVED` / `EXPENSE_REJECTED`); approval republishes `ExpenseCreatedEvent` so deferred budget evaluation runs.
 4. **Edit integrity** — a non-admin owner editing an `APPROVED` group expense resets it to `PENDING` (reviewer fields cleared).
 
-## 6. Event-Driven Budget Evaluation
+## 7. Event-Driven Budget Evaluation
 
 ```
 ExpenseService.createExpense()
@@ -140,7 +176,7 @@ BudgetEvaluationListener → BudgetThresholdEvaluator
 
 Because evaluation happens **after commit**, an alert failure can never roll back a saved expense. `BudgetNotificationEventRecorder` keeps alerts idempotent per threshold.
 
-## 7. Notification Architecture
+## 8. Notification Architecture
 
 | Piece | Detail |
 |---|---|
@@ -152,7 +188,7 @@ Because evaluation happens **after commit**, an alert failure can never roll bac
 | API | list / unread-count / mark-read / mark-read-all, ownership-checked |
 | Types | `GROUP_INVITE`, `EXPENSE_SPLIT_ASSIGNED`, `EXPENSE_APPROVED`, `EXPENSE_REJECTED`, budget WARNING/EXCEEDED, monthly summary |
 
-## 8. Classification & OCR Pipeline
+## 9. Classification & OCR Pipeline
 
 1. Request carries explicit `categoryId`? → store with source `USER`, confidence 1.0.
 2. Else `RuleBasedCategoryClassifier` matches `CategoryKeywords` against the description.
@@ -160,13 +196,13 @@ Because evaluation happens **after commit**, an alert failure can never roll bac
 4. Below `CLASSIFICATION_AUTO_ASSIGN_THRESHOLD` the category is left unassigned (warn band between auto/warn thresholds); below fallback policy applies `Uncategorized`.
 5. Receipts: multipart upload → Gemini Vision extraction (`ReceiptAnalysisService`) → draft suggestion returned to the UI.
 
-## 9. Configuration Profiles
+## 10. Configuration Profiles
 
 * `default` — PostgreSQL + `ddl-auto: update`, SQL init always, `show-sql: true`.
 * `h2` — in-memory DB for tests (`./mvnw test`), schema.sql-driven, H2 console enabled.
 * All secrets externalized through `.env` placeholders (see `backend/.env.example`).
 
-## 10. Build & Run
+## 11. Build & Run
 
 ```bash
 ./mvnw spring-boot:run          # dev server on :8080
