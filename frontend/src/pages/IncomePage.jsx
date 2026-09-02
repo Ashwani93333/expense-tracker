@@ -6,14 +6,14 @@ import { DateFilterBar } from '../components/layout/DateFilterBar';
 import { SummaryCard } from '../components/ui/SummaryCard';
 
 const SOURCE_COLORS = {
-  SALARY: '#22c55e',
-  FREELANCE: '#3b82f6',
-  INVESTMENTS: '#f59e0b',
-  BUSINESS: '#8b5cf6',
+  SALARY: 'var(--accent)',
+  FREELANCE: 'var(--blue)',
+  INVESTMENTS: 'var(--amber)',
+  BUSINESS: 'var(--violet)',
   RENTAL: '#ec4899',
-  GIFTS: '#ef4444',
+  GIFTS: 'var(--red)',
   REFUNDS: '#06b6d4',
-  OTHER: '#737373',
+  OTHER: 'var(--text-muted)',
 };
 
 const SOURCE_LABELS = {
@@ -44,15 +44,15 @@ export const IncomePage = () => {
       <div style={{
         padding: '32px',
         borderRadius: 'var(--r-2xl)',
-        background: 'linear-gradient(135deg, #0a1a0a 0%, #0d2818 50%, #061206 100%)',
+        background: 'linear-gradient(135deg, #050505 0%, #0d0d0d 50%, #050505 100%)',
         position: 'relative',
         overflow: 'hidden',
-        border: '1px solid rgba(34,197,94,0.15)',
+        border: '1px solid rgba(183,255,0,0.12)',
       }}>
         <div style={{
           position: 'absolute', top: '-60%', right: '-15%',
           width: '400px', height: '400px',
-          background: 'radial-gradient(circle, rgba(34,197,94,0.08), transparent 65%)',
+          background: 'radial-gradient(circle, rgba(183,255,0,0.06), transparent 65%)',
           borderRadius: '50%', pointerEvents: 'none',
         }} />
 
@@ -64,19 +64,19 @@ export const IncomePage = () => {
               letterSpacing: '-0.03em', marginBottom: '8px', lineHeight: 1.2,
               display: 'flex', alignItems: 'center', gap: '10px',
             }}>
-              <Briefcase size={28} color="#22c55e" /> Income Tracker
+              <Briefcase size={28} color="var(--accent)" /> Income Tracker
             </h1>
-            <p style={{ fontSize: '0.88rem', color: '#737373', maxWidth: '460px', lineHeight: 1.6, marginBottom: '24px' }}>
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-muted)', maxWidth: '460px', lineHeight: 1.6, marginBottom: '24px' }}>
               Track all your income sources in one place. Monitor earnings, spot trends, and understand your total financial picture.
             </p>
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-              <button className="btn btn-primary" onClick={openAddIncome} style={{ fontSize: '0.85rem', background: '#22c55e', color: '#fff' }}>
+              <button className="btn btn-primary" onClick={openAddIncome} style={{ fontSize: '0.85rem' }}>
                 <Plus size={15} /> Add Income
               </button>
               <button
-                className="btn"
+                className="btn btn-secondary"
                 onClick={() => setActiveTab('dashboard')}
-                style={{ fontSize: '0.85rem', background: 'rgba(255,255,255,0.08)', color: '#e5e5e5', border: '1px solid #333' }}
+                style={{ fontSize: '0.85rem' }}
               >
                 <Wallet size={15} /> View Dashboard
               </button>
@@ -84,20 +84,20 @@ export const IncomePage = () => {
           </div>
 
           <div style={{
-            background: 'rgba(34,197,94,0.06)',
-            border: '1px solid rgba(34,197,94,0.15)',
+            background: 'var(--accent-light)',
+            border: '1px solid rgba(183,255,0,0.15)',
             borderRadius: 'var(--r-xl)',
             padding: '20px 24px',
             minWidth: '180px',
             textAlign: 'right',
           }}>
-            <p style={{ fontSize: '0.72rem', color: '#737373', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
               Total Income
             </p>
-            <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#22c55e', letterSpacing: '-0.03em', lineHeight: 1 }}>
+            <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--accent)', letterSpacing: '-0.03em', lineHeight: 1 }}>
               ₹{totalIncome.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
             </div>
-            <p style={{ fontSize: '0.72rem', color: '#737373', marginTop: '6px' }}>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '6px' }}>
               {count} {count === 1 ? 'entry' : 'entries'}
             </p>
           </div>
@@ -111,7 +111,7 @@ export const IncomePage = () => {
           value={`₹${totalIncome.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
           sub={`${count} entries`}
           icon={TrendingUp}
-          accent="#22c55e"
+          accent="var(--accent)"
           loading={isLoading}
         />
         <SummaryCard
@@ -139,7 +139,7 @@ export const IncomePage = () => {
         <div className="card" style={{ padding: '22px' }}>
           <div className="section-header">
             <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Briefcase size={16} color="#22c55e" /> Income by Source
+              <Briefcase size={16} color="var(--accent)" /> Income by Source
             </h3>
           </div>
           {sourceBreakdown.map((item, i) => {

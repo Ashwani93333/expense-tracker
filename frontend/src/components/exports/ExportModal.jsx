@@ -1,19 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Download, FileText, Users, ChevronDown, FileSpreadsheet, FileType, FileJson, Check } from 'lucide-react';
+import { X, Download, FileText, Users, ChevronDown, FileSpreadsheet, FileType, Check } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 import { groupsApi, expensesApi } from '../../services/api';
 import { DateFilterBar } from '../layout/DateFilterBar';
 import { describeFilter } from '../../utils/dateFilter';
 import {
   toSlug, getAmount, categoryTotals, paymentTotals,
-  buildExpenseRows, exportToCSV, exportToJSON, exportToExcel,
+  buildExpenseRows, exportToCSV, exportToExcel,
 } from '../../utils/exportFormats';
 
 const FORMATS = [
   { id: 'pdf', label: 'PDF', icon: FileText, hint: 'Print / Save as PDF' },
   { id: 'xlsx', label: 'Excel (.xlsx)', icon: FileSpreadsheet, hint: 'Workbook with sheets' },
   { id: 'csv', label: 'CSV', icon: FileType, hint: 'Plain spreadsheet table' },
-  { id: 'json', label: 'JSON', icon: FileJson, hint: 'Raw structured data' },
 ];
 
 const pct = (amt, total) => (total > 0 ? Number(((amt / total) * 100).toFixed(1)) : 0);
@@ -388,24 +387,6 @@ export const ExportModal = ({ isOpen, onClose, exportType = 'personal', initialG
 
     if (format === 'csv') {
       exportToCSV(`${baseName}.csv`, rows);
-      return;
-    }
-
-    if (format === 'json') {
-      exportToJSON(`${baseName}.json`, {
-        type: exportType,
-        period: periodLabel,
-        filter: dateFilter,
-        generatedOn: new Date().toISOString(),
-        summary: {
-          total, transactions: expenses.length, categories: cats.length,
-        },
-        categoryBreakdown: cats.map(([name, amt]) => ({ category: name, amount: amt })),
-        paymentBreakdown: isGroup
-          ? paymentTotals(expenses).map(([name, amt]) => ({ member: name, amount: amt }))
-          : undefined,
-        expenses,
-      });
       return;
     }
 

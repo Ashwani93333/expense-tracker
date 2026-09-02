@@ -120,7 +120,7 @@ export const IncomeFormModal = () => {
             <div style={{ position: 'relative' }}>
               <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)', fontWeight: 700, fontSize: '1.3rem' }}>₹</span>
               <input
-                type="number" step="0.01" placeholder="0.00" required
+                type="number" step="1" placeholder="0.00" required
                 value={amount} onChange={e => setAmount(e.target.value)}
                 className="input-field"
                 style={{ paddingLeft: '32px', fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', height: '60px' }}
