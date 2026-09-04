@@ -668,7 +668,8 @@ export const OnboardingPage = () => {
       background: '#f8fafc',
       fontFamily: 'var(--font)',
       display: 'flex', flexDirection: 'column',
-      overflowX: 'hidden'
+      overflowX: 'hidden',
+      scrollPaddingTop: '80px',
     }}>
       {/* Sticky Header */}
       <header style={{

@@ -739,11 +739,6 @@ select.input-field {
 }
 
 /* ─── Sidebar Independent Scroll ─────────────────────────────────────────────── */
-html, body {
-  overflow: hidden;
-  height: 100vh;
-}
-
 .desktop-sidebar {
   overflow-y: auto;
   overflow-x: hidden;
