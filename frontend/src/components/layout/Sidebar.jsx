@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronRight,
   Briefcase,
+  CalendarDays,
 } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 
@@ -24,6 +25,7 @@ const NAV_SECTIONS = [
     label: 'Overview',
     items: [
       { id: 'dashboard',  label: 'Dashboard',       icon: LayoutDashboard },
+      { id: 'calendar',   label: 'Calendar',        icon: CalendarDays },
       { id: 'analytics',  label: 'Analytics',        icon: TrendingUp },
     ],
   },

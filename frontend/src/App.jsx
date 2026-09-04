@@ -18,6 +18,7 @@ import { CategoriesManager } from './components/categories/CategoriesManager';
 import { ExpenseFormModal } from './components/expenses/ExpenseFormModal';
 import { IncomeFormModal } from './components/incomes/IncomeFormModal';
 import { IncomePage } from './pages/IncomePage';
+import { CalendarPage } from './pages/CalendarPage';
 import { NotificationDrawer } from './components/notifications/NotificationDrawer';
 import { ExportModal } from './components/exports/ExportModal';
 import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
@@ -119,6 +120,7 @@ const AppContent = () => {
           className="main-content"
         >
           {activeTab === 'dashboard'      && <DashboardPage />}
+          {activeTab === 'calendar'       && <CalendarPage />}
           {activeTab === 'expenses'       && <ExpenseTable />}
           {activeTab === 'incomes'        && <IncomePage />}
           {activeTab === 'groups'         && <GroupsPage />}
