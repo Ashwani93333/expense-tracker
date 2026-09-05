@@ -62,6 +62,7 @@ export const authApi = {
   login: (payload) => request('POST', '/api/auth/login', payload),
   me: () => request('GET', '/api/auth/me'),
   logout: () => request('POST', '/api/auth/logout'),
+  changePassword: (payload) => request('PUT', '/api/auth/change-password', payload),
 };
 
 // ─── User Profile API ─────────────────────────────────────────────────────────

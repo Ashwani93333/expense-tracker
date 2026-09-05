@@ -55,6 +55,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const changePassword = async ({ currentPassword, newPassword, confirmPassword }) => {
+    setAuthError(null);
+    return authApi.changePassword({ currentPassword, newPassword, confirmPassword });
+  };
+
   const updateCurrentUser = (updatedUser) => {
     setCurrentUser(updatedUser);
   };
@@ -68,6 +73,7 @@ export const AuthProvider = ({ children }) => {
       login,
       signup,
       logout,
+      changePassword,
       updateCurrentUser,
     }}>
       {children}

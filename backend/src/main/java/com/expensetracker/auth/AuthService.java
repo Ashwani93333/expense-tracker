@@ -1,6 +1,7 @@
 package com.expensetracker.auth;
 
 import com.expensetracker.auth.dto.*;
+import com.expensetracker.exception.BadRequestException;
 import com.expensetracker.exception.ResourceNotFoundException;
 import com.expensetracker.exception.UserAlreadyExistsException;
 import com.expensetracker.model.Role;
@@ -16,6 +17,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -36,6 +39,9 @@ public class AuthService {
 
     @Transactional
     public AuthResponse signup(SignupRequest signupRequest) {
+        if (!signupRequest.getPassword().equals(signupRequest.getConfirmPassword())) {
+            throw new BadRequestException("Passwords do not match");
+        }
         if (userRepository.existsByEmail(signupRequest.getEmail().toLowerCase().trim())) {
             throw new UserAlreadyExistsException("User already exists with email: " + signupRequest.getEmail());
         }
@@ -95,5 +101,21 @@ public class AuthService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + principal.getId()));
 
         return UserDto.fromEntity(user);
+    }
+
+    @Transactional
+    public void changePassword(UUID userId, ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new BadRequestException("New password and confirmation do not match");
+        }
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            throw new BadRequestException("Current password is incorrect");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 }

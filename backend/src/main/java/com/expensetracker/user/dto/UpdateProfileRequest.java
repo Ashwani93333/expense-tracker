@@ -1,5 +1,7 @@
 package com.expensetracker.user.dto;
 
+import com.expensetracker.auth.PasswordPolicy;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public class UpdateProfileRequest {
@@ -13,7 +15,7 @@ public class UpdateProfileRequest {
     /** Current password, required when changing password */
     private String currentPassword;
 
-    @Size(min = 8, message = "New password must be at least 8 characters")
+    @Pattern(regexp = PasswordPolicy.PATTERN, message = PasswordPolicy.MESSAGE)
     private String newPassword;
 
     public String getFullName() { return fullName; }

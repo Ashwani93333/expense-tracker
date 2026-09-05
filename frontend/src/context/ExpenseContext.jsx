@@ -63,6 +63,7 @@ export const ExpenseProvider = ({ children }) => {
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportModalType, setExportModalType] = useState('personal');
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
 
   // ─── Toast Helper ───────────────────────────────────────────────────────────
   const showToast = (message, type = 'success') => {
@@ -501,6 +502,8 @@ export const ExpenseProvider = ({ children }) => {
       setIsExportModalOpen,
       exportModalType,
       setExportModalType,
+      isChangePasswordModalOpen,
+      setIsChangePasswordModalOpen,
       toastMessage,
       // Data version (bumps after every mutation → pages refetch instantly)
       dataVersion,

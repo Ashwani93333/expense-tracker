@@ -98,3 +98,12 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+
+jwt:
+  secret: ${JWT_SECRET:test-only-secret-key-0123456789abcdef0123456789abcdef}
+  expiration-ms: 86400000

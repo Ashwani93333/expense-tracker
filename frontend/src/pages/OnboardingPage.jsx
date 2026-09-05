@@ -7,6 +7,7 @@ import {
   Heart, HelpCircle, IndianRupee,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { PASSWORD_REQUIREMENTS, isPasswordValid } from '../utils/passwordPolicy';
 
 const useRevealOnScroll = () => {
   useEffect(() => {
@@ -596,9 +597,10 @@ export const OnboardingPage = () => {
   const { login, signup } = useAuth();
   const [isSignUpMode, setIsSignUpMode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [formData, setFormData] = useState({ fullName: '', email: '', password: '' });
+  const [formData, setFormData] = useState({ fullName: '', email: '', password: '', confirmPassword: '' });
   const [scrolled, setScrolled] = useState(false);
   const [headlineIdx, setHeadlineIdx] = useState(0);
 
@@ -629,11 +631,26 @@ export const OnboardingPage = () => {
     setError('');
     if (!formData.email || !formData.password) { setError('Please fill in all required fields.'); return; }
     if (isSignUpMode && !formData.fullName) { setError('Full name is required.'); return; }
-    if (formData.password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+    if (isSignUpMode) {
+      const missing = PASSWORD_REQUIREMENTS.filter(r => !r.test(formData.password));
+      if (missing.length > 0) {
+        setError(`Password must include: ${missing.map(r => r.label).join(', ')}.`);
+        return;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        setError('Passwords do not match.');
+        return;
+      }
+    }
     setIsLoading(true);
     try {
       if (isSignUpMode) {
-        await signup({ fullName: formData.fullName, email: formData.email, password: formData.password });
+        await signup({
+          fullName: formData.fullName,
+          email: formData.email,
+          password: formData.password,
+          confirmPassword: formData.confirmPassword,
+        });
       } else {
         await login(formData.email, formData.password);
       }
@@ -981,7 +998,7 @@ export const OnboardingPage = () => {
                   <Lock size={16} style={iconStyle} />
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    placeholder={isSignUpMode ? 'Min 6 characters' : '••••••••'}
+                    placeholder={isSignUpMode ? 'Min 8 chars, 1 uppercase, 1 symbol' : '••••••••'}
                     value={formData.password}
                     onChange={e => handleChange('password', e.target.value)}
                     required
@@ -996,7 +1013,54 @@ export const OnboardingPage = () => {
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
+                {isSignUpMode && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
+                    {PASSWORD_REQUIREMENTS.map((req, i) => {
+                      const met = req.test(formData.password);
+                      return (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '0.76rem' }}>
+                          {met ? (
+                            <CheckCircle2 size={13} color="#059669" />
+                          ) : (
+                            <span style={{
+                              width: '13px', height: '13px', borderRadius: '50%', flexShrink: 0,
+                              border: '1.5px solid #d1d5db', display: 'inline-block',
+                            }} />
+                          )}
+                          <span style={{ color: met ? '#059669' : '#6b7280', fontWeight: met ? 700 : 500 }}>
+                            {req.label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
+
+              {isSignUpMode && (
+                <div>
+                  <label style={labelStyle}>Confirm Password *</label>
+                  <div style={{ position: 'relative' }}>
+                    <Lock size={16} style={iconStyle} />
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      placeholder="Re-enter your password"
+                      value={formData.confirmPassword}
+                      onChange={e => handleChange('confirmPassword', e.target.value)}
+                      required
+                      style={{ ...inputStyle, paddingRight: '40px' }}
+                      onFocus={e => e.target.style.borderColor = '#050505'}
+                      onBlur={e => e.target.style.borderColor = '#e5e7eb'}
+                    />
+                    <button
+                      type="button" onClick={() => setShowConfirmPassword(p => !p)}
+                      style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: '2px' }}
+                    >
+                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <button
                 type="submit" disabled={isLoading}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Bell, Search, Wallet, LogOut, User, ChevronDown, ScanLine, Briefcase } from 'lucide-react';
+import { Plus, Bell, Search, Wallet, LogOut, User, ChevronDown, ScanLine, Briefcase, KeyRound } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 import { useAuth } from '../../context/AuthContext';
 import { useIncome } from '../../context/IncomeContext';
@@ -10,6 +10,7 @@ export const Navbar = () => {
     setIsNotifDrawerOpen,
     unreadNotifCount,
     setActiveTab,
+    setIsChangePasswordModalOpen,
   } = useExpense();
   const { openAddIncome } = useIncome();
   const { currentUser, logout } = useAuth();
@@ -218,6 +219,14 @@ export const Navbar = () => {
                   >
                     <Wallet size={14} />
                     <span>Budget Settings</span>
+                  </button>
+
+                  <button
+                    onClick={() => { setIsChangePasswordModalOpen(true); setUserMenuOpen(false); }}
+                    style={dropdownItemStyle}
+                  >
+                    <KeyRound size={14} />
+                    <span>Change Password</span>
                   </button>
 
                   <div style={{ borderTop: '1px solid var(--border)', marginTop: '4px', paddingTop: '4px' }}>

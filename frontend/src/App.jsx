@@ -21,6 +21,7 @@ import { IncomePage } from './pages/IncomePage';
 import { CalendarPage } from './pages/CalendarPage';
 import { NotificationDrawer } from './components/notifications/NotificationDrawer';
 import { ExportModal } from './components/exports/ExportModal';
+import { ChangePasswordModal } from './components/auth/ChangePasswordModal';
 import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
 
 const Toast = ({ message, type = 'success' }) => {
@@ -138,6 +139,7 @@ const AppContent = () => {
       <ExpenseFormModal />
       <IncomeFormModal />
       <NotificationDrawer />
+      <ChangePasswordModal />
       <ExportModal
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
