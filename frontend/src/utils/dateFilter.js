@@ -27,10 +27,22 @@ export const monthsBetween = (startMonth, endMonth) => {
 };
 
 /** Builds backend query params (month | year | dateFrom+dateTo) from a filter.
- *  Tolerant of both full filter objects ({ mode, month, year, dateFrom, dateTo })
- *  and raw param objects ({ month } | { year } | { dateFrom, dateTo }). */
+ *  Respects the active `mode` so stale values from other modes never leak into
+ *  the request (e.g. leftover custom dates must not override a month view).
+ *  Also tolerant of already-processed/raw param objects ({ month } | { year }
+ *  | { dateFrom, dateTo }) that carry no `mode`. */
 export const toQueryParams = (filter) => {
   if (!filter) return { month: getCurrentMonth() };
+  if (filter.mode === 'custom' && filter.dateFrom && filter.dateTo) {
+    return { dateFrom: filter.dateFrom, dateTo: filter.dateTo };
+  }
+  if (filter.mode === 'year') {
+    return { year: filter.year || getCurrentYear() };
+  }
+  if (filter.mode === 'month') {
+    return { month: filter.month || getCurrentMonth() };
+  }
+  // Already-processed/raw param objects (no mode) — legacy fallback.
   if (filter.dateFrom && filter.dateTo) return { dateFrom: filter.dateFrom, dateTo: filter.dateTo };
   if (filter.year) return { year: filter.year };
   return { month: filter.month || getCurrentMonth() };

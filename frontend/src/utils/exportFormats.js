@@ -31,6 +31,8 @@ const setWidths = (ws, widths) => {
   ws['!cols'] = widths.map(w => ({ wch: w }));
 };
 
+const INR = (v) => `₹${Number(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
 export const categoryTotals = (expenses) => {
   const map = {};
   expenses.forEach(e => {
@@ -74,17 +76,44 @@ export const buildExpenseRows = (expenses, forGroup) =>
     })
     .sort((a, b) => new Date(b.Date) - new Date(a.Date));
 
-export const exportToCSV = (filename, rows) => {
-  if (!rows) return;
-  const keys = Object.keys(rows[0] || {});
-  const esc = v => {
+export const exportToCSV = (filename, rows, meta = {}) => {
+  if (!rows || rows.length === 0) return;
+
+  const esc = (v) => {
     const s = v == null ? '' : String(v);
     return /[",\n]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
   };
-  const csv = [
-    keys.join(','),
-    ...rows.map(r => keys.map(k => esc(r[k])).join(',')),
-  ].join('\n');
+
+  const lines = [];
+
+  if (meta.title) {
+    lines.push(esc(meta.title));
+    if (meta.period) lines.push(esc(meta.period));
+    if (meta.stats) {
+      Object.entries(meta.stats).forEach(([k, v]) => lines.push(`${esc(k)},${esc(v)}`));
+    }
+    const genDate = new Date().toLocaleDateString('en-IN', {
+      year: 'numeric', month: 'long', day: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+    lines.push(`Generated,${esc(genDate)}`);
+    lines.push('');
+  }
+
+  const keys = Object.keys(rows[0] || {});
+  lines.push(keys.map(esc).join(','));
+
+  rows.forEach(r => {
+    lines.push(keys.map(k => esc(r[k])).join(','));
+  });
+
+  if (meta.stats && Object.keys(meta.stats).length > 0) {
+    lines.push('');
+    lines.push('--- Summary ---');
+    Object.entries(meta.stats).forEach(([k, v]) => lines.push(`${esc(k)},${esc(v)}`));
+  }
+
+  const csv = lines.join('\n');
   downloadBlob(filename, new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' }));
 };
 
@@ -98,33 +127,56 @@ export const exportToExcel = async (filename, { title, subtitle, stats, tables, 
   const wb = utils.book_new();
   const names = new Set();
 
+  const genDate = new Date().toLocaleDateString('en-IN', {
+    year: 'numeric', month: 'long', day: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+
   const summaryRows = [
     [title],
     [subtitle],
-    [],
+    [''],
+    ['Generated on', genDate],
+    [''],
     ...stats.map(([label, value]) => [label, value]),
-    [],
+    [''],
   ];
+
   tables.forEach(t => {
     summaryRows.push([t.name]);
     summaryRows.push(t.columns);
     t.rows.forEach(r => summaryRows.push(r));
-    summaryRows.push([]);
+    summaryRows.push(['']);
   });
+
   const summaryWs = utils.aoa_to_sheet(summaryRows);
   setWidths(summaryWs, [40, 24]);
+  summaryWs['!freeze'] = { xSplit: 0, ySplit: 0 };
   utils.book_append_sheet(wb, summaryWs, claimSheetName('Summary', names));
 
   tables.forEach(t => {
     const ws = utils.aoa_to_sheet([t.columns, ...t.rows]);
     setWidths(ws, t.columns.map(() => 26));
+    ws['!freeze'] = { xSplit: 0, ySplit: 1 };
     utils.book_append_sheet(wb, ws, claimSheetName(t.name, names));
   });
 
   if (expenseRows && expenseRows.length > 0) {
-    const ws = utils.json_to_sheet(expenseRows);
-    const widths = expenseColumns.map((c, i) => (i === 1 ? 44 : 24));
+    const formattedRows = expenseRows.map(r => {
+      const row = { ...r };
+      if (row.Amount != null) row.Amount = Number(Number(row.Amount).toFixed(2));
+      return row;
+    });
+    const ws = utils.json_to_sheet(formattedRows);
+    const widths = expenseColumns.map((c, i) => {
+      if (c === 'Description') return 44;
+      if (c === 'Splits') return 50;
+      if (c === 'Date') return 14;
+      if (c === 'Category' || c === 'Paid By') return 18;
+      return 20;
+    });
     setWidths(ws, widths);
+    ws['!freeze'] = { xSplit: 0, ySplit: 1 };
     utils.book_append_sheet(wb, ws, claimSheetName('Expenses', names));
   }
 

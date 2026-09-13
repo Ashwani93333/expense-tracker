@@ -4,6 +4,36 @@ import { useAuth } from '../../context/AuthContext';
 import { useExpense } from '../../context/ExpenseContext';
 import { PASSWORD_REQUIREMENTS, isPasswordValid } from '../../utils/passwordPolicy';
 
+const PasswordField = ({ label, icon, type, autoComplete, placeholder, value, onChange, onToggleShow }) => (
+  <div>
+    <label className="input-label" style={{ marginBottom: '8px' }}>
+      {icon} {label}
+    </label>
+    <div style={{ position: 'relative' }}>
+      <input
+        type={type}
+        className="input-field"
+        style={{ paddingRight: '42px' }}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+        value={value}
+        onChange={onChange}
+      />
+      <button
+        type="button"
+        onClick={onToggleShow}
+        style={{
+          position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
+          background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)',
+          padding: '4px', display: 'flex',
+        }}
+      >
+        {type === 'text' ? <EyeOff size={15} /> : <Eye size={15} />}
+      </button>
+    </div>
+  </div>
+);
+
 export const ChangePasswordModal = () => {
   const { isChangePasswordModalOpen, setIsChangePasswordModalOpen, showToast } = useExpense();
   const { changePassword } = useAuth();
@@ -65,36 +95,6 @@ export const ChangePasswordModal = () => {
 
   const toggleShow = (key) => setShow(prev => ({ ...prev, [key]: !prev[key] }));
 
-  const PasswordField = ({ label, field, icon, showKey, placeholder }) => (
-    <div>
-      <label className="input-label" style={{ marginBottom: '8px' }}>
-        {icon} {label}
-      </label>
-      <div style={{ position: 'relative' }}>
-        <input
-          type={show[showKey] ? 'text' : 'password'}
-          className="input-field"
-          style={{ paddingRight: '42px' }}
-          placeholder={placeholder}
-          value={form[field]}
-          onChange={e => setField(field, e.target.value)}
-          autoComplete={field === 'currentPassword' ? 'current-password' : 'new-password'}
-        />
-        <button
-          type="button"
-          onClick={() => toggleShow(showKey)}
-          style={{
-            position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
-            background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)',
-            padding: '4px', display: 'flex',
-          }}
-        >
-          {show[showKey] ? <EyeOff size={15} /> : <Eye size={15} />}
-        </button>
-      </div>
-    </div>
-  );
-
   return (
     <div className="modal-backdrop" onClick={close}>
       <div
@@ -152,19 +152,25 @@ export const ChangePasswordModal = () => {
 
           <PasswordField
             label="Current Password"
-            field="currentPassword"
             icon={<Lock size={12} color="var(--accent)" />}
-            showKey="current"
+            type={show.current ? 'text' : 'password'}
+            autoComplete="current-password"
             placeholder="Enter your current password"
+            value={form.currentPassword}
+            onChange={e => setField('currentPassword', e.target.value)}
+            onToggleShow={() => toggleShow('current')}
           />
 
           <div>
             <PasswordField
               label="New Password"
-              field="newPassword"
               icon={<ShieldCheck size={12} color="var(--accent)" />}
-              showKey="next"
+              type={show.next ? 'text' : 'password'}
+              autoComplete="new-password"
               placeholder="Min 8 characters"
+              value={form.newPassword}
+              onChange={e => setField('newPassword', e.target.value)}
+              onToggleShow={() => toggleShow('next')}
             />
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '10px' }}>
               {PASSWORD_REQUIREMENTS.map((req, i) => {
@@ -190,10 +196,13 @@ export const ChangePasswordModal = () => {
 
           <PasswordField
             label="Confirm New Password"
-            field="confirmPassword"
             icon={<KeyRound size={12} color="var(--accent)" />}
-            showKey="confirm"
+            type={show.confirm ? 'text' : 'password'}
+            autoComplete="new-password"
             placeholder="Re-enter your new password"
+            value={form.confirmPassword}
+            onChange={e => setField('confirmPassword', e.target.value)}
+            onToggleShow={() => toggleShow('confirm')}
           />
 
           <button

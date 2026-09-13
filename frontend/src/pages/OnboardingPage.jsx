@@ -655,7 +655,10 @@ export const OnboardingPage = () => {
         await login(formData.email, formData.password);
       }
     } catch (err) {
-      setError(err.message || (isSignUpMode ? 'Signup failed. Please try again.' : 'Invalid email or password.'));
+      const detail = err.data?.validationErrors
+        ? Object.values(err.data.validationErrors)[0]
+        : null;
+      setError(detail || err.message || (isSignUpMode ? 'Signup failed. Please try again.' : 'Invalid email or password.'));
     } finally {
       setIsLoading(false);
     }

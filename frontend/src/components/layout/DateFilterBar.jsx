@@ -22,9 +22,20 @@ export const DateFilterBar = () => {
 
   const goMode = (mode) => {
     const patch = { mode };
-    if (mode === 'year' && !dateFilter.year) patch.year = getCurrentYear();
+    if (mode === 'year') {
+      // Base the year on the month currently being viewed, not the (possibly
+      // stale) `year` field from a previous year view.
+      const month = dateFilter.month || getCurrentMonth();
+      patch.year = Number(month.slice(0, 4));
+    }
     if (mode === 'custom') {
-      if (!dateFilter.dateFrom || !dateFilter.dateTo) {
+      // Start the custom range from the period currently being viewed so the
+      // results match what the user was looking at before the switch.
+      if (dateFilter.mode === 'year') {
+        const y = dateFilter.year || getCurrentYear();
+        patch.dateFrom = `${y}-01-01`;
+        patch.dateTo = `${y}-12-31`;
+      } else {
         const month = dateFilter.month || getCurrentMonth();
         const [y, m] = month.split('-').map(Number);
         const lastDay = new Date(y, m, 0).getDate();
@@ -37,12 +48,18 @@ export const DateFilterBar = () => {
 
   const prev = () => {
     if (dateFilter.mode === 'year') set({ year: (dateFilter.year || getCurrentYear()) - 1 });
-    else set({ month: shiftMonth(dateFilter.month || getCurrentMonth(), -1) });
+    else {
+      const month = shiftMonth(dateFilter.month || getCurrentMonth(), -1);
+      set({ month, year: Number(month.slice(0, 4)) });
+    }
   };
 
   const next = () => {
     if (dateFilter.mode === 'year') set({ year: (dateFilter.year || getCurrentYear()) + 1 });
-    else set({ month: shiftMonth(dateFilter.month || getCurrentMonth(), 1) });
+    else {
+      const month = shiftMonth(dateFilter.month || getCurrentMonth(), 1);
+      set({ month, year: Number(month.slice(0, 4)) });
+    }
   };
 
   const onFromChange = (v) => {

@@ -51,7 +51,7 @@ export const ExpenseProvider = ({ children }) => {
   // Backward-compatible month helpers
   const currentMonth = dateFilter.month;
   const setCurrentMonth = useCallback((m) => {
-    setDateFilter(prev => ({ ...prev, mode: 'month', month: m }));
+    setDateFilter(prev => ({ ...prev, mode: 'month', month: m, year: Number(m.slice(0, 4)) }));
   }, []);
 
   // Modals & Drawers

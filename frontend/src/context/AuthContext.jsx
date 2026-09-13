@@ -36,9 +36,9 @@ export const AuthProvider = ({ children }) => {
     return data.user;
   };
 
-  const signup = async ({ fullName, email, password, avatarUrl }) => {
+  const signup = async ({ fullName, email, password, confirmPassword, avatarUrl }) => {
     setAuthError(null);
-    const data = await authApi.signup({ fullName, email, password, avatarUrl });
+    const data = await authApi.signup({ fullName, email, password, confirmPassword, avatarUrl });
     setToken(data.token);
     setCurrentUser(data.user);
     return data.user;

@@ -17,6 +17,134 @@ const FORMATS = [
 
 const pct = (amt, total) => (total > 0 ? Number(((amt / total) * 100).toFixed(1)) : 0);
 
+const INR = (v) => `₹${Number(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const PDF_SHARED_STYLES = `
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  @page { size: A4; margin: 16mm 14mm; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1e1e1e; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  .report-header {
+    background: linear-gradient(135deg, #0f0f0f 0%, #1a1a2e 50%, #16213e 100%);
+    color: #fff; padding: 36px 40px; border-radius: 12px; margin-bottom: 28px;
+    position: relative; overflow: hidden;
+  }
+  .report-header::after {
+    content: ''; position: absolute; top: -40px; right: -40px;
+    width: 160px; height: 160px; border-radius: 50%;
+    background: rgba(183, 255, 0, 0.08);
+  }
+  .report-header::before {
+    content: ''; position: absolute; bottom: -60px; right: 60px;
+    width: 120px; height: 120px; border-radius: 50%;
+    background: rgba(99, 102, 241, 0.06);
+  }
+  .report-header h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 4px; position: relative; z-index: 1; }
+  .report-header .subtitle { font-size: 13px; color: rgba(255,255,255,0.6); font-weight: 500; position: relative; z-index: 1; }
+  .report-header .brand { position: absolute; top: 36px; right: 40px; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.25); text-transform: uppercase; letter-spacing: 0.12em; z-index: 1; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+  .stat-card {
+    padding: 18px 16px; border-radius: 10px; border: 1px solid #f0f0f0;
+    background: #fafafa; position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%;
+    border-radius: 0 3px 3px 0;
+  }
+  .stat-card.accent-green::before { background: #22c55e; }
+  .stat-card.accent-blue::before { background: #3b82f6; }
+  .stat-card.accent-purple::before { background: #8b5cf6; }
+  .stat-card.accent-amber::before { background: #f59e0b; }
+  .stat-card .stat-label { font-size: 10.5px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .stat-card .stat-value { font-size: 20px; font-weight: 800; color: #111827; letter-spacing: -0.02em; }
+
+  .section { margin-bottom: 28px; page-break-inside: avoid; }
+  .section-title {
+    font-size: 14px; font-weight: 800; color: #111827; margin-bottom: 14px;
+    padding-bottom: 8px; border-bottom: 2px solid #f0f0f0;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+
+  .data-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .data-table thead th {
+    padding: 10px 14px; text-align: left; font-weight: 700; font-size: 10.5px;
+    text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280;
+    background: #f9fafb; border-bottom: 2px solid #e5e7eb;
+  }
+  .data-table tbody td {
+    padding: 10px 14px; border-bottom: 1px solid #f3f4f6; color: #374151;
+  }
+  .data-table tbody tr:nth-child(even) { background: #fafbfc; }
+  .data-table tbody tr:last-child td { border-bottom: 2px solid #e5e7eb; }
+  .data-table .text-right { text-align: right; }
+  .data-table .text-center { text-align: center; }
+  .data-table .font-bold { font-weight: 700; }
+  .data-table .text-muted { color: #9ca3af; }
+
+  .progress-row { display: flex; align-items: center; gap: 10px; }
+  .progress-bar { flex: 1; height: 6px; background: #f3f4f6; border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 3px; }
+  .progress-pct { font-size: 11px; font-weight: 700; color: #6b7280; min-width: 42px; text-align: right; }
+
+  .day-group { margin-bottom: 18px; page-break-inside: avoid; }
+  .day-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+    border-radius: 8px; margin-bottom: 4px; border-left: 3px solid #6366f1;
+  }
+  .day-header .day-date { font-size: 12.5px; font-weight: 700; color: #111827; }
+  .day-header .day-total { font-size: 12.5px; font-weight: 700; color: #ef4444; }
+
+  .expense-item {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 10px 14px 10px 20px; border-bottom: 1px solid #f9fafb; font-size: 12.5px;
+  }
+  .expense-item:last-child { border-bottom: none; }
+  .expense-item:hover { background: #fafbfc; }
+  .expense-info { flex: 1; }
+  .expense-desc { font-weight: 600; color: #111827; margin-bottom: 2px; }
+  .expense-meta { font-size: 11px; color: #9ca3af; }
+  .expense-amount { font-weight: 700; color: #ef4444; white-space: nowrap; margin-left: 16px; }
+  .expense-settled { color: #22c55e; font-size: 11px; margin-left: 4px; }
+
+  .splits-detail { font-size: 10.5px; color: #9ca3af; margin-top: 4px; padding-left: 2px; }
+  .split-item { display: inline; }
+  .split-settled { color: #22c55e; }
+
+  .report-footer {
+    margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e7eb;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10.5px; color: #9ca3af;
+  }
+  .report-footer .generated { font-weight: 500; }
+  .report-footer .brand-footer { font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
+
+  .empty-state { text-align: center; padding: 40px 20px; color: #9ca3af; font-size: 13px; }
+
+  @media print {
+    body { background: #fff; }
+    .report-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .stat-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .data-table thead th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .data-table tbody tr:nth-child(even) { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .day-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .progress-fill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .section { page-break-inside: avoid; }
+    .day-group { page-break-inside: avoid; }
+  }
+`;
+
+const CATEGORY_COLORS = [
+  '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899',
+  '#f43f5e', '#ef4444', '#f97316', '#f59e0b', '#eab308',
+  '#84cc16', '#22c55e', '#14b8a6', '#06b6d4', '#0ea5e9',
+  '#3b82f6', '#6366f1',
+];
+
+const getColor = (i) => CATEGORY_COLORS[i % CATEGORY_COLORS.length];
+
 const generatePersonalPDF = (expenses, categories, periodLabel, currentUser) => {
   const total = expenses.reduce((s, e) => s + (e.amount || 0), 0);
 
@@ -26,8 +154,8 @@ const generatePersonalPDF = (expenses, categories, periodLabel, currentUser) => 
     if (!categoryBreakdown[catName]) categoryBreakdown[catName] = 0;
     categoryBreakdown[catName] += exp.amount || 0;
   });
-
   const sortedCategories = Object.entries(categoryBreakdown).sort((a, b) => b[1] - a[1]);
+  const maxCat = sortedCategories.length > 0 ? sortedCategories[0][1] : 1;
 
   const grouped = expenses.reduce((acc, exp) => {
     const d = exp.expenseDate || exp.date || 'Unknown';
@@ -37,111 +165,117 @@ const generatePersonalPDF = (expenses, categories, periodLabel, currentUser) => 
   }, {});
   const sortedDates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a));
 
-  const html = `
-<!DOCTYPE html>
-<html>
+  const now = new Date().toLocaleDateString('en-IN', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Personal Expenses - ${periodLabel}</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Inter', -apple-system, sans-serif; color: #1a1a1a; padding: 40px; background: #fff; }
-    .header { text-align: center; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid #e5e5e5; }
-    .header h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
-    .header p { color: #737373; font-size: 14px; }
-    .summary { display: flex; gap: 16px; margin-bottom: 32px; }
-    .summary-card { flex: 1; padding: 16px; border: 1px solid #e5e5e5; border-radius: 8px; }
-    .summary-card .label { font-size: 12px; color: #737373; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-    .summary-card .value { font-size: 20px; font-weight: 700; margin-top: 4px; }
-    .breakdown { margin-bottom: 32px; }
-    .breakdown h2 { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
-    .breakdown-table { width: 100%; border-collapse: collapse; }
-    .breakdown-table th, .breakdown-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
-    .breakdown-table th { background: #fafafa; font-weight: 600; color: #525252; }
-    .breakdown-table td:last-child { text-align: right; font-weight: 600; }
-    .expenses { margin-bottom: 24px; }
-    .expenses h2 { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
-    .day-group { margin-bottom: 16px; }
-    .day-header { display: flex; justify-content: space-between; padding: 8px 12px; background: #fafafa; border-radius: 6px; margin-bottom: 6px; font-size: 13px; font-weight: 600; }
-    .expense-row { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #f5f5f5; font-size: 13px; }
-    .expense-row:last-child { border-bottom: none; }
-    .expense-desc { flex: 1; }
-    .expense-cat { color: #737373; font-size: 12px; }
-    .expense-amount { font-weight: 600; }
-    .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e5e5; text-align: center; color: #a3a3a3; font-size: 11px; }
-    @media print { body { padding: 20px; } }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personal Expense Report — ${periodLabel}</title>
+  <style>${PDF_SHARED_STYLES}</style>
 </head>
 <body>
-  <div class="header">
+  <div class="report-header">
+    <div class="brand">Finance Tracker</div>
     <h1>Personal Expense Report</h1>
-    <p>${periodLabel}${currentUser ? ' · ' + (currentUser.name || currentUser.email || '') : ''}</p>
+    <div class="subtitle">${periodLabel}${currentUser ? ' &middot; ' + (currentUser.name || currentUser.email || '') : ''}</div>
   </div>
 
-  <div class="summary">
-    <div class="summary-card">
-      <div class="label">Total Expenses</div>
-      <div class="value">₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+  <div class="stats-grid">
+    <div class="stat-card accent-green">
+      <div class="stat-label">Total Spent</div>
+      <div class="stat-value">${INR(total)}</div>
     </div>
-    <div class="summary-card">
-      <div class="label">Transactions</div>
-      <div class="value">${expenses.length}</div>
+    <div class="stat-card accent-blue">
+      <div class="stat-label">Transactions</div>
+      <div class="stat-value">${expenses.length.toLocaleString('en-IN')}</div>
     </div>
-    <div class="summary-card">
-      <div class="label">Categories</div>
-      <div class="value">${sortedCategories.length}</div>
+    <div class="stat-card accent-purple">
+      <div class="stat-label">Categories</div>
+      <div class="stat-value">${sortedCategories.length}</div>
     </div>
-    <div class="summary-card">
-      <div class="label">Avg / Transaction</div>
-      <div class="value">₹${expenses.length > 0 ? (total / expenses.length).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}</div>
+    <div class="stat-card accent-amber">
+      <div class="stat-label">Avg / Transaction</div>
+      <div class="stat-value">${INR(expenses.length > 0 ? total / expenses.length : 0)}</div>
     </div>
   </div>
 
-  <div class="breakdown">
-    <h2>Category Breakdown</h2>
-    <table class="breakdown-table">
-      <thead><tr><th>Category</th><th>Amount</th><th>% of Total</th></tr></thead>
+  ${sortedCategories.length > 0 ? `
+  <div class="section">
+    <div class="section-title">Category Breakdown</div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width:30%">Category</th>
+          <th style="width:30%">Amount</th>
+          <th style="width:40%">Distribution</th>
+        </tr>
+      </thead>
       <tbody>
-        ${sortedCategories.map(([name, amount]) => `
+        ${sortedCategories.map(([name, amount], i) => {
+          const p = pct(amount, total);
+          const barWidth = maxCat > 0 ? (amount / maxCat) * 100 : 0;
+          const color = getColor(i);
+          return `
           <tr>
-            <td>${name}</td>
-            <td>₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-            <td>${total > 0 ? ((amount / total) * 100).toFixed(1) : 0}%</td>
-          </tr>
-        `).join('')}
+            <td class="font-bold">${name}</td>
+            <td class="text-right font-bold">${INR(amount)}</td>
+            <td>
+              <div class="progress-row">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width:${barWidth}%;background:${color};"></div>
+                </div>
+                <div class="progress-pct">${p}%</div>
+              </div>
+            </td>
+          </tr>`;
+        }).join('')}
       </tbody>
+      <tfoot>
+        <tr>
+          <td class="font-bold" style="border-top:2px solid #e5e7eb;padding-top:12px;">Total</td>
+          <td class="text-right font-bold" style="border-top:2px solid #e5e7eb;padding-top:12px;">${INR(total)}</td>
+          <td style="border-top:2px solid #e5e7eb;padding-top:12px;font-weight:700;color:#6b7280;">100%</td>
+        </tr>
+      </tfoot>
     </table>
-  </div>
+  </div>` : ''}
 
-  <div class="expenses">
-    <h2>Detailed Expenses</h2>
-    ${sortedDates.map(dateStr => {
+  <div class="section">
+    <div class="section-title">Detailed Expenses</div>
+    ${sortedDates.length === 0 ? '<div class="empty-state">No expenses recorded for this period.</div>' :
+    sortedDates.map(dateStr => {
       const dayExpenses = grouped[dateStr];
       const dayTotal = dayExpenses.reduce((s, e) => s + (e.amount || 0), 0);
-      const dateLabel = new Date(dateStr + 'T12:00:00').toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+      const dateLabel = new Date(dateStr + 'T12:00:00').toLocaleDateString('en-IN', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+      });
       return `
-        <div class="day-group">
-          <div class="day-header">
-            <span>${dateLabel}</span>
-            <span>-₹${dayTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-          </div>
-          ${dayExpenses.map(exp => `
-            <div class="expense-row">
-              <div class="expense-desc">
-                ${exp.description || 'Expense'}
-                <div class="expense-cat">${exp.categoryName || 'Uncategorized'}</div>
-              </div>
-              <div class="expense-amount">-₹${(exp.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-            </div>
-          `).join('')}
+      <div class="day-group">
+        <div class="day-header">
+          <span class="day-date">${dateLabel}</span>
+          <span class="day-total">${INR(dayTotal)}</span>
         </div>
-      `;
+        ${dayExpenses.map(exp => `
+          <div class="expense-item">
+            <div class="expense-info">
+              <div class="expense-desc">${exp.description || 'Expense'}</div>
+              <div class="expense-meta">${exp.categoryName || 'Uncategorized'}</div>
+            </div>
+            <div class="expense-amount">${INR(exp.amount)}</div>
+          </div>
+        `).join('')}
+      </div>`;
     }).join('')}
   </div>
 
-  <div class="footer">
-    Generated on ${new Date().toLocaleDateString('en-IN', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })} · Finance Tracker
+  <div class="report-footer">
+    <span class="generated">Generated on ${now}</span>
+    <span class="brand-footer">Finance Tracker</span>
   </div>
 </body>
 </html>`;
@@ -149,7 +283,7 @@ const generatePersonalPDF = (expenses, categories, periodLabel, currentUser) => 
   const printWindow = window.open('', '_blank');
   printWindow.document.write(html);
   printWindow.document.close();
-  setTimeout(() => printWindow.print(), 500);
+  setTimeout(() => printWindow.print(), 600);
 };
 
 const generateGroupPDF = (groupExpenses, groupName, periodLabel, members) => {
@@ -162,6 +296,7 @@ const generateGroupPDF = (groupExpenses, groupName, periodLabel, members) => {
     categoryBreakdown[catName] += exp.amount || 0;
   });
   const sortedCategories = Object.entries(categoryBreakdown).sort((a, b) => b[1] - a[1]);
+  const maxCat = sortedCategories.length > 0 ? sortedCategories[0][1] : 1;
 
   const paidByBreakdown = {};
   groupExpenses.forEach(exp => {
@@ -170,6 +305,9 @@ const generateGroupPDF = (groupExpenses, groupName, periodLabel, members) => {
     paidByBreakdown[payer] += exp.amount || 0;
   });
   const sortedPayers = Object.entries(paidByBreakdown).sort((a, b) => b[1] - a[1]);
+  const maxPayer = sortedPayers.length > 0 ? sortedPayers[0][1] : 1;
+
+  const memberCount = members?.length || sortedPayers.length || 1;
 
   const grouped = groupExpenses.reduce((acc, exp) => {
     const d = exp.expenseDate || exp.date || 'Unknown';
@@ -179,132 +317,165 @@ const generateGroupPDF = (groupExpenses, groupName, periodLabel, members) => {
   }, {});
   const sortedDates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a));
 
-  const html = `
-<!DOCTYPE html>
-<html>
+  const now = new Date().toLocaleDateString('en-IN', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
+
+  const PAYER_COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f97316', '#22c55e', '#06b6d4'];
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>${groupName} Expenses - ${periodLabel}</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Inter', -apple-system, sans-serif; color: #1a1a1a; padding: 40px; background: #fff; }
-    .header { text-align: center; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 2px solid #e5e5e5; }
-    .header h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
-    .header p { color: #737373; font-size: 14px; }
-    .summary { display: flex; gap: 16px; margin-bottom: 32px; flex-wrap: wrap; }
-    .summary-card { flex: 1; min-width: 120px; padding: 16px; border: 1px solid #e5e5e5; border-radius: 8px; }
-    .summary-card .label { font-size: 12px; color: #737373; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-    .summary-card .value { font-size: 20px; font-weight: 700; margin-top: 4px; }
-    .section { margin-bottom: 32px; }
-    .section h2 { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
-    .table { width: 100%; border-collapse: collapse; }
-    .table th, .table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
-    .table th { background: #fafafa; font-weight: 600; color: #525252; }
-    .table td:last-child { text-align: right; font-weight: 600; }
-    .day-group { margin-bottom: 16px; }
-    .day-header { display: flex; justify-content: space-between; padding: 8px 12px; background: #fafafa; border-radius: 6px; margin-bottom: 6px; font-size: 13px; font-weight: 600; }
-    .expense-row { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #f5f5f5; font-size: 13px; }
-    .expense-row:last-child { border-bottom: none; }
-    .expense-desc { flex: 1; }
-    .expense-meta { color: #737373; font-size: 12px; }
-    .expense-amount { font-weight: 600; }
-    .splits { font-size: 11px; color: #737373; margin-top: 4px; }
-    .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e5e5; text-align: center; color: #a3a3a3; font-size: 11px; }
-    @media print { body { padding: 20px; } }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${groupName} — Expense Report — ${periodLabel}</title>
+  <style>${PDF_SHARED_STYLES}</style>
 </head>
 <body>
-  <div class="header">
+  <div class="report-header">
+    <div class="brand">Finance Tracker</div>
     <h1>Group Expense Report</h1>
-    <p>${groupName} · ${periodLabel}</p>
+    <div class="subtitle">${groupName} &middot; ${periodLabel}</div>
   </div>
 
-  <div class="summary">
-    <div class="summary-card">
-      <div class="label">Total Expenses</div>
-      <div class="value">₹${total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+  <div class="stats-grid">
+    <div class="stat-card accent-green">
+      <div class="stat-label">Total Spent</div>
+      <div class="stat-value">${INR(total)}</div>
     </div>
-    <div class="summary-card">
-      <div class="label">Transactions</div>
-      <div class="value">${groupExpenses.length}</div>
+    <div class="stat-card accent-blue">
+      <div class="stat-label">Transactions</div>
+      <div class="stat-value">${groupExpenses.length.toLocaleString('en-IN')}</div>
     </div>
-    <div class="summary-card">
-      <div class="label">Members</div>
-      <div class="value">${members?.length || sortedPayers.length}</div>
+    <div class="stat-card accent-purple">
+      <div class="stat-label">Members</div>
+      <div class="stat-value">${memberCount}</div>
     </div>
-    <div class="summary-card">
-      <div class="label">Avg / Person</div>
-      <div class="value">₹${(members?.length || 1) > 0 ? (total / (members?.length || 1)).toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}</div>
+    <div class="stat-card accent-amber">
+      <div class="stat-label">Avg / Person</div>
+      <div class="stat-value">${INR(total / memberCount)}</div>
     </div>
   </div>
 
+  ${sortedCategories.length > 0 ? `
   <div class="section">
-    <h2>Category Breakdown</h2>
-    <table class="table">
-      <thead><tr><th>Category</th><th>Amount</th><th>% of Total</th></tr></thead>
+    <div class="section-title">Category Breakdown</div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width:30%">Category</th>
+          <th style="width:30%">Amount</th>
+          <th style="width:40%">Distribution</th>
+        </tr>
+      </thead>
       <tbody>
-        ${sortedCategories.map(([name, amount]) => `
+        ${sortedCategories.map(([name, amount], i) => {
+          const p = pct(amount, total);
+          const barWidth = maxCat > 0 ? (amount / maxCat) * 100 : 0;
+          const color = getColor(i);
+          return `
           <tr>
-            <td>${name}</td>
-            <td>₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-            <td>${total > 0 ? ((amount / total) * 100).toFixed(1) : 0}%</td>
-          </tr>
-        `).join('')}
+            <td class="font-bold">${name}</td>
+            <td class="text-right font-bold">${INR(amount)}</td>
+            <td>
+              <div class="progress-row">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width:${barWidth}%;background:${color};"></div>
+                </div>
+                <div class="progress-pct">${p}%</div>
+              </div>
+            </td>
+          </tr>`;
+        }).join('')}
       </tbody>
+      <tfoot>
+        <tr>
+          <td class="font-bold" style="border-top:2px solid #e5e7eb;padding-top:12px;">Total</td>
+          <td class="text-right font-bold" style="border-top:2px solid #e5e7eb;padding-top:12px;">${INR(total)}</td>
+          <td style="border-top:2px solid #e5e7eb;padding-top:12px;font-weight:700;color:#6b7280;">100%</td>
+        </tr>
+      </tfoot>
     </table>
-  </div>
+  </div>` : ''}
 
+  ${sortedPayers.length > 0 ? `
   <div class="section">
-    <h2>Payment Summary</h2>
-    <table class="table">
-      <thead><tr><th>Member</th><th>Total Paid</th><th>% of Total</th></tr></thead>
+    <div class="section-title">Payment Summary</div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th style="width:30%">Member</th>
+          <th style="width:30%">Total Paid</th>
+          <th style="width:40%">Contribution</th>
+        </tr>
+      </thead>
       <tbody>
-        ${sortedPayers.map(([name, amount]) => `
+        ${sortedPayers.map(([name, amount], i) => {
+          const p = pct(amount, total);
+          const barWidth = maxPayer > 0 ? (amount / maxPayer) * 100 : 0;
+          const color = PAYER_COLORS[i % PAYER_COLORS.length];
+          return `
           <tr>
-            <td>${name}</td>
-            <td>₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-            <td>${total > 0 ? ((amount / total) * 100).toFixed(1) : 0}%</td>
-          </tr>
-        `).join('')}
+            <td class="font-bold">${name}</td>
+            <td class="text-right font-bold">${INR(amount)}</td>
+            <td>
+              <div class="progress-row">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width:${barWidth}%;background:${color};"></div>
+                </div>
+                <div class="progress-pct">${p}%</div>
+              </div>
+            </td>
+          </tr>`;
+        }).join('')}
       </tbody>
+      <tfoot>
+        <tr>
+          <td class="font-bold" style="border-top:2px solid #e5e7eb;padding-top:12px;">Total</td>
+          <td class="text-right font-bold" style="border-top:2px solid #e5e7eb;padding-top:12px;">${INR(total)}</td>
+          <td style="border-top:2px solid #e5e7eb;padding-top:12px;font-weight:700;color:#6b7280;">100%</td>
+        </tr>
+      </tfoot>
     </table>
-  </div>
+  </div>` : ''}
 
   <div class="section">
-    <h2>Detailed Expenses</h2>
-    ${sortedDates.length === 0 ? '<p style="color:#737373;font-size:13px;">No expenses recorded for this period.</p>' :
+    <div class="section-title">Detailed Expenses</div>
+    ${sortedDates.length === 0 ? '<div class="empty-state">No expenses recorded for this period.</div>' :
     sortedDates.map(dateStr => {
       const dayExpenses = grouped[dateStr];
       const dayTotal = dayExpenses.reduce((s, e) => s + (e.amount || 0), 0);
-      const dateLabel = new Date(dateStr + 'T12:00:00').toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+      const dateLabel = new Date(dateStr + 'T12:00:00').toLocaleDateString('en-IN', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+      });
       return `
-        <div class="day-group">
-          <div class="day-header">
-            <span>${dateLabel}</span>
-            <span>-₹${dayTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-          </div>
-          ${dayExpenses.map(exp => `
-            <div class="expense-row">
-              <div class="expense-desc">
-                ${exp.description || 'Expense'}
-                <div class="expense-meta">${exp.categoryName || 'Uncategorized'} · Paid by ${exp.paidByName || 'Unknown'} · ${exp.splitType || 'EQUAL'} split</div>
-                ${exp.splits && exp.splits.length > 0 ? `
-                  <div class="splits">
-                    Splits: ${exp.splits.map(s => `${s.userName || s.name}: ₹${(s.shareAmount || 0).toFixed(2)}${s.isSettled ? ' ✓' : ''}`).join(' · ')}
-                  </div>
-                ` : ''}
-              </div>
-              <div class="expense-amount">-₹${(exp.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-            </div>
-          `).join('')}
+      <div class="day-group">
+        <div class="day-header">
+          <span class="day-date">${dateLabel}</span>
+          <span class="day-total">${INR(dayTotal)}</span>
         </div>
-      `;
+        ${dayExpenses.map(exp => `
+          <div class="expense-item">
+            <div class="expense-info">
+              <div class="expense-desc">${exp.description || 'Expense'}</div>
+              <div class="expense-meta">${exp.categoryName || 'Uncategorized'} &middot; Paid by ${exp.paidByName || 'Unknown'} &middot; ${(exp.splitType || 'EQUAL').toLowerCase()} split</div>
+              ${exp.splits && exp.splits.length > 0 ? `
+                <div class="splits-detail">
+                  ${exp.splits.map(s => `<span class="split-item">${s.userName || s.name}: ${INR(s.shareAmount || 0)}${s.isSettled ? ' <span class="split-settled">&#10003;</span>' : ''}</span>`).join(' &middot; ')}
+                </div>
+              ` : ''}
+            </div>
+            <div class="expense-amount">${INR(exp.amount)}</div>
+          </div>
+        `).join('')}
+      </div>`;
     }).join('')}
   </div>
 
-  <div class="footer">
-    Generated on ${new Date().toLocaleDateString('en-IN', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })} · Finance Tracker
+  <div class="report-footer">
+    <span class="generated">Generated on ${now}</span>
+    <span class="brand-footer">Finance Tracker</span>
   </div>
 </body>
 </html>`;
@@ -312,7 +483,7 @@ const generateGroupPDF = (groupExpenses, groupName, periodLabel, members) => {
   const printWindow = window.open('', '_blank');
   printWindow.document.write(html);
   printWindow.document.close();
-  setTimeout(() => printWindow.print(), 500);
+  setTimeout(() => printWindow.print(), 600);
 };
 
 export const ExportModal = ({ isOpen, onClose, exportType = 'personal', initialGroupId = null }) => {
@@ -386,35 +557,42 @@ export const ExportModal = ({ isOpen, onClose, exportType = 'personal', initialG
     const rows = buildExpenseRows(expenses, isGroup);
 
     if (format === 'csv') {
-      exportToCSV(`${baseName}.csv`, rows);
+      exportToCSV(`${baseName}.csv`, rows, {
+        title: isGroup ? `Group Expense Report — ${group?.name || 'Group'}` : 'Personal Expense Report',
+        period: periodLabel,
+        stats: isGroup
+          ? { 'Total Expenses': INR(total), 'Transactions': expenses.length, 'Members': group?.members?.length || 1, 'Avg / Person': INR(total / (group?.members?.length || 1)) }
+          : { 'Total Expenses': INR(total), 'Transactions': expenses.length, 'Categories': cats.length, 'Avg / Transaction': INR(expenses.length ? total / expenses.length : 0) },
+        isGroup,
+      });
       return;
     }
 
     const memberCount = isGroup ? (group?.members?.length || 1) : 0;
     const stats = isGroup
       ? [
-          ['Total Expenses', Number(total.toFixed(2))],
+          ['Total Expenses', INR(total)],
           ['Transactions', expenses.length],
           ['Members', memberCount],
-          ['Avg / Person', Number((total / (memberCount || 1)).toFixed(2))],
+          ['Avg / Person', INR(total / (memberCount || 1))],
         ]
       : [
-          ['Total Expenses', Number(total.toFixed(2))],
+          ['Total Expenses', INR(total)],
           ['Transactions', expenses.length],
           ['Categories', cats.length],
-          ['Avg / Transaction', Number(expenses.length ? (total / expenses.length).toFixed(2) : 0)],
+          ['Avg / Transaction', INR(expenses.length ? total / expenses.length : 0)],
         ];
 
     const tables = [{
       name: 'Category Breakdown',
       columns: ['Category', 'Amount', '% of Total'],
-      rows: cats.map(([name, amt]) => [name, Number(amt.toFixed(2)), pct(amt, total)]),
+      rows: cats.map(([name, amt]) => [name, INR(amt), `${pct(amt, total)}%`]),
     }];
     if (isGroup) {
       tables.push({
         name: 'Payment Summary',
         columns: ['Member', 'Total Paid', '% of Total'],
-        rows: paymentTotals(expenses).map(([name, amt]) => [name, Number(amt.toFixed(2)), pct(amt, total)]),
+        rows: paymentTotals(expenses).map(([name, amt]) => [name, INR(amt), `${pct(amt, total)}%`]),
       });
     }
 
@@ -448,7 +626,6 @@ export const ExportModal = ({ isOpen, onClose, exportType = 'personal', initialG
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '20px 24px', borderBottom: '1px solid #f0f0f0',
@@ -485,9 +662,7 @@ export const ExportModal = ({ isOpen, onClose, exportType = 'personal', initialG
           </button>
         </div>
 
-        {/* Body */}
         <div style={{ padding: '24px' }}>
-          {/* Period Selector */}
           <div style={{ marginBottom: '20px' }}>
             <label style={{ fontSize: '12px', fontWeight: 600, color: '#525252', display: 'block', marginBottom: '6px' }}>
               Select Period
@@ -495,7 +670,6 @@ export const ExportModal = ({ isOpen, onClose, exportType = 'personal', initialG
             <DateFilterBar />
           </div>
 
-          {/* Group Selector (only for group export) */}
           {exportType === 'group' && (
             <div style={{ marginBottom: '20px' }}>
               <label style={{ fontSize: '12px', fontWeight: 600, color: '#525252', display: 'block', marginBottom: '6px' }}>
@@ -524,7 +698,6 @@ export const ExportModal = ({ isOpen, onClose, exportType = 'personal', initialG
             </div>
           )}
 
-          {/* Format Selector */}
           <div style={{ marginBottom: '20px' }}>
             <label style={{ fontSize: '12px', fontWeight: 600, color: '#525252', display: 'block', marginBottom: '6px' }}>
               Export Format
@@ -559,7 +732,6 @@ export const ExportModal = ({ isOpen, onClose, exportType = 'personal', initialG
             </p>
           </div>
 
-          {/* Preview Stats */}
           <div style={{
             padding: '16px', background: '#fafafa', borderRadius: '10px',
             border: '1px solid #f0f0f0', marginBottom: '20px',
@@ -581,16 +753,15 @@ export const ExportModal = ({ isOpen, onClose, exportType = 'personal', initialG
               <div>
                 <div style={{ fontSize: '11px', color: '#a3a3a3' }}>Total</div>
                 <div style={{ fontSize: '13px', fontWeight: 600, color: '#1a1a1a' }}>
-                  {isLoadingData ? '...' : `₹${(exportType === 'personal'
+                  {isLoadingData ? '...' : INR(exportType === 'personal'
                     ? personalExpenses.reduce((s, e) => s + (e.amount || 0), 0)
                     : groupExpenses.reduce((s, e) => s + (e.amount || 0), 0)
-                  ).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+                  )}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Export Button */}
           <button
             onClick={handleExport}
             disabled={isLoadingData}
