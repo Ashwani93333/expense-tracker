@@ -17,6 +17,7 @@ import {
   ChevronRight,
   Briefcase,
   CalendarDays,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 
@@ -53,6 +54,7 @@ const NAV_SECTIONS = [
   {
     label: 'Settings',
     items: [
+      { id: 'preferences',           label: 'Preferences',     icon: SlidersHorizontal },
       { id: 'notification-settings', label: 'Notifications', icon: BellRing },
     ],
   },

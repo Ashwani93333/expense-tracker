@@ -7,6 +7,7 @@ import {
   Heart, HelpCircle, IndianRupee,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useOnboardingWizard } from '../context/OnboardingWizardContext';
 import { PASSWORD_REQUIREMENTS, isPasswordValid } from '../utils/passwordPolicy';
 
 const useRevealOnScroll = () => {
@@ -427,7 +428,7 @@ const FeatureShowcase = () => {
           <div>
             <h3 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#111827', marginBottom: '12px' }}>{H.title}</h3>
             <p style={{ fontSize: '0.98rem', color: '#64748b', lineHeight: 1.7, marginBottom: '20px' }}>{H.desc}</p>
-            <button className="btn btn-primary btn-lg" onClick={() => { setIsSignUpModeGlobal(true); document.getElementById('auth-section').scrollIntoView({ behavior: 'smooth' }); }}>
+            <button className="btn btn-primary btn-lg" onClick={() => { setIsSignUpModeGlobal(); }}>
               Try it free <ArrowRight size={16} />
             </button>
           </div>
@@ -594,7 +595,8 @@ const HeroFloatingIcons = () => {
 };
 
 export const OnboardingPage = () => {
-  const { login, signup } = useAuth();
+  const { login } = useAuth();
+  const { openWizard } = useOnboardingWizard();
   const [isSignUpMode, setIsSignUpMode] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -605,7 +607,7 @@ export const OnboardingPage = () => {
   const [headlineIdx, setHeadlineIdx] = useState(0);
 
   useRevealOnScroll();
-  setGlobalSignUp(setIsSignUpMode);
+  setGlobalSignUp(openWizard);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -645,15 +647,10 @@ export const OnboardingPage = () => {
     setIsLoading(true);
     try {
       if (isSignUpMode) {
-        await signup({
-          fullName: formData.fullName,
-          email: formData.email,
-          password: formData.password,
-          confirmPassword: formData.confirmPassword,
-        });
-      } else {
-        await login(formData.email, formData.password);
+        openWizard(formData);
+        return;
       }
+      await login(formData.email, formData.password);
     } catch (err) {
       const detail = err.data?.validationErrors
         ? Object.values(err.data.validationErrors)[0]
@@ -726,7 +723,7 @@ export const OnboardingPage = () => {
             Sign In
           </button>
           <button
-            onClick={() => { setIsSignUpMode(true); scrollToAuth(); }}
+            onClick={openWizard}
             style={{
               padding: '8px 20px', borderRadius: '10px', border: 'none',
               background: '#050505', color: '#B7FF00', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer',
@@ -784,7 +781,7 @@ export const OnboardingPage = () => {
 
           <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap', animation: 'fadeIn 1.2s ease-out' }}>
             <button
-              onClick={() => { setIsSignUpMode(true); scrollToAuth(); }}
+              onClick={openWizard}
               style={{
                 padding: '16px 30px', borderRadius: '12px', border: 'none',
                 background: '#B7FF00', color: '#050505', fontWeight: 800, fontSize: '1rem', cursor: 'pointer',
@@ -926,7 +923,10 @@ export const OnboardingPage = () => {
               ].map(t => (
                 <button
                   key={t.label}
-                  onClick={() => { setIsSignUpMode(t.mode); setError(''); }}
+                  onClick={() => {
+                    if (t.mode) { openWizard(); return; }
+                    setIsSignUpMode(false); setError('');
+                  }}
                   style={{
                     flex: 1, padding: '11px', borderRadius: '8px', border: 'none',
                     background: isSignUpMode === t.mode ? '#fff' : 'transparent',

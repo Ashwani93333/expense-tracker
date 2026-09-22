@@ -74,6 +74,12 @@ export const usersApi = {
   updateNotificationSettings: (payload) => request('PUT', '/api/users/me/notification-settings', payload),
 };
 
+// ─── User Preferences / Onboarding API ────────────────────────────────────────
+export const userPreferencesApi = {
+  get: () => request('GET', '/api/users/me/preferences'),
+  update: (payload) => request('PUT', '/api/users/me/preferences', payload),
+};
+
 // ─── Categories API ───────────────────────────────────────────────────────────
 export const categoriesApi = {
   list: () => request('GET', '/api/categories'),

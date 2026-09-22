@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Bell, Search, Wallet, LogOut, User, ChevronDown, ScanLine, Briefcase, KeyRound } from 'lucide-react';
+import { Plus, Bell, Search, Wallet, LogOut, User, ChevronDown, ScanLine, Briefcase, KeyRound, SlidersHorizontal } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 import { useAuth } from '../../context/AuthContext';
 import { useIncome } from '../../context/IncomeContext';
@@ -211,6 +211,14 @@ export const Navbar = () => {
                   >
                     <User size={14} />
                     <span>Dashboard</span>
+                  </button>
+
+                  <button
+                    onClick={() => { setActiveTab('preferences'); setUserMenuOpen(false); }}
+                    style={dropdownItemStyle}
+                  >
+                    <SlidersHorizontal size={14} />
+                    <span>Preferences</span>
                   </button>
 
                   <button

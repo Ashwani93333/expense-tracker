@@ -1,7 +1,8 @@
 import React from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ExpenseProvider, useExpense } from './context/ExpenseContext';
-import { IncomeProvider, useIncome } from './context/IncomeContext';
+import { IncomeProvider } from './context/IncomeContext';
+import { OnboardingWizardProvider, useOnboardingWizard } from './context/OnboardingWizardContext';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
 import { MobileNavigation } from './components/layout/MobileNavigation';
@@ -10,6 +11,7 @@ import { GroupsPage } from './pages/GroupsPage';
 import { GroupDetailPage } from './pages/GroupDetailPage';
 import { BudgetSettingsPage } from './pages/BudgetSettingsPage';
 import { NotificationSettingsPage } from './pages/NotificationSettingsPage';
+import { PreferencesPage } from './pages/PreferencesPage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { ExpenseTable } from './components/expenses/ExpenseTable';
 import { ReceiptScanner } from './components/receipts/ReceiptScanner';
@@ -22,6 +24,7 @@ import { CalendarPage } from './pages/CalendarPage';
 import { NotificationDrawer } from './components/notifications/NotificationDrawer';
 import { ExportModal } from './components/exports/ExportModal';
 import { ChangePasswordModal } from './components/auth/ChangePasswordModal';
+import { RegistrationWizard } from './pages/auth/RegistrationWizard';
 import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
 
 const Toast = ({ message, type = 'success' }) => {
@@ -128,6 +131,7 @@ const AppContent = () => {
           {activeTab === 'group-detail'   && <GroupDetailPage />}
           {activeTab === 'budget-settings'&& <BudgetSettingsPage />}
           {activeTab === 'notification-settings' && <NotificationSettingsPage />}
+          {activeTab === 'preferences'         && <PreferencesPage />}
           {activeTab === 'scan'           && <ReceiptScanner />}
           {activeTab === 'analytics'      && <AnalyticsCharts />}
           {activeTab === 'categories'     && <CategoriesManager />}
@@ -156,25 +160,36 @@ const AppContent = () => {
 };
 
 const AuthGatedApp = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, currentUser, isLoading } = useAuth();
+  const { wizard } = useOnboardingWizard();
 
   if (isLoading) return <AuthLoader />;
 
-  if (!isAuthenticated) return <OnboardingPage />;
+  const onboardingComplete = currentUser?.onboardingCompleted === true;
 
-  return (
-    <ExpenseProvider>
-      <IncomeProvider>
-        <AppContent />
-      </IncomeProvider>
-    </ExpenseProvider>
-  );
+  if (isAuthenticated && onboardingComplete) {
+    return (
+      <ExpenseProvider>
+        <IncomeProvider>
+          <AppContent />
+        </IncomeProvider>
+      </ExpenseProvider>
+    );
+  }
+
+  // Authenticated but preferences missing → continue setup. Pre-auth users who
+  // launched the wizard from the marketing page are also routed here.
+  if (isAuthenticated || wizard.show) return <RegistrationWizard />;
+
+  return <OnboardingPage />;
 };
 
 export default function App() {
   return (
     <AuthProvider>
-      <AuthGatedApp />
+      <OnboardingWizardProvider>
+        <AuthGatedApp />
+      </OnboardingWizardProvider>
     </AuthProvider>
   );
 }

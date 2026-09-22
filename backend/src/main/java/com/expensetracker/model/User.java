@@ -34,6 +34,9 @@ public class User {
     @Column(name = "is_active")
     private Boolean isActive = true;
 
+    @Column(name = "onboarding_completed")
+    private Boolean onboardingCompleted = false;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
@@ -44,7 +47,7 @@ public class User {
 
     public User() {}
 
-    public User(UUID id, String fullName, String email, String passwordHash, String avatarUrl, Role role, Boolean isActive, OffsetDateTime createdAt, OffsetDateTime updatedAt) {
+    public User(UUID id, String fullName, String email, String passwordHash, String avatarUrl, Role role, Boolean isActive, Boolean onboardingCompleted, OffsetDateTime createdAt, OffsetDateTime updatedAt) {
         this.id = id;
         this.fullName = fullName;
         this.email = email;
@@ -52,6 +55,7 @@ public class User {
         this.avatarUrl = avatarUrl;
         this.role = role != null ? role : Role.ROLE_USER;
         this.isActive = isActive != null ? isActive : true;
+        this.onboardingCompleted = onboardingCompleted != null ? onboardingCompleted : false;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -68,6 +72,7 @@ public class User {
         private String avatarUrl;
         private Role role = Role.ROLE_USER;
         private Boolean isActive = true;
+        private Boolean onboardingCompleted = false;
         private OffsetDateTime createdAt;
         private OffsetDateTime updatedAt;
 
@@ -78,11 +83,12 @@ public class User {
         public UserBuilder avatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; return this; }
         public UserBuilder role(Role role) { this.role = role; return this; }
         public UserBuilder isActive(Boolean isActive) { this.isActive = isActive; return this; }
+        public UserBuilder onboardingCompleted(Boolean onboardingCompleted) { this.onboardingCompleted = onboardingCompleted; return this; }
         public UserBuilder createdAt(OffsetDateTime createdAt) { this.createdAt = createdAt; return this; }
         public UserBuilder updatedAt(OffsetDateTime updatedAt) { this.updatedAt = updatedAt; return this; }
 
         public User build() {
-            return new User(id, fullName, email, passwordHash, avatarUrl, role, isActive, createdAt, updatedAt);
+            return new User(id, fullName, email, passwordHash, avatarUrl, role, isActive, onboardingCompleted, createdAt, updatedAt);
         }
     }
 
@@ -100,6 +106,8 @@ public class User {
     public void setRole(Role role) { this.role = role; }
     public Boolean getIsActive() { return isActive; }
     public void setIsActive(Boolean isActive) { this.isActive = isActive; }
+    public Boolean getOnboardingCompleted() { return onboardingCompleted; }
+    public void setOnboardingCompleted(Boolean onboardingCompleted) { this.onboardingCompleted = onboardingCompleted; }
     public OffsetDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
     public OffsetDateTime getUpdatedAt() { return updatedAt; }

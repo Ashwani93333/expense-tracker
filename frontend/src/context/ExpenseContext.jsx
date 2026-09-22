@@ -148,6 +148,8 @@ export const ExpenseProvider = ({ children }) => {
           paidBy: formData.paidBy,
           splitType: formData.splitType || 'EQUAL',
           splits: formData.splits || [],
+          receiptUrl: formData.receiptUrl || null,
+          receiptHash: formData.receiptHash || null,
         };
         newExpense = await groupsApi.createExpense(formData.groupId, payload);
       } else {

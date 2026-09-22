@@ -167,6 +167,20 @@ CREATE TABLE IF NOT EXISTS user_notification_settings (
     CONSTRAINT uk_user_notification_settings_user UNIQUE (user_id)
 );
 
+-- ================= USER PREFERENCES =================
+-- Per-user onboarding preferences (income slab, spending style, spend categories).
+-- Exactly one row per user.
+CREATE TABLE IF NOT EXISTS user_preferences (
+    id                       UUID PRIMARY KEY,
+    user_id                  UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    income_slab              VARCHAR(30),
+    expense_preference       VARCHAR(20),
+    selected_category_ids    TEXT,
+    created_at               TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at               TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_user_preferences_user UNIQUE (user_id)
+);
+
 -- ================= CATEGORY EXPENSE LIMITS =================
 -- Per-user, per-category monthly spending notification limits.
 CREATE TABLE IF NOT EXISTS category_expense_limits (
@@ -242,6 +256,9 @@ CREATE TABLE IF NOT EXISTS incomes (
 );
 
 -- ================= BACKWARD-COMPATIBLE COLUMN ADDITIONS =================
+-- Onboarding completion flag on users.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT FALSE;
+
 -- Category classification metadata (keywords as JSON array in TEXT, matching existing TEXT-JSON convention).
 ALTER TABLE categories ADD COLUMN IF NOT EXISTS keywords TEXT;
 ALTER TABLE categories ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES users(id);

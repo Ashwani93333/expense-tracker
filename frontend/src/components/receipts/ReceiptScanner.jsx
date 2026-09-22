@@ -1,11 +1,12 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   UploadCloud, ScanLine, Loader2, CheckCircle2, ShieldCheck, Tag,
   X, Edit3, DollarSign, Calendar, FileText, Zap, AlertCircle, AlertTriangle,
-  ShoppingCart, Smartphone, UtensilsCrossed, Sparkles
+  ShoppingCart, Smartphone, UtensilsCrossed, Sparkles, Users, Scale, Percent, PenLine
 } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
-import { expensesApi } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import { expensesApi, groupsApi } from '../../services/api';
 import { CategorySearchSelect } from '../categories/CategorySearchSelect';
 import { PageHeader } from '../ui/PageHeader';
 
@@ -55,8 +56,31 @@ const getMonthLabel = (dateStr) => {
   return new Date(y, m - 1, 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
 };
 
+const round2 = (n) => Math.round(n * 100) / 100;
+
+const SplitTypeBtn = ({ value, current, label, icon: Icon, onClick }) => (
+  <button
+    type="button"
+    onClick={() => onClick(value)}
+    style={{
+      flex: 1, padding: '9px 4px', border: '1px solid',
+      borderColor: current === value ? '#050505' : 'var(--border)',
+      borderRadius: 'var(--r-md)',
+      background: current === value ? '#050505' : '#fff',
+      color: current === value ? '#B7FF00' : 'var(--text-muted)',
+      fontWeight: current === value ? 700 : 500,
+      fontSize: '0.78rem', cursor: 'pointer', fontFamily: 'var(--font)',
+      transition: 'var(--t-fast)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+    }}
+  >
+    <Icon size={13} /> {label}
+  </button>
+);
+
 export const ReceiptScanner = () => {
-  const { addExpense, addCategory, categories } = useExpense();
+  const { addExpense, addCategory, categories, groups } = useExpense();
+  const { currentUser } = useAuth();
 
   const [isDragOver, setIsDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -71,6 +95,14 @@ export const ReceiptScanner = () => {
   const [editDate, setEditDate] = useState('');
   const [editCategoryId, setEditCategoryId] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  const [isGroupExpense, setIsGroupExpense] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState('');
+  const [paidBy, setPaidBy] = useState('');
+  const [splitType, setSplitType] = useState('EQUAL');
+  const [groupMembers, setGroupMembers] = useState([]);
+  const [splits, setSplits] = useState([]);
+  const [membersLoading, setMembersLoading] = useState(false);
 
   const fileInputRef = useRef(null);
 
@@ -163,6 +195,7 @@ export const ReceiptScanner = () => {
 
   const handleConfirm = async () => {
     if (!editAmount || !editDescription || isSaving) return;
+    if (isGroupExpense && (membersLoading || groupMembers.length === 0 || splitError)) return;
     setIsSaving(true);
     try {
       await addExpense({
@@ -172,6 +205,10 @@ export const ReceiptScanner = () => {
         categoryId: editCategoryId,
         receiptHash: scannedData?.receiptHash || null,
         receiptUrl: scannedData?.receiptUrl || null,
+        groupId: isGroupExpense ? selectedGroupId : null,
+        paidBy: isGroupExpense ? paidBy : null,
+        splitType: isGroupExpense ? splitType : null,
+        splits: isGroupExpense ? splits : null,
       });
       resetAll();
     } catch (err) {
@@ -181,6 +218,76 @@ export const ReceiptScanner = () => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // ─── Group split helpers ─────────────────────────────────────────────────────
+  const buildSplits = (members, totalAmount, type) => {
+    const n = members.length || 1;
+    if (type === 'EQUAL') {
+      const base = round2(totalAmount / n);
+      setSplits(members.map((m, i) => i === n - 1
+        ? { userId: m.userId, userName: m.userName, shareAmount: round2(totalAmount - base * (n - 1)), sharePercent: round2(100 / n) }
+        : { userId: m.userId, userName: m.userName, shareAmount: base, sharePercent: round2(100 / n) }
+      ));
+    } else if (type === 'PERCENT') {
+      const pct = round2(100 / n);
+      const list = members.map((m, i) => ({
+        userId: m.userId, userName: m.userName,
+        sharePercent: pct,
+        shareAmount: round2((totalAmount * pct) / 100),
+      }));
+      const usedPct = round2(pct * (n - 1));
+      const usedAmt = list.slice(0, -1).reduce((a, s) => a + s.shareAmount, 0);
+      list[n - 1] = { ...list[n - 1], sharePercent: round2(100 - usedPct), shareAmount: round2(totalAmount - usedAmt) };
+      setSplits(list);
+    } else {
+      const base = round2(totalAmount / n);
+      setSplits(members.map((m, i) => i === n - 1
+        ? { userId: m.userId, userName: m.userName, shareAmount: round2(totalAmount - base * (n - 1)) }
+        : { userId: m.userId, userName: m.userName, shareAmount: base }
+      ));
+    }
+  };
+
+  // When a scan is active and the user opts to split with a group, load members.
+  useEffect(() => {
+    if (!isGroupExpense || !selectedGroupId) { setGroupMembers([]); setSplits([]); return; }
+    let cancelled = false;
+    const fetchMembers = async () => {
+      setMembersLoading(true);
+      try {
+        const data = await groupsApi.get(selectedGroupId);
+        const mems = (data.members || []).filter(m => m.userId);
+        if (cancelled) return;
+        setGroupMembers(mems);
+        if (!mems.some(m => m.userId === paidBy)) {
+          setPaidBy(currentUser?.id || mems[0]?.userId || '');
+        }
+      } catch {
+        if (!cancelled) setGroupMembers([]);
+      } finally {
+        if (!cancelled) setMembersLoading(false);
+      }
+    };
+    fetchMembers();
+    return () => { cancelled = true; };
+  }, [isGroupExpense, selectedGroupId]);
+
+  // Rebuild shares whenever the scanned amount / split method / member list changes.
+  useEffect(() => {
+    if (!isGroupExpense || groupMembers.length === 0) return;
+    buildSplits(groupMembers, parseFloat(editAmount) || 0, splitType);
+  }, [editAmount, splitType, groupMembers, isGroupExpense]);
+
+  const updateSplitAmount = (userId, value) =>
+    setSplits(prev => prev.map(s => s.userId === userId ? { ...s, shareAmount: parseFloat(value) || 0 } : s));
+
+  const updateSplitPercent = (userId, value) => {
+    const pct = parseFloat(value) || 0;
+    const total = parseFloat(editAmount) || 0;
+    setSplits(prev => prev.map(s =>
+      s.userId === userId ? { ...s, sharePercent: pct, shareAmount: round2((total * pct) / 100) } : s
+    ));
   };
 
   const resetAll = () => {
@@ -194,7 +301,17 @@ export const ReceiptScanner = () => {
     setEditDescription('');
     setEditDate('');
     setEditCategoryId('');
+    setIsGroupExpense(false);
+    setSelectedGroupId('');
+    setPaidBy('');
+    setSplitType('EQUAL');
+    setGroupMembers([]);
+    setSplits([]);
+    setMembersLoading(false);
   };
+
+  const splitTotal = splits.reduce((s, sp) => s + (sp.shareAmount || 0), 0);
+  const splitError = isGroupExpense && groupMembers.length > 0 && Math.abs(splitTotal - (parseFloat(editAmount) || 0)) > 0.5;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', maxWidth: '800px', margin: '0 auto', width: '100%' }}>
@@ -481,6 +598,115 @@ export const ReceiptScanner = () => {
               </div>
             </div>
 
+            {/* Group Toggle */}
+            {groups.length > 0 && (
+              <div style={{
+                padding: '14px 16px', borderRadius: 'var(--r-xl)',
+                background: isGroupExpense ? 'rgba(183,255,0,0.06)' : 'var(--bg-surface)',
+                border: `1px solid ${isGroupExpense ? 'rgba(183,255,0,0.2)' : 'var(--border)'}`,
+                transition: 'var(--t-fast)',
+              }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={isGroupExpense}
+                    onChange={e => {
+                      setIsGroupExpense(e.target.checked);
+                      if (e.target.checked && !selectedGroupId && groups.length > 0) setSelectedGroupId(groups[0].id);
+                    }}
+                    style={{ width: '16px', height: '16px', accentColor: '#050505', cursor: 'pointer' }}
+                  />
+                  <div>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <Users size={13} /> Split with a group
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '1px' }}>
+                      Assign shares to group members when saving this receipt
+                    </div>
+                  </div>
+                </label>
+              </div>
+            )}
+
+            {/* Group options */}
+            {isGroupExpense && (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div className="input-group" style={{ margin: 0 }}>
+                    <label className="input-label">Select Group</label>
+                    <select value={selectedGroupId} onChange={e => setSelectedGroupId(e.target.value)} className="input-field">
+                      {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="input-group" style={{ margin: 0 }}>
+                    <label className="input-label">Paid By</label>
+                    <select value={paidBy} onChange={e => setPaidBy(e.target.value)} className="input-field">
+                      {groupMembers.map(m => <option key={m.userId} value={m.userId}>{m.userName}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="input-label" style={{ marginBottom: '8px', display: 'block' }}>Split Method</label>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <SplitTypeBtn value="EQUAL"   current={splitType} label="Equal"    icon={Scale}   onClick={setSplitType} />
+                    <SplitTypeBtn value="PERCENT" current={splitType} label="% Percent" icon={Percent} onClick={setSplitType} />
+                    <SplitTypeBtn value="CUSTOM"  current={splitType} label="Custom"   icon={PenLine} onClick={setSplitType} />
+                  </div>
+                </div>
+
+                {/* Split table */}
+                {membersLoading ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                    <div className="spinner spinner-sm" /> Loading members...
+                  </div>
+                ) : splits.length > 0 && (
+                  <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--r-lg)', overflow: 'hidden', border: '1px solid var(--border)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: '8px 14px', borderBottom: '1px solid var(--border)', background: '#050505' }}>
+                      <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#525252', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Member</span>
+                      <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#525252', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Share</span>
+                    </div>
+                    {splits.map(sp => (
+                      <div key={sp.userId} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid var(--border)' }}>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 500 }}>
+                          {sp.userName}
+                          {sp.userId === currentUser?.id && <span className="badge" style={{ marginLeft: '6px', fontSize: '0.62rem', background: '#050505', color: '#B7FF00' }}>You</span>}
+                        </span>
+                        <div style={{ textAlign: 'right' }}>
+                          {splitType === 'EQUAL' ? (
+                            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>₹{sp.shareAmount.toFixed(2)}</span>
+                          ) : splitType === 'PERCENT' ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', justifyContent: 'flex-end' }}>
+                              <input
+                                type="number" step="0.1" min="0" max="100"
+                                value={sp.sharePercent || ''}
+                                onChange={e => updateSplitPercent(sp.userId, e.target.value)}
+                                style={{ width: '55px', padding: '4px 7px', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', color: 'var(--text-primary)', fontSize: '0.82rem', outline: 'none', textAlign: 'right', fontFamily: 'var(--font)', background: '#fff' }}
+                              />
+                              <span style={{ color: 'var(--text-muted)', fontSize: '0.73rem' }}>% = ₹{sp.shareAmount.toFixed(2)}</span>
+                            </div>
+                          ) : (
+                            <input
+                              type="number" step="0.01" min="0"
+                              value={sp.shareAmount || ''}
+                              onChange={e => updateSplitAmount(sp.userId, e.target.value)}
+                              style={{ width: '90px', padding: '4px 7px', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', color: 'var(--text-primary)', fontSize: '0.87rem', fontWeight: 700, outline: 'none', textAlign: 'right', fontFamily: 'var(--font)', background: '#fff' }}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: '9px 14px', background: '#050505' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#737373' }}>Total</span>
+                      <span style={{ fontSize: '0.88rem', fontWeight: 800, color: splitError ? '#ef4444' : '#B7FF00', textAlign: 'right', display: 'inline-flex', alignItems: 'center', gap: '5px', justifyContent: 'flex-end' }}>
+                        ₹{splitTotal.toFixed(2)} {splitError && <AlertTriangle size={13} />}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
             {/* Actions */}
             <div style={{ display: 'flex', gap: '10px', marginTop: '6px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
               <button className="btn btn-secondary" onClick={resetAll} style={{ flex: 1 }}>
@@ -489,7 +715,7 @@ export const ReceiptScanner = () => {
               <button
                 className="btn btn-primary"
                 onClick={handleConfirm}
-                disabled={!editAmount || !editDescription || isSaving}
+                disabled={!editAmount || !editDescription || isSaving || (isGroupExpense && (membersLoading || groupMembers.length === 0 || splitError))}
                 style={{ flex: 2 }}
               >
                 {isSaving ? (

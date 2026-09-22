@@ -13,17 +13,19 @@ public class UserDto {
     private String avatarUrl;
     private Role role;
     private Boolean isActive;
+    private Boolean onboardingCompleted;
     private OffsetDateTime createdAt;
 
     public UserDto() {}
 
-    public UserDto(UUID id, String fullName, String email, String avatarUrl, Role role, Boolean isActive, OffsetDateTime createdAt) {
+    public UserDto(UUID id, String fullName, String email, String avatarUrl, Role role, Boolean isActive, Boolean onboardingCompleted, OffsetDateTime createdAt) {
         this.id = id;
         this.fullName = fullName;
         this.email = email;
         this.avatarUrl = avatarUrl;
         this.role = role;
         this.isActive = isActive;
+        this.onboardingCompleted = onboardingCompleted;
         this.createdAt = createdAt;
     }
 
@@ -38,6 +40,7 @@ public class UserDto {
         private String avatarUrl;
         private Role role;
         private Boolean isActive;
+        private Boolean onboardingCompleted;
         private OffsetDateTime createdAt;
 
         public UserDtoBuilder id(UUID id) { this.id = id; return this; }
@@ -46,10 +49,11 @@ public class UserDto {
         public UserDtoBuilder avatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; return this; }
         public UserDtoBuilder role(Role role) { this.role = role; return this; }
         public UserDtoBuilder isActive(Boolean isActive) { this.isActive = isActive; return this; }
+        public UserDtoBuilder onboardingCompleted(Boolean onboardingCompleted) { this.onboardingCompleted = onboardingCompleted; return this; }
         public UserDtoBuilder createdAt(OffsetDateTime createdAt) { this.createdAt = createdAt; return this; }
 
         public UserDto build() {
-            return new UserDto(id, fullName, email, avatarUrl, role, isActive, createdAt);
+            return new UserDto(id, fullName, email, avatarUrl, role, isActive, onboardingCompleted, createdAt);
         }
     }
 
@@ -62,6 +66,7 @@ public class UserDto {
                 .avatarUrl(user.getAvatarUrl())
                 .role(user.getRole())
                 .isActive(user.getIsActive())
+                .onboardingCompleted(user.getOnboardingCompleted())
                 .createdAt(user.getCreatedAt())
                 .build();
     }
@@ -78,6 +83,8 @@ public class UserDto {
     public void setRole(Role role) { this.role = role; }
     public Boolean getIsActive() { return isActive; }
     public void setIsActive(Boolean isActive) { this.isActive = isActive; }
+    public Boolean getOnboardingCompleted() { return onboardingCompleted; }
+    public void setOnboardingCompleted(Boolean onboardingCompleted) { this.onboardingCompleted = onboardingCompleted; }
     public OffsetDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
 }

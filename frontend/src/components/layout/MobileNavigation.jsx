@@ -14,7 +14,7 @@ export const MobileNavigation = () => {
   const { activeTab, setActiveTab, setIsAddModalOpen } = useExpense();
 
   const isActive = (id) => {
-    if (id === 'more') return ['groups', 'budget-settings', 'notification-settings', 'categories', 'group-detail'].includes(activeTab);
+    if (id === 'more') return ['groups', 'budget-settings', 'notification-settings', 'preferences', 'categories', 'group-detail'].includes(activeTab);
     if (id === 'dashboard') return activeTab === 'dashboard';
     if (id === 'expenses') return activeTab === 'expenses';
     if (id === 'scan') return activeTab === 'scan';
