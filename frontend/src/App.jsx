@@ -119,7 +119,6 @@ const AppContent = () => {
           minWidth: 0,
           overflowX: 'hidden',
           overflowY: 'auto',
-          maxWidth: '1200px',
         }}
           className="main-content"
         >

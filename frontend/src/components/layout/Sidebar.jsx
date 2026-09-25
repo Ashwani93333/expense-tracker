@@ -68,6 +68,7 @@ const EXPORT_OPTIONS = [
 export const Sidebar = () => {
   const { activeTab, setActiveTab, groups, setIsExportModalOpen, setExportModalType } = useExpense();
   const [isExportExpanded, setIsExportExpanded] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   const isActive = (id) => activeTab === id || (id === 'groups' && activeTab === 'group-detail');
 
@@ -82,20 +83,37 @@ export const Sidebar = () => {
   };
 
   return (
-    <aside className="desktop-sidebar" style={{
-      width: 'var(--sidebar-width)',
-      flexShrink: 0,
-      background: '#ffffff',
-      borderRight: '1px solid #e5e5e5',
-      boxShadow: '4px 0 24px -4px rgba(0,0,0,0.06)',
-      display: 'flex',
-      flexDirection: 'column',
-      padding: '20px 12px',
-      height: 'calc(100vh - var(--header-height))',
-      position: 'sticky',
-      top: 'var(--header-height)',
-      alignSelf: 'flex-start',
-    }}>
+    <>
+      <div
+        className="sidebar-hover-zone"
+        onMouseEnter={() => setIsHovered(true)}
+      >
+        {!isHovered && (
+          <div className="sidebar-hover-tab">
+            <ChevronRight size={15} color="#737373" />
+          </div>
+        )}
+      </div>
+
+      <aside
+        className="desktop-sidebar"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        style={{
+          width: isHovered ? 'var(--sidebar-width)' : 0,
+          flexShrink: 0,
+          background: '#ffffff',
+          borderRight: isHovered ? '1px solid #e5e5e5' : 'none',
+          boxShadow: isHovered ? '4px 0 24px -4px rgba(0,0,0,0.06)' : 'none',
+          display: 'flex',
+          flexDirection: 'column',
+          padding: isHovered ? '20px 12px' : '0',
+          height: 'calc(100vh - var(--header-height))',
+          position: 'sticky',
+          top: 'var(--header-height)',
+          alignSelf: 'flex-start',
+          zIndex: 2,
+        }}>
 
       {NAV_SECTIONS.map(section => (
         <div key={section.label} style={{ marginBottom: '24px' }}>
@@ -300,5 +318,6 @@ export const Sidebar = () => {
         </p>
       </div>
     </aside>
+    </>
   );
 };
