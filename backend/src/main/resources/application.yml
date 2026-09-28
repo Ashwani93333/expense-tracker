@@ -72,6 +72,15 @@ app:
     auto-assign-threshold: ${CLASSIFICATION_AUTO_ASSIGN_THRESHOLD:0.75}
     warn-threshold: ${CLASSIFICATION_WARN_THRESHOLD:0.50}
     fallback-category: ${CLASSIFICATION_FALLBACK_CATEGORY:Uncategorized}
+  cache:
+    # In-process (Caffeine) cache for the group report / analytics / budget
+    # aggregates. Set to false to make every @Cacheable method a pass-through.
+    enabled: ${APP_CACHE_ENABLED:true}
+    # Staleness bound. The aggregates depend on six tables, so a short TTL is used
+    # in place of an exhaustive eviction fan-out: a missed invalidation self-heals
+    # within one window instead of persisting for the life of the process.
+    ttl-seconds: ${APP_CACHE_TTL_SECONDS:30}
+    max-entries: ${APP_CACHE_MAX_ENTRIES:1000}
 
 ---
 spring:
@@ -103,6 +112,12 @@ spring:
     init:
       mode: always
       schema-locations: classpath:schema.sql
+
+app:
+  cache:
+    # Integration tests assert on freshly committed state and would otherwise
+    # observe an aggregate cached by an earlier statement in the same test.
+    enabled: false
 
 jwt:
   secret: ${JWT_SECRET:test-only-secret-key-0123456789abcdef0123456789abcdef}

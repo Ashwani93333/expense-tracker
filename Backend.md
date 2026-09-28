@@ -54,7 +54,9 @@ com.expensetracker
 │                    BudgetThresholdEvaluator, BudgetEvaluationListener, event recorder
 ├── notification/    NotificationService (facade), InAppNotificationService,
 │                    EmailNotificationService, settings + category-limit controllers, dto
-├── report/          GroupReportController/Service (monthly report, analytics), SettlementService
+├── report/          GroupReportController/Service (monthly report, analytics), SettlementService,
+│                    GroupReportCache (cached aggregates)
+├── config/          CacheConfig (Caffeine cache manager, TTL-bounded)
 ├── summary/         MonthlySummaryScheduler (cron: 0 0 2 1 * *)
 ├── classification/  ExpenseCategoryClassifier, RuleBasedCategoryClassifier, Gemini-backed classifier
 ├── storage/         FileSystemStorageService (receipt uploads under /uploads)
@@ -200,9 +202,54 @@ Because evaluation happens **after commit**, an alert failure can never roll bac
 
 * `default` — PostgreSQL + `ddl-auto: update`, SQL init always, `show-sql: true`.
 * `h2` — in-memory DB for tests (`./mvnw test`), schema.sql-driven, H2 console enabled.
+  Also sets `app.cache.enabled: false` so integration tests always observe freshly
+  committed state.
 * All secrets externalized through `.env` placeholders (see `backend/.env.example`).
 
-## 11. Build & Run
+## 11. Read-Through Caching
+
+`@EnableCaching` (on `ExpenseTrackerApplication`) with a Caffeine in-process
+`CacheManager` defined in `config/CacheConfig.java`. Four group-scoped read
+aggregates are cached, all keyed by `(groupId, resolvedDateRange)`:
+
+| Cache | Cached method | Endpoint |
+| --- | --- | --- |
+| `groupMonthlyReport` | `GroupReportCache.monthlyReport` | `GET /api/groups/{id}/reports/monthly` |
+| `groupAnalytics` | `GroupReportCache.analytics` | `GET /api/groups/{id}/reports/analytics` |
+| `groupBudgetStatus` | `GroupBudgetCache.budgetStatus` | `GET /api/groups/{id}/budget/status` |
+| `groupMemberBudgets` | `GroupBudgetCache.memberBudgets` | `GET /api/groups/{id}/members/budgets` |
+
+Two design points worth knowing before adding a fifth:
+
+* **Authorization stays outside the cache.** The aggregate bodies live in the
+  `*Cache` beans; `GroupReportService` / `GroupBudgetService` call `requireMember`
+  and resolve the date range on every request, then delegate. Annotating the
+  public service method instead would let a cache hit skip the membership check,
+  so a user removed from a group would keep reading its expenses until the TTL
+  expired. `GroupReportCacheIntegrationTest` fails if this is refactored away.
+* **Staleness is bounded by TTL, not by eviction.** These aggregates derive from
+  six tables (`expenses`, `expense_splits`, `group_budgets`,
+  `group_member_budgets`, `group_members`, `users`). Rather than maintain an
+  exhaustive `@CacheEvict` fan-out that rots the first time a write path is added,
+  correctness is delegated to `app.cache.ttl-seconds` (default 30): a missed
+  invalidation self-heals within one window instead of persisting for the life of
+  the process. Budget *write* paths (`setGroupBudget`, `setMemberBudget`) bypass the
+  cache via `freshBudgetStatus` / `memberBudgetView` so their response reflects the
+  change just made.
+
+Tunables: `APP_CACHE_ENABLED`, `APP_CACHE_TTL_SECONDS`, `APP_CACHE_MAX_ENTRIES`.
+
+The unread notification count is deliberately **not** cached: it is a single
+`COUNT(*)` served by `idx_notifications_user (user_id, is_read, created_at DESC)`,
+and caching it would add three invalidation paths (including the event-driven
+`InAppNotificationService.createNotification`) for no measurable gain.
+
+`spring-boot-starter-cache` is intentionally not a dependency — it is absent from
+the local repository for the managed 3.3.3 version. The `@Cacheable` API ships in
+`spring-context`; `spring-context-support` + `caffeine` supply the manager, both
+version-managed by the Boot BOM.
+
+## 12. Build & Run
 
 ```bash
 ./mvnw spring-boot:run          # dev server on :8080

@@ -112,6 +112,23 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
+
+        <!--
+            Caching. spring-boot-starter-cache is deliberately NOT used: it is not
+            present in the local repository for the managed 3.3.3 version. The
+            @Cacheable annotation API ships in spring-context (already on the
+            classpath); spring-context-support supplies the CaffeineCacheManager
+            adapter, and caffeine is the in-process provider. Both versions are
+            managed by the Boot 3.3.3 BOM, so no explicit versions are declared.
+        -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context-support</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
