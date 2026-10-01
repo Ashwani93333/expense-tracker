@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, ShieldCheck, Trash2, Check, Loader2, Tag } from 'lucide-react';
+import { Plus, ShieldCheck, Trash2, Check, Loader2, Tag, SlidersHorizontal } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 import { CATEGORY_ICONS, CategoryIcon } from './categoryIcons';
 import { PageHeader } from '../ui/PageHeader';
@@ -7,7 +7,7 @@ import { PageHeader } from '../ui/PageHeader';
 const PRESET_COLORS = ['#B7FF00', '#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6', '#ec4899', '#84cc16', '#f97316'];
 
 export const CategoriesManager = () => {
-  const { categories, addCategory, deleteCategory, isLoading } = useExpense();
+  const { categories, addCategory, deleteCategory, isLoading, setActiveTab } = useExpense();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [name, setName] = useState('');
@@ -15,6 +15,11 @@ export const CategoriesManager = () => {
   const [color, setColor] = useState('#B7FF00');
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+
+  // The API already returns the user's defaults first, then their custom and
+  // previously-used categories.
+  const defaults = categories.filter(c => c.userDefault);
+  const extras = categories.filter(c => !c.userDefault);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -41,12 +46,17 @@ export const CategoriesManager = () => {
       <PageHeader
         icon={Tag}
         badge="Categories"
-        title="Category Manager"
-        subtitle={`${categories.length} categories · Used to tag and filter your expenses`}
+        title="Your Categories"
+        subtitle={`${categories.length} categories · These are the ones shown when adding expenses`}
         actions={
-          <button className="btn btn-primary" onClick={() => setIsFormOpen(p => !p)}>
-            <Plus size={16} /> {isFormOpen ? 'Cancel' : 'New Category'}
-          </button>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button className="btn btn-secondary" onClick={() => setActiveTab('preferences')}>
+              <SlidersHorizontal size={16} /> Edit Preferences
+            </button>
+            <button className="btn btn-primary" onClick={() => setIsFormOpen(p => !p)}>
+              <Plus size={16} /> {isFormOpen ? 'Cancel' : 'New Category'}
+            </button>
+          </div>
         }
       >
 
@@ -121,52 +131,78 @@ export const CategoriesManager = () => {
           ))}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '14px' }}>
-          {categories.map(cat => (
-            <div key={cat.id} className="card" style={{
-              padding: '16px 18px', display: 'flex', alignItems: 'center', gap: '12px',
-              justifyContent: 'space-between',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-                <div style={{
-                  width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0,
-                  background: `${cat.color || '#737373'}15`,
-                  border: `1px solid ${cat.color || '#737373'}30`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <CategoryIcon icon={cat.icon} size={18} color={cat.color || '#737373'} />
-                </div>
-                <div style={{ minWidth: 0 }}>
-                  <h4 style={{ fontSize: '0.875rem', color: 'var(--text-primary)', margin: 0, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {cat.name}
-                  </h4>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    {cat.isSystem ? (
-                      <><ShieldCheck size={10} color="#22c55e" /> System</>
-                    ) : (
-                      'Custom'
-                    )}
-                  </span>
-                </div>
-              </div>
+        <>
+          {defaults.length > 0 && (
+            <Section title="Your default categories" hint="Selected in preferences — the only ones offered when adding an expense." onDelete={handleDelete} deletingId={deletingId}>
+              {defaults}
+            </Section>
+          )}
 
-              {!cat.isSystem && (
-                <button
-                  className="btn btn-ghost btn-icon"
-                  onClick={() => handleDelete(cat.id)}
-                  disabled={deletingId === cat.id}
-                  style={{ color: '#ef4444', width: '32px', height: '32px', flexShrink: 0 }}
-                >
-                  {deletingId === cat.id
-                    ? <Loader2 size={14} style={{ animation: 'spin 0.7s linear infinite' }} />
-                    : <Trash2 size={14} />
-                  }
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
+          {extras.length > 0 && (
+            <Section title="Custom & previously used" hint="Your own categories, plus any default kept because an existing expense uses it." onDelete={handleDelete} deletingId={deletingId}>
+              {extras}
+            </Section>
+          )}
+        </>
       )}
     </div>
   );
 };
+
+const Section = ({ title, hint, onDelete, deletingId, children }) => (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+    <div>
+      <h3 style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, letterSpacing: '0.02em' }}>
+        {title}
+      </h3>
+      <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '3px 0 0' }}>{hint}</p>
+    </div>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '14px' }}>
+      {children.map(cat => (
+        <div key={cat.id} className="card" style={{
+          padding: '16px 18px', display: 'flex', alignItems: 'center', gap: '12px',
+          justifyContent: 'space-between',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+            <div style={{
+              width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0,
+              background: `${cat.color || '#737373'}15`,
+              border: `1px solid ${cat.color || '#737373'}30`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <CategoryIcon icon={cat.icon} size={18} color={cat.color || '#737373'} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <h4 style={{ fontSize: '0.875rem', color: 'var(--text-primary)', margin: 0, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {cat.name}
+              </h4>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                {cat.userDefault ? (
+                  <><ShieldCheck size={10} color="#22c55e" /> Your default</>
+                ) : cat.isDefault ? (
+                  <><ShieldCheck size={10} color="#737373" /> Kept — used before</>
+                ) : (
+                  'Custom'
+                )}
+              </span>
+            </div>
+          </div>
+
+          {!cat.isDefault && (
+            <button
+              className="btn btn-ghost btn-icon"
+              onClick={() => onDelete(cat.id)}
+              disabled={deletingId === cat.id}
+              style={{ color: '#ef4444', width: '32px', height: '32px', flexShrink: 0 }}
+            >
+              {deletingId === cat.id
+                ? <Loader2 size={14} style={{ animation: 'spin 0.7s linear infinite' }} />
+                : <Trash2 size={14} />
+              }
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  </div>
+);

@@ -82,7 +82,20 @@ export const userPreferencesApi = {
 
 // ─── Categories API ───────────────────────────────────────────────────────────
 export const categoriesApi = {
+  // Working set — narrowed to the categories selected during onboarding.
   list: () => request('GET', '/api/categories'),
+  // Full catalogue (every default + own custom) — for the preferences picker.
+  // Falls back to the working set so the picker is never empty if an older
+  // backend without this route is running.
+  listAll: async () => {
+    try {
+      return await request('GET', '/api/categories/all');
+    } catch (err) {
+      if (err.status !== 404 && err.status !== 405) throw err;
+      console.warn('GET /api/categories/all unavailable, falling back to the working set');
+      return request('GET', '/api/categories');
+    }
+  },
   create: (payload) => request('POST', '/api/categories', payload),
   update: (id, payload) => request('PUT', `/api/categories/${id}`, payload),
   delete: (id) => request('DELETE', `/api/categories/${id}`),

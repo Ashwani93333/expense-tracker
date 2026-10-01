@@ -11,7 +11,10 @@ const NAV_ITEMS = [
 ];
 
 export const MobileNavigation = () => {
-  const { activeTab, setActiveTab, setIsAddModalOpen } = useExpense();
+  const { activeTab, setActiveTab, setIsAddModalOpen, preferences } = useExpense();
+
+  // Individual-only spenders never get routed into the groups tab.
+  const individualOnly = preferences?.expensePreference === 'INDIVIDUAL';
 
   const isActive = (id) => {
     if (id === 'more') return ['groups', 'budget-settings', 'notification-settings', 'preferences', 'categories', 'group-detail'].includes(activeTab);
@@ -26,7 +29,7 @@ export const MobileNavigation = () => {
     if (id === 'scan') {
       setActiveTab('scan');
     } else if (id === 'more') {
-      setActiveTab('groups');
+      setActiveTab(individualOnly ? 'budget-settings' : 'groups');
     } else {
       setActiveTab(id);
     }

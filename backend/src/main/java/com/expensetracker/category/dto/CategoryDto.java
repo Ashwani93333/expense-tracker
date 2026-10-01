@@ -10,6 +10,8 @@ public class CategoryDto {
     private String icon;
     private String color;
     private Boolean isDefault;
+    /** True when the user selected this category in the preferences form. */
+    private Boolean userDefault;
     private List<String> keywords;
     private UUID createdByUserId;
     private String createdByUserName;
@@ -18,12 +20,17 @@ public class CategoryDto {
     public CategoryDto() {}
 
     public static CategoryDto fromEntity(com.expensetracker.model.Category c) {
+        return fromEntity(c, false);
+    }
+
+    public static CategoryDto fromEntity(com.expensetracker.model.Category c, boolean userDefault) {
         CategoryDto dto = new CategoryDto();
         dto.setId(c.getId());
         dto.setName(c.getName());
         dto.setIcon(c.getIcon());
         dto.setColor(c.getColor());
         dto.setIsDefault(c.getIsDefault());
+        dto.setUserDefault(userDefault);
         dto.setKeywords(com.expensetracker.category.CategoryKeywords.parse(c.getKeywords()));
         if (c.getCreatedBy() != null) {
             dto.setCreatedByUserId(c.getCreatedBy().getId());
@@ -43,6 +50,8 @@ public class CategoryDto {
     public void setColor(String color) { this.color = color; }
     public Boolean getIsDefault() { return isDefault; }
     public void setIsDefault(Boolean isDefault) { this.isDefault = isDefault; }
+    public Boolean getUserDefault() { return userDefault; }
+    public void setUserDefault(Boolean userDefault) { this.userDefault = userDefault; }
     public List<String> getKeywords() { return keywords; }
     public void setKeywords(List<String> keywords) { this.keywords = keywords; }
     public UUID getCreatedByUserId() { return createdByUserId; }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Wallet, ArrowLeft, ArrowRight, Loader2, AlertCircle, CheckCircle2,
+  Wallet, ArrowLeft, ArrowRight, Loader2, AlertCircle, CheckCircle2, RefreshCw,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useOnboardingWizard } from '../../context/OnboardingWizardContext';
@@ -9,9 +9,14 @@ import { OnboardingProgress } from './components/OnboardingProgress';
 import { IncomeSlabSelector } from '../../components/preferences/IncomeSlabSelector';
 import { SpendingStyleSelector } from '../../components/preferences/SpendingStyleSelector';
 import { CategoryChips } from '../../components/preferences/CategoryChips';
+import { fmtINR } from '../../constants/preferences';
 
 export const PreferencesStep = () => {
   const { currentUser, updateCurrentUser } = useAuth();
+  // Deliberately no useExpense() here: the wizard is rendered outside
+  // ExpenseProvider (see AuthGatedApp), so that context is null at this point.
+  // ExpenseProvider mounts right after setup completes and fetches the
+  // narrowed category set on its own.
   const { wizard, savePreferences, goToStep, closeWizard } = useOnboardingWizard();
 
   const [incomeSlab, setIncomeSlab] = useState(wizard.preferences.incomeSlab || '');
@@ -19,20 +24,30 @@ export const PreferencesStep = () => {
   const [categories, setCategories] = useState([]);
   const [selectedCategories, setSelectedCategories] = useState(wizard.preferences.categories || []);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
+  const [appliedBudget, setAppliedBudget] = useState(null);
+  const [appliedCategoryCount, setAppliedCategoryCount] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     const initial = wizard.preferences;
     (async () => {
       const [catsRes, prefsRes] = await Promise.allSettled([
-        categoriesApi.list(),
+        categoriesApi.listAll(),
         userPreferencesApi.get(),
       ]);
       if (cancelled) return;
-      if (catsRes.status === 'fulfilled') setCategories(catsRes.value || []);
+
+      if (catsRes.status === 'fulfilled') {
+        setCategories(catsRes.value || []);
+      } else {
+        // Never leave the user staring at a silently empty picker.
+        console.error('Failed to load categories for the preferences step', catsRes.reason);
+        setLoadError(catsRes.reason?.message || 'Could not load categories.');
+      }
 
       if (prefsRes.status === 'fulfilled' && prefsRes.value) {
         const p = prefsRes.value;
@@ -45,6 +60,18 @@ export const PreferencesStep = () => {
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const reloadCategories = async () => {
+    setLoading(true);
+    setLoadError('');
+    try {
+      setCategories(await categoriesApi.listAll() || []);
+    } catch (err) {
+      setLoadError(err.message || 'Could not load categories.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const updatePrefs = (next) => {
     savePreferences({
@@ -75,8 +102,10 @@ export const PreferencesStep = () => {
       });
       savePreferences({ incomeSlab, spendingStyle, categories: selectedCategories });
       if (currentUser) updateCurrentUser({ ...currentUser, onboardingCompleted: true });
+      setAppliedBudget(updated?.suggestedMonthlyBudget ?? null);
+      setAppliedCategoryCount(selectedCategories.length);
       setDone(true);
-      setTimeout(() => closeWizard(), 900);
+      setTimeout(() => closeWizard(), 1400);
     } catch (err) {
       setError(err.message || "We couldn't save your preferences. Please try again.");
       setSaving(false);
@@ -100,12 +129,22 @@ export const PreferencesStep = () => {
           }}>
             <CheckCircle2 size={30} color="#050505" />
           </div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff', margin: '0 0 6px' }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fff', margin: '0 0 10px' }}>
             All set, {currentUser?.fullName?.split(' ')[0] || 'friend'}!
           </h2>
-          <p style={{ fontSize: '0.95rem', color: '#a1a1aa', margin: 0 }}>
-            Entering your dashboard...
-          </p>
+          <div style={{
+            display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center',
+            fontSize: '0.88rem', color: '#a1a1aa', marginBottom: '18px',
+          }}>
+            {appliedBudget != null && (
+              <span>
+                Monthly budget set to <strong style={{ color: '#B7FF00' }}>{fmtINR(appliedBudget)}</strong>
+                {appliedCategoryCount > 0 && ` with caps across ${appliedCategoryCount} categor${appliedCategoryCount === 1 ? 'y' : 'ies'}`}
+              </span>
+            )}
+            <span>Your categories are now the only ones shown when adding expenses.</span>
+            <span>Entering your dashboard...</span>
+          </div>
         </div>
       </div>
     );
@@ -211,7 +250,18 @@ export const PreferencesStep = () => {
                 Select all that apply.
               </p>
               <div style={{ padding: '18px', borderRadius: 'var(--r-lg)', border: '1px solid #f1f5f9', background: '#fafafa' }}>
-                <CategoryChips categories={categories} selected={selectedCategories} onToggle={toggleCategory} />
+                {loadError ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                    <p style={{ fontSize: '0.82rem', color: '#b91c1c', margin: 0 }}>
+                      Couldn't load categories: {loadError}
+                    </p>
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={reloadCategories}>
+                      <RefreshCw size={13} /> Try again
+                    </button>
+                  </div>
+                ) : (
+                  <CategoryChips categories={categories} selected={selectedCategories} onToggle={toggleCategory} />
+                )}
               </div>
             </section>
           </>

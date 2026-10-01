@@ -1,6 +1,7 @@
 package com.expensetracker.classification;
 
 import com.expensetracker.category.CategoryKeywords;
+import com.expensetracker.category.UserCategoryScope;
 import com.expensetracker.model.Category;
 import com.expensetracker.repository.CategoryRepository;
 import org.springframework.stereotype.Component;
@@ -34,9 +35,12 @@ public class RuleBasedCategoryClassifier implements CategoryClassifier {
     static final double WEAK_MATCH = 0.60;
 
     private final CategoryRepository categoryRepository;
+    private final UserCategoryScope categoryScope;
 
-    public RuleBasedCategoryClassifier(CategoryRepository categoryRepository) {
+    public RuleBasedCategoryClassifier(CategoryRepository categoryRepository,
+                                       UserCategoryScope categoryScope) {
         this.categoryRepository = categoryRepository;
+        this.categoryScope = categoryScope;
     }
 
     @Override
@@ -46,7 +50,9 @@ public class RuleBasedCategoryClassifier implements CategoryClassifier {
             return new CategoryClassificationResult(null, null, 0.0, ClassificationSource.FALLBACK, false);
         }
 
-        List<Category> candidates = categoryRepository.findDefaultsAndUserCategories(input.getUserId());
+        // Scoped to the user's working set, so the classifier never auto-assigns a
+    // category they deselected during onboarding.
+    List<Category> candidates = categoryScope.resolve(input.getUserId());
 
         Category best = null;
         double bestScore = 0.0;

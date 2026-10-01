@@ -181,6 +181,19 @@ CREATE TABLE IF NOT EXISTS user_preferences (
     CONSTRAINT uk_user_preferences_user UNIQUE (user_id)
 );
 
+-- ================= USER DEFAULT CATEGORIES =================
+-- The categories a user selected in the preferences form, materialised as real
+-- rows so they are the user's default categories everywhere: shown in the
+-- category manager, offered when adding an expense, and the only candidates for
+-- auto-classification. Re-synced on every preferences save.
+CREATE TABLE IF NOT EXISTS user_default_categories (
+    id           UUID PRIMARY KEY,
+    user_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    category_id  UUID NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+    created_at   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_user_default_categories UNIQUE (user_id, category_id)
+);
+
 -- ================= CATEGORY EXPENSE LIMITS =================
 -- Per-user, per-category monthly spending notification limits.
 CREATE TABLE IF NOT EXISTS category_expense_limits (
@@ -290,6 +303,10 @@ ALTER TABLE user_notification_settings ADD COLUMN IF NOT EXISTS total_expenditur
 -- Group notification settings.
 ALTER TABLE user_notification_settings ADD COLUMN IF NOT EXISTS budget_update_enabled BOOLEAN DEFAULT TRUE;
 ALTER TABLE user_notification_settings ADD COLUMN IF NOT EXISTS expiry_date_update_enabled BOOLEAN DEFAULT TRUE;
+
+-- Surrogate key for user_default_categories, in case an earlier revision of this
+-- schema created the table without one.
+ALTER TABLE user_default_categories ADD COLUMN IF NOT EXISTS id UUID;
 ALTER TABLE user_notification_settings ADD COLUMN IF NOT EXISTS payment_approval_enabled BOOLEAN DEFAULT TRUE;
 
 -- ================= BACKWARD-COMPATIBLE BUDGET EVENT MIGRATION =================
@@ -316,4 +333,5 @@ CREATE INDEX IF NOT EXISTS idx_user_budgets_lookup ON user_budgets(user_id, "mon
 CREATE INDEX IF NOT EXISTS idx_group_invites_token ON group_invites(token);
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_categories_created_by ON categories(created_by);
+CREATE INDEX IF NOT EXISTS idx_user_default_categories_user ON user_default_categories(user_id);
 CREATE INDEX IF NOT EXISTS idx_category_expense_limits_user ON category_expense_limits(user_id);

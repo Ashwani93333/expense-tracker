@@ -1,5 +1,6 @@
 package com.expensetracker.classification;
 
+import com.expensetracker.category.UserCategoryScope;
 import com.expensetracker.model.Category;
 import com.expensetracker.model.User;
 import com.expensetracker.repository.CategoryRepository;
@@ -18,7 +19,9 @@ class RuleBasedCategoryClassifierTest {
 
     private final UUID userId = UUID.randomUUID();
     private final CategoryRepository categoryRepository = mock(CategoryRepository.class);
-    private final RuleBasedCategoryClassifier classifier = new RuleBasedCategoryClassifier(categoryRepository);
+    private final UserCategoryScope categoryScope = mock(UserCategoryScope.class);
+    private final RuleBasedCategoryClassifier classifier =
+            new RuleBasedCategoryClassifier(categoryRepository, categoryScope);
 
     private Category food;
     private Category customFood;
@@ -27,8 +30,8 @@ class RuleBasedCategoryClassifierTest {
     void setUp() {
         food = category("Food & Dining", "[\"swiggy\",\"zomato\",\"restaurant\",\"dominos\"]", null);
         customFood = category("My Food", "[\"tiffin\"]", user(userId));
-        when(categoryRepository.findDefaultsAndUserCategories(userId))
-                .thenReturn(List.of(food, customFood));
+        // The scope is the user's narrowed working set, not the full catalogue.
+        when(categoryScope.resolve(userId)).thenReturn(List.of(food, customFood));
     }
 
     @Test
@@ -58,11 +61,22 @@ class RuleBasedCategoryClassifierTest {
     @Test
     void shortKeywordsMatchOnWordBoundariesOnly() {
         Category shortKeyword = category("Fitness", "[\"gym\"]", null);
-        when(categoryRepository.findDefaultsAndUserCategories(userId))
-                .thenReturn(List.of(food, customFood, shortKeyword));
+        when(categoryScope.resolve(userId)).thenReturn(List.of(food, customFood, shortKeyword));
 
         assertThat(classifier.classify(input("visited gym")).getCategoryName()).isEqualTo("Fitness");
         assertThat(classifier.classify(input("went to gymnasium")).getCategoryId()).isNull();
+    }
+
+    @Test
+    void neverClassifiesIntoADeselectedCategory() {
+        Category deselected = category("Entertainment", "[\"cinema\",\"concert\"]", null);
+        // Excluded from the working set during onboarding.
+        when(categoryScope.resolve(userId)).thenReturn(List.of(food, customFood));
+
+        CategoryClassificationResult result = classifier.classify(input("cinema tickets"));
+
+        assertThat(result.getCategoryId()).isNull();
+        assertThat(result.getSource()).isEqualTo(ClassificationSource.FALLBACK);
     }
 
     @Test
@@ -75,7 +89,7 @@ class RuleBasedCategoryClassifierTest {
 
     @Test
     void noMatchFallsBack() {
-        when(categoryRepository.findDefaultsAndUserCategories(userId)).thenReturn(List.of());
+        when(categoryScope.resolve(userId)).thenReturn(List.of());
         CategoryClassificationResult result = classifier.classify(input("random noise"));
         assertThat(result.getCategoryId()).isNull();
         assertThat(result.getSource()).isEqualTo(ClassificationSource.FALLBACK);

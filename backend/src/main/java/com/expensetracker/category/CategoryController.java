@@ -22,9 +22,16 @@ public class CategoryController {
         this.categoryService = categoryService;
     }
 
+    /** Categories the user works with, narrowed to their onboarding selection. */
     @GetMapping
     public ResponseEntity<List<CategoryDto>> getCategories(@AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(categoryService.getCategoriesForUser(principal.getId()));
+    }
+
+    /** The complete catalogue (every default + own custom), for the preferences picker. */
+    @GetMapping("/all")
+    public ResponseEntity<List<CategoryDto>> getAllCategories(@AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(categoryService.getAllCategoriesForUser(principal.getId()));
     }
 
     @PostMapping

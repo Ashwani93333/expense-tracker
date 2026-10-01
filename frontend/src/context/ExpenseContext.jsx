@@ -7,6 +7,7 @@ import {
   budgetsApi,
   notificationsApi,
   usersApi,
+  userPreferencesApi,
 } from '../services/api';
 import {
   getCurrentMonth,
@@ -74,20 +75,53 @@ export const ExpenseProvider = ({ children }) => {
   // ─── Active Group ────────────────────────────────────────────────────────────
   const activeGroup = groups.find(g => g.id === activeGroupId) || groups[0] || null;
 
+  // ─── Onboarding Preferences ──────────────────────────────────────────────────
+  // `categories` is already narrowed server-side to the user's onboarding
+  // selection, so the picker, filters and charts all agree. The raw preference
+  // object is kept for the nav (e.g. hiding Groups for individual spenders).
+  const [preferences, setPreferences] = useState(null);
+
+  const refreshPreferences = useCallback(async () => {
+    if (!isAuthenticated) return null;
+    try {
+      const data = await userPreferencesApi.get();
+      setPreferences(data || null);
+      return data || null;
+    } catch {
+      setPreferences(null);
+      return null;
+    }
+  }, [isAuthenticated]);
+
+  /** Refetches the narrowed category working set on its own. */
+  const refreshCategories = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      const cats = await categoriesApi.list();
+      setCategories(cats || []);
+    } catch { /* keep the previous set */ }
+  }, [isAuthenticated]);
+
+  const refreshPreferencesAndCategories = useCallback(async () => {
+    await Promise.all([refreshPreferences(), refreshCategories()]);
+  }, [refreshPreferences, refreshCategories]);
+
   // ─── Initial Data Fetch ──────────────────────────────────────────────────────
   const fetchAll = useCallback(async () => {
     if (!isAuthenticated) return;
     setIsLoading(true);
     try {
       const params = toQueryParams(dateFilter);
-      const [cats, grps, notifs, budgetStatus] = await Promise.allSettled([
+      const [cats, grps, notifs, budgetStatus, prefs] = await Promise.allSettled([
         categoriesApi.list(),
         groupsApi.list(),
         notificationsApi.list(),
         budgetsApi.getStatus(params),
+        userPreferencesApi.get(),
       ]);
 
       if (cats.status === 'fulfilled') setCategories(cats.value || []);
+      if (prefs.status === 'fulfilled') setPreferences(prefs.value || null);
       if (grps.status === 'fulfilled') {
         const groupList = grps.value || [];
         setGroups(groupList);
@@ -118,6 +152,7 @@ export const ExpenseProvider = ({ children }) => {
       setGroups([]);
       setNotifications([]);
       setPersonalBudgetStatus([]);
+      setPreferences(null);
     }
   }, [isAuthenticated, fetchAll]);
 
@@ -532,6 +567,10 @@ export const ExpenseProvider = ({ children }) => {
       markAllNotifsRead,
       showToast,
       fetchAll,
+      refreshCategories,
+      refreshPreferences,
+      refreshPreferencesAndCategories,
+      preferences,
       totalSpent,
     }}>
       {children}

@@ -1,5 +1,6 @@
 package com.expensetracker.preference;
 
+import com.expensetracker.category.UserDefaultCategoryService;
 import com.expensetracker.exception.BadRequestException;
 import com.expensetracker.model.Category;
 import com.expensetracker.model.User;
@@ -12,6 +13,7 @@ import com.expensetracker.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -19,7 +21,10 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,8 +35,11 @@ class UserPreferenceServiceTest {
             mock(UserPreferencesRepository.class);
     private final UserRepository userRepository = mock(UserRepository.class);
     private final CategoryRepository categoryRepository = mock(CategoryRepository.class);
-    private final UserPreferenceService service =
-            new UserPreferenceService(preferencesRepository, userRepository, categoryRepository);
+    private final PreferenceSetupService preferenceSetupService = mock(PreferenceSetupService.class);
+    private final UserDefaultCategoryService userDefaultCategoryService = mock(UserDefaultCategoryService.class);
+    private final UserPreferenceService service = new UserPreferenceService(
+            preferencesRepository, userRepository, categoryRepository, preferenceSetupService,
+            userDefaultCategoryService);
 
     @BeforeEach
     void setUp() {
@@ -84,6 +92,7 @@ class UserPreferenceServiceTest {
         assertThat(dto.getOnboardingCompleted()).isTrue();
         assertThat(user.getOnboardingCompleted()).isTrue();
         verify(userRepository).save(user);
+        verify(preferenceSetupService).applyPreferences(eq(userId), any(UserPreferences.class), eq(false));
     }
 
     @Test
@@ -109,6 +118,23 @@ class UserPreferenceServiceTest {
         assertThat(dto.getIncomeSlab()).isEqualTo("UNDER_25K");
         assertThat(dto.getSelectedCategoryIds()).containsExactly(cat.getId());
         verify(preferencesRepository).save(existing);
+        // The pick is materialised as the user's default categories.
+        verify(userDefaultCategoryService).syncDefaults(userId, List.of(cat.getId()));
+    }
+
+    @Test
+    void savingPreferencesWithoutCategorySelectionLeavesDefaultsAlone() {
+        UserPreferences existing = new UserPreferences();
+        existing.setUser(user());
+        when(preferencesRepository.findByUserId(userId)).thenReturn(Optional.of(existing));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user()));
+
+        UpdateUserPreferencesRequest req = new UpdateUserPreferencesRequest();
+        req.setIncomeSlab("UNDER_25K");
+
+        service.updatePreferences(userId, req);
+
+        verify(userDefaultCategoryService, never()).syncDefaults(any(), any());
     }
 
     @Test
@@ -123,6 +149,27 @@ class UserPreferenceServiceTest {
         UserPreferencesDto dto = service.updatePreferences(userId, req);
 
         assertThat(dto.getOnboardingCompleted()).isTrue();
+        verify(preferenceSetupService).applyPreferences(eq(userId), any(UserPreferences.class), eq(false));
+    }
+
+    @Test
+    void budgetsAreNotSeededWhenOnboardingWasAlreadyComplete() {
+        UserPreferences existing = new UserPreferences();
+        existing.setUser(user());
+        existing.setIncomeSlab("UNDER_25K");
+        existing.setExpensePreference("INDIVIDUAL");
+        when(preferencesRepository.findByUserId(userId)).thenReturn(Optional.of(existing));
+        User user = user();
+        // Simulate a user who has already been through onboarding.
+        user.setOnboardingCompleted(true);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        UpdateUserPreferencesRequest req = new UpdateUserPreferencesRequest();
+        req.setIncomeSlab("ABOVE_2P5L");
+
+        service.updatePreferences(userId, req);
+
+        verify(preferenceSetupService, never()).applyPreferences(any(), any(UserPreferences.class), anyBoolean());
     }
 
     @Test

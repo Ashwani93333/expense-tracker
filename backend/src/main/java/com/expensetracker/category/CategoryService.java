@@ -13,7 +13,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -22,21 +24,48 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
+    private final UserCategoryScope categoryScope;
     private final ObjectMapper objectMapper;
 
     public CategoryService(CategoryRepository categoryRepository, UserRepository userRepository,
+                           UserCategoryScope categoryScope,
                            ObjectMapper objectMapper) {
         this.categoryRepository = categoryRepository;
         this.userRepository = userRepository;
+        this.categoryScope = categoryScope;
         this.objectMapper = objectMapper;
     }
 
-    /** System defaults plus the current user's own custom categories. */
+    /**
+     * The complete catalogue — every default plus the user's own categories. The
+     * preferences screen uses this so users can re-pick categories they previously
+     * deselected.
+     */
+    @Transactional(readOnly = true)
+    public List<CategoryDto> getAllCategoriesForUser(UUID userId) {
+        Set<UUID> defaults = categoryScope.preferredIds(userId);
+        return categoryScope.accessible(userId)
+                .stream()
+                .sorted(Comparator.comparing(Category::getName, String.CASE_INSENSITIVE_ORDER))
+                .map(c -> CategoryDto.fromEntity(c, defaults.contains(c.getId())))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * The categories the user actually works with — their default categories, their
+     * own custom ones and anything already used by an existing expense. This is what
+     * the add-expense picker receives. See {@link UserCategoryScope} for the rules.
+     */
     @Transactional(readOnly = true)
     public List<CategoryDto> getCategoriesForUser(UUID userId) {
-        return categoryRepository.findDefaultsAndUserCategories(userId)
+        Set<UUID> defaults = categoryScope.preferredIds(userId);
+        return categoryScope.resolve(userId)
                 .stream()
-                .map(CategoryDto::fromEntity)
+                // The user's own defaults lead, then everything else alphabetically.
+                .sorted(Comparator
+                        .comparing((Category c) -> !defaults.contains(c.getId()))
+                        .thenComparing(Category::getName, String.CASE_INSENSITIVE_ORDER))
+                .map(c -> CategoryDto.fromEntity(c, defaults.contains(c.getId())))
                 .collect(Collectors.toList());
     }
 

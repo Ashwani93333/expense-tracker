@@ -7,10 +7,11 @@ import {
   CheckCircle2,
   IndianRupee,
   Sparkles,
+  Info,
 } from 'lucide-react';
 import { useExpense } from '../context/ExpenseContext';
 import { useAuth } from '../context/AuthContext';
-import { userPreferencesApi } from '../services/api';
+import { userPreferencesApi, categoriesApi } from '../services/api';
 import { PageHeader } from '../components/ui/PageHeader';
 import { IncomeSlabSelector } from '../components/preferences/IncomeSlabSelector';
 import { SpendingStyleSelector } from '../components/preferences/SpendingStyleSelector';
@@ -18,7 +19,7 @@ import { CategoryChips } from '../components/preferences/CategoryChips';
 import { fmtINR } from '../constants/preferences';
 
 export const PreferencesPage = () => {
-  const { categories, showToast } = useExpense();
+  const { categories, showToast, refreshCategories } = useExpense();
   const { currentUser, updateCurrentUser } = useAuth();
 
   const [prefs, setPrefs] = useState(null);
@@ -27,15 +28,21 @@ export const PreferencesPage = () => {
   const [incomeSlab, setIncomeSlab] = useState('');
   const [spendingStyle, setSpendingStyle] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
+  // Full catalogue for the picker — the context only holds the narrowed working set.
+  const [allCategories, setAllCategories] = useState([]);
 
   const load = async () => {
     setLoading(true);
     try {
-      const data = await userPreferencesApi.get();
+      const [data, cats] = await Promise.all([
+        userPreferencesApi.get(),
+        categoriesApi.listAll().catch(() => null),
+      ]);
       setPrefs(data || {});
       setIncomeSlab(data?.incomeSlab || '');
       setSpendingStyle(data?.expensePreference || '');
       setSelectedIds(data?.selectedCategoryIds || []);
+      setAllCategories(cats || []);
     } catch (err) {
       showToast(err.message || 'Failed to load preferences', 'error');
       setPrefs({});
@@ -60,6 +67,10 @@ export const PreferencesPage = () => {
       if (updated && typeof updated.onboardingCompleted === 'boolean' && currentUser) {
         updateCurrentUser({ ...currentUser, onboardingCompleted: updated.onboardingCompleted });
       }
+      // The category set just narrowed or widened — refetch so every picker,
+      // filter and chart reflects the new working set.
+      await refreshCategories();
+      setAllCategories(await categoriesApi.listAll().catch(() => allCategories));
       showToast(updated?.onboardingCompleted ? 'Preferences saved — setup complete!' : 'Preferences saved!');
     } catch (err) {
       showToast(err.message || 'Failed to save preferences', 'error');
@@ -159,10 +170,26 @@ export const PreferencesPage = () => {
           <div className="card" style={{ padding: '24px' }}>
             <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700, marginBottom: '6px' }}>Go-To Categories</h3>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
-              Select the categories you use most — they'll be used for quick picks and suggestions.
+              These become your only categories when adding expenses. Anything you deselect is hidden
+              from the picker, filters and the auto-classifier — except categories you already used,
+              which stay so old expenses keep their label.
             </p>
-            <CategoryChips categories={categories} selected={selectedIds} onToggle={toggleCategory} />
+            <CategoryChips categories={allCategories.length > 0 ? allCategories : categories} selected={selectedIds} onToggle={toggleCategory} />
           </div>
+
+          {prefs?.suggestedMonthlyBudget != null && (
+            <div style={{
+              padding: '14px 18px', borderRadius: 'var(--r-lg)',
+              background: 'var(--bg-surface)', border: '1px dashed var(--border)',
+              display: 'flex', alignItems: 'flex-start', gap: '10px',
+            }}>
+              <Info size={15} color="var(--text-muted)" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.55 }}>
+                Budgets were created automatically the first time you set your income range, and are
+                never overwritten after that. Change any figure in Budgets and it sticks.
+              </span>
+            </div>
+          )}
 
           {prefs?.suggestedMonthlyBudget != null && (
             <div style={{

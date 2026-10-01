@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ExpenseProvider, useExpense } from './context/ExpenseContext';
 import { IncomeProvider } from './context/IncomeContext';
@@ -103,7 +103,17 @@ const AuthLoader = () => (
 );
 
 const AppContent = () => {
-  const { activeTab, toastMessage, isExportModalOpen, setIsExportModalOpen, exportModalType } = useExpense();
+  const { activeTab, toastMessage, isExportModalOpen, setIsExportModalOpen, exportModalType, preferences, setActiveTab } = useExpense();
+
+  // Group surfaces are hidden for individual-only spenders, but a stale tab id
+  // (restored session, bookmark) must not slip through either.
+  const individualOnly = preferences?.expensePreference === 'INDIVIDUAL';
+  const GROUP_TABS = ['groups', 'group-detail'];
+  useEffect(() => {
+    if (individualOnly && GROUP_TABS.includes(activeTab)) setActiveTab('dashboard');
+  }, [individualOnly, activeTab, setActiveTab]);
+
+  const visibleTab = individualOnly && GROUP_TABS.includes(activeTab) ? 'dashboard' : activeTab;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg-page)', overflow: 'hidden' }}>
@@ -122,18 +132,18 @@ const AppContent = () => {
         }}
           className="main-content"
         >
-          {activeTab === 'dashboard'      && <DashboardPage />}
-          {activeTab === 'calendar'       && <CalendarPage />}
-          {activeTab === 'expenses'       && <ExpenseTable />}
-          {activeTab === 'incomes'        && <IncomePage />}
-          {activeTab === 'groups'         && <GroupsPage />}
-          {activeTab === 'group-detail'   && <GroupDetailPage />}
-          {activeTab === 'budget-settings'&& <BudgetSettingsPage />}
-          {activeTab === 'notification-settings' && <NotificationSettingsPage />}
-          {activeTab === 'preferences'         && <PreferencesPage />}
-          {activeTab === 'scan'           && <ReceiptScanner />}
-          {activeTab === 'analytics'      && <AnalyticsCharts />}
-          {activeTab === 'categories'     && <CategoriesManager />}
+          {visibleTab === 'dashboard'      && <DashboardPage />}
+          {visibleTab === 'calendar'       && <CalendarPage />}
+          {visibleTab === 'expenses'       && <ExpenseTable />}
+          {visibleTab === 'incomes'        && <IncomePage />}
+          {visibleTab === 'groups'         && <GroupsPage />}
+          {visibleTab === 'group-detail'   && <GroupDetailPage />}
+          {visibleTab === 'budget-settings'&& <BudgetSettingsPage />}
+          {visibleTab === 'notification-settings' && <NotificationSettingsPage />}
+          {visibleTab === 'preferences'         && <PreferencesPage />}
+          {visibleTab === 'scan'           && <ReceiptScanner />}
+          {visibleTab === 'analytics'      && <AnalyticsCharts />}
+          {visibleTab === 'categories'     && <CategoriesManager />}
         </main>
       </div>
 

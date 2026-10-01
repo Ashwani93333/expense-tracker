@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { X, CheckCircle, Loader2, Users, DollarSign, CalendarDays, Tag, AlignLeft, ScanLine, Scale, PenLine, Percent, AlertTriangle } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 import { useAuth } from '../../context/AuthContext';
@@ -26,7 +26,7 @@ const SplitTypeBtn = ({ value, current, label, icon: Icon, onClick }) => (
 );
 
 export const ExpenseFormModal = () => {
-  const { isAddModalOpen, setIsAddModalOpen, setActiveTab, categories, addCategory, addExpense, groups } = useExpense();
+  const { isAddModalOpen, setIsAddModalOpen, setActiveTab, categories, addCategory, addExpense, groups, preferences } = useExpense();
   const { currentUser } = useAuth();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -42,9 +42,21 @@ export const ExpenseFormModal = () => {
   const [splits, setSplits] = useState([]);
   const [membersLoading, setMembersLoading] = useState(false);
 
-  useEffect(() => {
-    if (categories.length > 0 && !categoryId) setCategoryId(categories[0].id);
+  // `categories` is the user's onboarding-selected set, so the picker only ever
+  // offers what they asked for. Uncategorized is kept last as the escape hatch.
+  const pickerCategories = useMemo(() => {
+    const isFallback = c => c.name?.toLowerCase() === 'uncategorized';
+    return [...categories].sort((a, b) => Number(isFallback(a)) - Number(isFallback(b)));
   }, [categories]);
+
+  const defaultCategoryId = pickerCategories[0]?.id || '';
+
+  // Users who said they only ever spend on their own get no split UI at all.
+  const individualOnly = preferences?.expensePreference === 'INDIVIDUAL';
+
+  useEffect(() => {
+    if (pickerCategories.length > 0 && !categoryId) setCategoryId(defaultCategoryId);
+  }, [pickerCategories, defaultCategoryId]);
 
   useEffect(() => {
     if (currentUser?.id) setPaidBy(currentUser.id);
@@ -107,7 +119,7 @@ export const ExpenseFormModal = () => {
   const reset = () => {
     setAmount(''); setDescription('');
     setExpenseDate(new Date().toISOString().split('T')[0]);
-    setCategoryId(categories[0]?.id || '');
+    setCategoryId(defaultCategoryId);
     setIsGroupExpense(false); setSelectedGroupId('');
     setSplitType('EQUAL'); setSplits([]); setGroupMembers([]);
     setPaidBy(currentUser?.id || '');
@@ -217,7 +229,7 @@ export const ExpenseFormModal = () => {
           <div className="input-group" style={{ margin: 0 }}>
             <label className="input-label"><Tag size={12} /> Category</label>
             <CategorySearchSelect
-              categories={categories}
+              categories={pickerCategories}
               value={categoryId}
               onChange={setCategoryId}
               addCategory={addCategory}
@@ -225,7 +237,7 @@ export const ExpenseFormModal = () => {
           </div>
 
           {/* Group Toggle */}
-          {groups.length > 0 && (
+          {groups.length > 0 && !individualOnly && (
             <div style={{
               padding: '14px 16px', borderRadius: 'var(--r-xl)',
               background: isGroupExpense ? 'rgba(183,255,0,0.06)' : 'var(--bg-surface)',

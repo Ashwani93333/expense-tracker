@@ -40,6 +40,7 @@ const NAV_SECTIONS = [
     ],
   },
   {
+    id: 'groups',
     label: 'Groups',
     items: [
       { id: 'groups',       label: 'Groups',       icon: Users, badgeKey: 'groups' },
@@ -66,11 +67,20 @@ const EXPORT_OPTIONS = [
 ];
 
 export const Sidebar = () => {
-  const { activeTab, setActiveTab, groups, setIsExportModalOpen, setExportModalType } = useExpense();
+  const { activeTab, setActiveTab, groups, setIsExportModalOpen, setExportModalType, preferences } = useExpense();
   const [isExportExpanded, setIsExportExpanded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
   const isActive = (id) => activeTab === id || (id === 'groups' && activeTab === 'group-detail');
+
+  // Users who said they only spend on their own never see group surfaces.
+  const individualOnly = preferences?.expensePreference === 'INDIVIDUAL';
+
+  const sections = NAV_SECTIONS
+    .filter(s => s.id !== 'groups' || !individualOnly)
+    .map(s => (s.id === 'groups'
+      ? { ...s, items: s.items.filter(i => i.id !== 'groups' || !individualOnly) }
+      : s));
 
   const handleExportClick = (type) => {
     setExportModalType(type);
@@ -115,7 +125,7 @@ export const Sidebar = () => {
           zIndex: 2,
         }}>
 
-      {NAV_SECTIONS.map(section => (
+      {sections.map(section => (
         <div key={section.label} style={{ marginBottom: '24px' }}>
           {/* Section Label */}
           <div style={{
@@ -258,7 +268,7 @@ export const Sidebar = () => {
         {/* Export Sub-Items */}
         {isExportExpanded && (
           <div style={{ paddingLeft: '8px', marginTop: '4px' }}>
-            {EXPORT_OPTIONS.map(option => {
+            {EXPORT_OPTIONS.filter(o => o.id !== 'group' || !individualOnly).map(option => {
               const Icon = option.icon;
               return (
                 <button
@@ -302,21 +312,8 @@ export const Sidebar = () => {
 
       {/* Bottom spacer */}
       <div style={{ flex: 1 }} />
-
-      {/* API Status badge */}
-      <div style={{
-        padding: '12px', borderRadius: 'var(--r-lg)',
-        background: 'rgba(255,255,255,0.03)', border: '1px solid #1a1a1a',
-        margin: '8px 0',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '4px' }}>
-          <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#22c55e', flexShrink: 0 }} />
-          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#737373' }}>Connected</span>
-        </div>
-        <p style={{ fontSize: '0.68rem', color: '#525252', lineHeight: 1.5 }}>
-          API · JWT auth
-        </p>
-      </div>
+      
+      
     </aside>
     </>
   );

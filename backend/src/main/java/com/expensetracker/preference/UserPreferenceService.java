@@ -1,5 +1,6 @@
 package com.expensetracker.preference;
 
+import com.expensetracker.category.UserDefaultCategoryService;
 import com.expensetracker.exception.BadRequestException;
 import com.expensetracker.exception.ResourceNotFoundException;
 import com.expensetracker.model.Category;
@@ -27,13 +28,19 @@ public class UserPreferenceService {
     private final UserPreferencesRepository preferencesRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
+    private final PreferenceSetupService preferenceSetupService;
+    private final UserDefaultCategoryService userDefaultCategoryService;
 
     public UserPreferenceService(UserPreferencesRepository preferencesRepository,
                                  UserRepository userRepository,
-                                 CategoryRepository categoryRepository) {
+                                 CategoryRepository categoryRepository,
+                                 PreferenceSetupService preferenceSetupService,
+                                 UserDefaultCategoryService userDefaultCategoryService) {
         this.preferencesRepository = preferencesRepository;
         this.userRepository = userRepository;
         this.categoryRepository = categoryRepository;
+        this.preferenceSetupService = preferenceSetupService;
+        this.userDefaultCategoryService = userDefaultCategoryService;
     }
 
     @Transactional
@@ -54,7 +61,12 @@ public class UserPreferenceService {
             prefs.setExpensePreference(validExpensePreference(req.getExpensePreference()));
         }
         if (req.getSelectedCategoryIds() != null) {
-            prefs.setSelectedCategoryIds(validCategoryIds(userId, req.getSelectedCategoryIds()));
+            List<UUID> selected = validCategoryIds(userId, req.getSelectedCategoryIds());
+            prefs.setSelectedCategoryIds(selected);
+            // Materialise the pick as the user's default categories. Runs on every
+            // save so the add-expense picker, the category manager and the
+            // classifier all reflect the current form state immediately.
+            userDefaultCategoryService.syncDefaults(userId, selected);
         }
         preferencesRepository.save(prefs);
 
@@ -63,6 +75,10 @@ public class UserPreferenceService {
         if (!Boolean.TRUE.equals(user.getOnboardingCompleted()) && (explicitlyCompleted || essentialsFilled)) {
             user.setOnboardingCompleted(true);
             userRepository.save(user);
+            // Materialise the choices: the slab's suggested figure becomes the
+            // overall monthly budget and the selected categories get share-based
+            // caps. Create-if-absent, so re-saving never overwrites manual edits.
+            preferenceSetupService.applyPreferences(userId, prefs, false);
         }
 
         return UserPreferencesDto.fromEntity(prefs, user);

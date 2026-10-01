@@ -8,6 +8,7 @@ import { PageHeader } from '../components/ui/PageHeader';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { DateFilterBar } from '../components/layout/DateFilterBar';
 import { describeFilter, activeMonth } from '../utils/dateFilter';
+import { fmtINR } from '../constants/preferences';
 
 const statusColor = (s) => ({
   OK:        '#22c55e',
@@ -30,7 +31,7 @@ const statusLabel = (s) => ({
 }[s] || s);
 
 export const BudgetSettingsPage = () => {
-  const { categories, updatePersonalBudget, updateCategoryBudget, dateFilter } = useExpense();
+  const { categories, updatePersonalBudget, updateCategoryBudget, dateFilter, preferences } = useExpense();
   const { currentUser } = useAuth();
 
   const [budgetStatus, setBudgetStatus] = useState(null);
@@ -87,6 +88,11 @@ export const BudgetSettingsPage = () => {
         subtitle="Stay ahead of your spending. Set monthly spending limits and get alerts."
         actions={
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {preferences?.suggestedMonthlyBudget != null && (
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                Suggested for your income range: <strong style={{ color: 'var(--text-primary)' }}>{fmtINR(preferences.suggestedMonthlyBudget)}</strong>
+              </span>
+            )}
             <button className="btn btn-secondary btn-sm" onClick={fetchBudgetStatus} title="Refresh">
               <RefreshCw size={14} />
             </button>
