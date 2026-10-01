@@ -7,6 +7,7 @@ import com.expensetracker.exception.ResourceNotFoundException;
 import com.expensetracker.model.Category;
 import com.expensetracker.model.User;
 import com.expensetracker.model.UserBudget;
+import com.expensetracker.period.AccountPeriodPolicy;
 import com.expensetracker.repository.CategoryRepository;
 import com.expensetracker.repository.ExpenseRepository;
 import com.expensetracker.repository.UserBudgetRepository;
@@ -24,19 +25,24 @@ public class BudgetService {
     private final UserBudgetRepository userBudgetRepository;
     private final CategoryRepository categoryRepository;
     private final ExpenseRepository expenseRepository;
+    private final AccountPeriodPolicy periodPolicy;
 
     public BudgetService(
             UserBudgetRepository userBudgetRepository,
             CategoryRepository categoryRepository,
-            ExpenseRepository expenseRepository) {
+            ExpenseRepository expenseRepository,
+            AccountPeriodPolicy periodPolicy) {
         this.userBudgetRepository = userBudgetRepository;
         this.categoryRepository = categoryRepository;
         this.expenseRepository = expenseRepository;
+        this.periodPolicy = periodPolicy;
     }
 
     @Transactional
     public BudgetStatusResponse setPersonalBudget(User user, SetBudgetRequest req, String monthParam) {
         LocalDate month = parseMonth(monthParam);
+        // No budgeting for months that predate the account.
+        periodPolicy.requireMonthAllowed(user, YearMonth.from(month), "A budget");
 
         UserBudget budget;
         if (req.getCategoryId() == null) {

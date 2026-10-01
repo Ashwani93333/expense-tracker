@@ -26,7 +26,7 @@ const SplitTypeBtn = ({ value, current, label, icon: Icon, onClick }) => (
 );
 
 export const ExpenseFormModal = () => {
-  const { isAddModalOpen, setIsAddModalOpen, setActiveTab, categories, addCategory, addExpense, groups, preferences } = useExpense();
+  const { isAddModalOpen, setIsAddModalOpen, setActiveTab, categories, addCategory, addExpense, groups, preferences, earliestMonth } = useExpense();
   const { currentUser } = useAuth();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -125,9 +125,13 @@ export const ExpenseFormModal = () => {
     setPaidBy(currentUser?.id || '');
   };
 
+  // An account cannot record spend dated before it existed.
+  const minExpenseDate = earliestMonth ? `${earliestMonth}-01` : undefined;
+  const dateBeforeFloor = Boolean(earliestMonth && expenseDate && expenseDate < minExpenseDate);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!amount || !description) return;
+    if (!amount || !description || dateBeforeFloor) return;
     setIsLoading(true);
     try {
       await addExpense({
@@ -221,7 +225,18 @@ export const ExpenseFormModal = () => {
             </div>
             <div className="input-group" style={{ margin: 0 }}>
               <label className="input-label"><CalendarDays size={12} /> Date</label>
-              <input type="date" required value={expenseDate} onChange={e => setExpenseDate(e.target.value)} className="input-field" />
+              <div>
+                <input
+                  type="date" required min={minExpenseDate} value={expenseDate}
+                  onChange={e => setExpenseDate(e.target.value)}
+                  className="input-field"
+                />
+                {dateBeforeFloor && (
+                  <p style={{ marginTop: '5px', fontSize: '0.72rem', color: 'var(--danger, #ef4444)' }}>
+                    Expenses cannot be dated before your account started ({earliestMonth}).
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 

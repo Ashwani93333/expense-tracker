@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Calendar, X, TrendingUp, ReceiptText } from 'lucide-react';
 import { useExpense } from '../context/ExpenseContext';
 import { useIncome } from '../context/IncomeContext';
+import { isBeforeFloor, previousMonth } from '../utils/dateFilter';
 
 const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -23,7 +24,7 @@ const formatShortDate = (dateStr) => {
 };
 
 export const CalendarPage = () => {
-  const { expenses } = useExpense();
+  const { expenses, earliestMonth } = useExpense();
   const { incomes } = useIncome();
 
   const today = todayStr();
@@ -84,6 +85,8 @@ export const CalendarPage = () => {
     return days;
   }, [year, month]);
 
+  const viewMonthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
+  const canGoPrev = !isBeforeFloor(previousMonth(viewMonthKey), earliestMonth);
   const goToPrev = () => setViewDate(new Date(year, month - 1, 1));
   const goToNext = () => setViewDate(new Date(year, month + 1, 1));
   const goToToday = () => {
@@ -137,13 +140,15 @@ export const CalendarPage = () => {
       {/* Calendar Controls */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button
-            onClick={goToPrev}
-            className="btn btn-ghost btn-icon"
-            aria-label="Previous month"
-          >
-            <ChevronLeft size={18} />
-          </button>
+          {canGoPrev && (
+            <button
+              onClick={goToPrev}
+              className="btn btn-ghost btn-icon"
+              aria-label="Previous month"
+            >
+              <ChevronLeft size={18} />
+            </button>
+          )}
           <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)', minWidth: '180px', textAlign: 'center' }}>
             {monthLabel}
           </h2>

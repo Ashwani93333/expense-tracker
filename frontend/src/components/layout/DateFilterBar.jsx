@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Calendar, CalendarRange, CalendarDays } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
-import { getCurrentMonth, getCurrentYear, describeFilter } from '../../utils/dateFilter';
+import {
+  getCurrentMonth, getCurrentYear, describeFilter,
+  clampFilterToFloor, filterReachesBeforeFloor, isBeforeFloor,
+} from '../../utils/dateFilter';
 
 const MODES = [
   { id: 'month', label: 'Month', icon: CalendarDays },
@@ -16,9 +19,13 @@ const shiftMonth = (month, delta) => {
 };
 
 export const DateFilterBar = () => {
-  const { dateFilter, setDateFilter } = useExpense();
+  const { dateFilter, setDateFilter, earliestMonth } = useExpense();
 
-  const set = (patch) => setDateFilter(prev => ({ ...prev, ...patch }));
+  // Never show a period that predates the account itself.
+  const set = (patch) => {
+    const next = { ...dateFilter, ...patch };
+    setDateFilter(clampFilterToFloor(next, earliestMonth));
+  };
 
   const goMode = (mode) => {
     const patch = { mode };
@@ -85,6 +92,26 @@ export const DateFilterBar = () => {
   const showPrev = dateFilter.mode !== 'custom';
   const showNext = dateFilter.mode !== 'custom';
 
+  // Hide back-navigation entirely rather than offering periods that predate the
+  // account — a new user never learns earlier periods exist.
+  const earliestYear = Number(String(earliestMonth || '').slice(0, 4)) || getCurrentYear();
+  const canGoPrev = dateFilter.mode === 'year'
+    ? (dateFilter.year || getCurrentYear()) > earliestYear
+    : !isBeforeFloor(shiftMonth(dateFilter.month || getCurrentMonth(), -1), earliestMonth);
+
+  // Safety net: if a filter was restored pointing before the account existed, pull
+  // it forward rather than issuing a request for a period the user cannot access.
+  useEffect(() => {
+    if (filterReachesBeforeFloor(dateFilter, earliestMonth)) {
+      setDateFilter(clampFilterToFloor(dateFilter, earliestMonth));
+    }
+  }, [dateFilter, earliestMonth, setDateFilter]);
+
+  // The year mode is meaningless when the account and the current year are the same.
+  const yearModeAvailable = !earliestMonth
+    || Number(earliestYear) < getCurrentYear()
+    || (dateFilter.month && Number(dateFilter.month.slice(0, 4)) > earliestYear);
+
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap',
@@ -99,6 +126,7 @@ export const DateFilterBar = () => {
         {MODES.map(m => {
           const Icon = m.icon;
           const active = dateFilter.mode === m.id;
+          if (m.id === 'year' && !yearModeAvailable) return null;
           return (
             <button
               key={m.id}
@@ -123,7 +151,7 @@ export const DateFilterBar = () => {
 
       {/* Navigation */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-        {showPrev && (
+        {showPrev && canGoPrev && (
           <button className="btn btn-ghost btn-sm" onClick={prev} title="Previous" style={{ padding: '6px', width: '30px' }}>
             <ChevronLeft size={15} />
           </button>
@@ -134,6 +162,7 @@ export const DateFilterBar = () => {
             <input
               type="date"
               value={dateFilter.dateFrom || ''}
+              min={earliestMonth ? `${earliestMonth}-01` : undefined}
               onChange={e => onFromChange(e.target.value)}
               className="input-field"
               style={{ fontSize: '0.8rem', cursor: 'pointer', width: '150px' }}
@@ -142,6 +171,7 @@ export const DateFilterBar = () => {
             <input
               type="date"
               value={dateFilter.dateTo || ''}
+              min={earliestMonth ? `${earliestMonth}-01` : undefined}
               onChange={e => onToChange(e.target.value)}
               className="input-field"
               style={{ fontSize: '0.8rem', cursor: 'pointer', width: '150px' }}

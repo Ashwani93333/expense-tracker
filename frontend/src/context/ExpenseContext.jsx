@@ -14,12 +14,17 @@ import {
   toQueryParams,
   isInFilterRange,
   activeMonth,
+  earliestMonthFor,
+  clampFilterToFloor,
 } from '../utils/dateFilter';
 
 const ExpenseContext = createContext(null);
 
 export const ExpenseProvider = ({ children }) => {
   const { currentUser, isAuthenticated } = useAuth();
+
+  // Earliest period this account may view or record — its signup month.
+  const earliestMonth = earliestMonthFor(currentUser);
 
   // ─── Core Data State ────────────────────────────────────────────────────────
   const [expenses, setExpenses] = useState([]);
@@ -39,13 +44,22 @@ export const ExpenseProvider = ({ children }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [activeGroupId, setActiveGroupId] = useState(null);
   // `month` is always kept populated (used for always-monthly budget setting).
-  const [dateFilter, setDateFilter] = useState({
+  const [dateFilter, setDateFilterRaw] = useState({
     mode: 'month',
     month: getCurrentMonth(),
     year: new Date().getFullYear(),
     dateFrom: null,
     dateTo: null,
   });
+
+  // Central choke point: no caller — bar, page, deep link or restore — can move the
+  // active filter to a period that predates the account.
+  const setDateFilter = useCallback((patchOrFn) => {
+    setDateFilterRaw(prev => {
+      const next = typeof patchOrFn === 'function' ? patchOrFn(prev) : { ...prev, ...patchOrFn };
+      return clampFilterToFloor(next, earliestMonthFor(currentUser));
+    });
+  }, [currentUser]);
   const [isLoading, setIsLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
 
@@ -571,6 +585,7 @@ export const ExpenseProvider = ({ children }) => {
       refreshPreferences,
       refreshPreferencesAndCategories,
       preferences,
+      earliestMonth,
       totalSpent,
     }}>
       {children}

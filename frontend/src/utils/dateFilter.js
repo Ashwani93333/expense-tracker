@@ -76,3 +76,53 @@ export const describeFilter = (filter) => {
 
 /** The month used for always-monthly operations like setting a budget. */
 export const activeMonth = (filter) => filter?.month || getCurrentMonth();
+
+// ─── Account period floor ─────────────────────────────────────────────────────
+// An account cannot reach back before it existed. A user who signs up this month
+// has no data in any earlier period, so the app never offers to navigate there
+// and never lets them file an expense dated before their signup month. Because
+// the floor is the account's own creation month, existing accounts keep full
+// access to everything they recorded.
+
+/** The earliest month ('YYYY-MM') an account may view or record, or null if unknown. */
+export const earliestMonthFor = (user) => {
+  const createdAt = user?.createdAt;
+  if (!createdAt || typeof createdAt !== 'string' || createdAt.length < 7) return null;
+  return createdAt.slice(0, 7);
+};
+
+/** True when `month` ('YYYY-MM') is before the account's floor. */
+export const isBeforeFloor = (month, floor) => {
+  if (!month || !floor) return false;
+  return String(month) < String(floor);
+};
+
+/** True when a filter would show periods the account has no access to. */
+export const filterReachesBeforeFloor = (filter, floor) => {
+  if (!filter || !floor) return false;
+  if (filter.mode === 'custom') return isBeforeFloor(filter.dateFrom?.slice(0, 7), floor);
+  if (filter.mode === 'year') return Number(filter.year) < Number(floor.slice(0, 4));
+  return isBeforeFloor(filter.month, floor);
+};
+
+/** The same filter, moved forward to the floor so it never shows forbidden data. */
+export const clampFilterToFloor = (filter, floor) => {
+  if (!filter || !floor || !filterReachesBeforeFloor(filter, floor)) return filter;
+  const clamped = { ...filter };
+  if (filter.mode === 'custom') {
+    if (clamped.dateFrom < `${floor}-01`) clamped.dateFrom = `${floor}-01`;
+  } else if (filter.mode === 'year') {
+    clamped.year = Number(floor.slice(0, 4));
+  } else if (isBeforeFloor(filter.month, floor)) {
+    clamped.month = floor;
+    clamped.year = Number(floor.slice(0, 4));
+  }
+  return clamped;
+};
+
+/** The previous month ('YYYY-MM') relative to `month`. */
+export const previousMonth = (month) => {
+  const [y, m] = String(month).split('-').map(Number);
+  const d = new Date(y, m - 2, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};

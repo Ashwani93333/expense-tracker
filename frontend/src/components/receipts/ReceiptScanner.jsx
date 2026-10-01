@@ -79,7 +79,11 @@ const SplitTypeBtn = ({ value, current, label, icon: Icon, onClick }) => (
 );
 
 export const ReceiptScanner = () => {
-  const { addExpense, addCategory, categories, groups } = useExpense();
+  const { addExpense, addCategory, categories, groups, earliestMonth } = useExpense();
+
+  // A scanned receipt can be dated before the account existed (e.g. an old
+  // receipt). Pull it forward to the account's first day rather than rejecting it.
+  const dateFloor = earliestMonth ? `${earliestMonth}-01` : null;
   const { currentUser } = useAuth();
 
   const [isDragOver, setIsDragOver] = useState(false);
@@ -136,7 +140,7 @@ export const ReceiptScanner = () => {
       const mappedData = {
         amount: data.totalAmount || data.amount,
         description: data.merchantName || data.description,
-        expenseDate: data.date || data.expenseDate,
+        expenseDate: (data.date || data.expenseDate) < dateFloor ? dateFloor : (data.date || data.expenseDate),
         confidenceScore: data.confidenceScore || 0.95,
         receiptHash: data.receiptHash || null,
         receiptUrl: data.receiptUrl || null,
@@ -591,8 +595,12 @@ export const ReceiptScanner = () => {
                 <label className="input-label"><Calendar size={12} /> Date</label>
                 <input
                   type="date"
-                  value={editDate}
-                  onChange={e => setEditDate(e.target.value)}
+                  min={dateFloor || undefined}
+                  value={editDate < dateFloor ? dateFloor : editDate}
+                  onChange={e => {
+                    const v = e.target.value;
+                    setEditDate(v < dateFloor ? dateFloor : v);
+                  }}
                   className="input-field"
                 />
               </div>

@@ -15,6 +15,7 @@ import com.expensetracker.expense.dto.UpdateExpenseRequest;
 import com.expensetracker.group.GroupRoleGuard;
 import com.expensetracker.model.*;
 import com.expensetracker.notification.NotificationService;
+import com.expensetracker.period.AccountPeriodPolicy;
 import com.expensetracker.notification.NotificationSettingsService;
 import com.expensetracker.repository.*;
 import org.springframework.context.ApplicationEventPublisher;
@@ -47,6 +48,7 @@ public class ExpenseService {
     private final GroupRoleGuard groupRoleGuard;
     private final NotificationService notificationService;
     private final NotificationSettingsService notificationSettingsService;
+    private final AccountPeriodPolicy periodPolicy;
 
     public ExpenseService(
             ExpenseRepository expenseRepository,
@@ -59,7 +61,8 @@ public class ExpenseService {
             ApplicationEventPublisher eventPublisher,
             GroupRoleGuard groupRoleGuard,
             NotificationService notificationService,
-            NotificationSettingsService notificationSettingsService) {
+            NotificationSettingsService notificationSettingsService,
+            AccountPeriodPolicy periodPolicy) {
         this.expenseRepository = expenseRepository;
         this.groupRepository = groupRepository;
         this.groupMemberRepository = groupMemberRepository;
@@ -71,10 +74,13 @@ public class ExpenseService {
         this.groupRoleGuard = groupRoleGuard;
         this.notificationService = notificationService;
         this.notificationSettingsService = notificationSettingsService;
+        this.periodPolicy = periodPolicy;
     }
 
     @Transactional
     public ExpenseDto createExpense(User currentUser, CreateExpenseRequest req) {
+        // An account cannot record spend from before it existed.
+        periodPolicy.requireDateAllowed(currentUser, req.getExpenseDate(), "An expense");
         Expense expense = new Expense();
         expense.setUser(currentUser);
         expense.setAmount(req.getAmount());
@@ -211,7 +217,10 @@ public class ExpenseService {
         }
         if (req.getAmount() != null) expense.setAmount(req.getAmount());
         if (req.getDescription() != null) expense.setDescription(req.getDescription());
-        if (req.getExpenseDate() != null) expense.setExpenseDate(req.getExpenseDate());
+        if (req.getExpenseDate() != null) {
+            periodPolicy.requireDateAllowed(user, req.getExpenseDate(), "An expense");
+            expense.setExpenseDate(req.getExpenseDate());
+        }
         if (req.getReceiptUrl() != null) expense.setReceiptUrl(req.getReceiptUrl());
         if (req.getCategoryId() != null) {
             Category cat = categoryClassifier.requireCategoryById(req.getCategoryId());

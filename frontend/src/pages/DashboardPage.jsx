@@ -11,7 +11,7 @@ import { expensesApi } from '../services/api';
 import { SummaryCard } from '../components/ui/SummaryCard';
 import { InsightCard } from '../components/ui/InsightCard';
 import { DateFilterBar } from '../components/layout/DateFilterBar';
-import { describeFilter } from '../utils/dateFilter';
+import { describeFilter, previousMonth, isBeforeFloor } from '../utils/dateFilter';
 
 const getGreeting = () => {
   const h = new Date().getHours();
@@ -24,7 +24,7 @@ export const DashboardPage = () => {
   const {
     expenses, personalBudget, groups,
     setIsAddModalOpen, setActiveTab, setActiveGroupId,
-    dateFilter, isLoading,
+    dateFilter, isLoading, earliestMonth,
   } = useExpense();
   const { currentUser } = useAuth();
   const { financialOverview, openAddIncome } = useIncome();
@@ -46,19 +46,20 @@ export const DashboardPage = () => {
   }, [dateFilter, expenses.length]);
 
   useEffect(() => {
-    // "vs last month" comparison only makes sense in month mode.
+    // "vs last month" comparison only makes sense in month mode, and only when the
+    // previous month is inside the account's own range.
     if (dateFilter.mode !== 'month') { setPrevSummary(null); return; }
     const fetchPrevSummary = async () => {
       try {
         const m = dateFilter.month;
-        const prev = new Date(+m.slice(0, 4), +m.slice(5, 7) - 2, 1);
-        const prevKey = `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, '0')}`;
+        const prevKey = previousMonth(m);
+        if (isBeforeFloor(prevKey, earliestMonth)) { setPrevSummary(null); return; }
         const data = await expensesApi.summary({ month: prevKey });
         setPrevSummary(data);
       } catch { setPrevSummary(null); }
     };
     fetchPrevSummary();
-  }, [dateFilter]);
+  }, [dateFilter, earliestMonth]);
 
   const recentExpenses = expenses.slice(0, 5);
   const periodLabel = describeFilter(dateFilter);
