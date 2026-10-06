@@ -18,6 +18,7 @@ import { ReceiptScanner } from './components/receipts/ReceiptScanner';
 import { AnalyticsCharts } from './components/analytics/AnalyticsCharts';
 import { CategoriesManager } from './components/categories/CategoriesManager';
 import { ExpenseFormModal } from './components/expenses/ExpenseFormModal';
+import { BudgetExtendPrompt } from './components/budget/BudgetExtendPrompt';
 import { IncomeFormModal } from './components/incomes/IncomeFormModal';
 import { IncomePage } from './pages/IncomePage';
 import { CalendarPage } from './pages/CalendarPage';
@@ -151,6 +152,7 @@ const AppContent = () => {
 
       <ExpenseFormModal />
       <IncomeFormModal />
+      <BudgetExtendPrompt />
       <NotificationDrawer />
       <ChangePasswordModal />
       <ExportModal

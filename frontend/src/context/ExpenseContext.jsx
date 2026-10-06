@@ -63,6 +63,11 @@ export const ExpenseProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
 
+  // ─── Budget Crossing Prompt ───────────────────────────────────────────────────
+  // Queue (not a single slot) because one expense can sit over both the overall
+  // budget and a category budget; each is offered as its own decision.
+  const [budgetPromptQueue, setBudgetPromptQueue] = useState([]);
+
   // Backward-compatible month helpers
   const currentMonth = dateFilter.month;
   const setCurrentMonth = useCallback((m) => {
@@ -184,8 +189,49 @@ export const ExpenseProvider = ({ children }) => {
   }, [notifications]);
 
   // ─── Add Personal Expense ────────────────────────────────────────────────────
+  /**
+   * After every expense, re-reads that month's budgets and prompts for anything
+   * sitting above its limit — so the offer comes up on each new transaction while
+   * a budget is blown, not only on the single expense that tipped it over.
+   */
+  const checkBudgetCrossings = useCallback(async (month, categoryId) => {
+    if (!month) return;
+    let status;
+    try {
+      status = await budgetsApi.getStatus({ month });
+    } catch { return; }
+
+    (status || []).forEach(b => {
+      const key = b.categoryId || 'overall';
+      // Only the category just spent from, plus the overall budget.
+      if (b.categoryId && b.categoryId !== categoryId) return;
+      const isOver = Number(b.spent) > Number(b.budgetLimit);
+      if (!isOver) return;
+
+      const keyId = `${month}:${key}`;
+      const entry = {
+        key: keyId,
+        month,
+        categoryId: b.categoryId || null,
+        categoryName: b.categoryName || null,
+        limit: Number(b.budgetLimit),
+        spent: Number(b.spent),
+        overBy: Number(b.spent) - Number(b.budgetLimit),
+      };
+      // Refresh any still-pending prompt rather than stacking duplicates.
+      setBudgetPromptQueue(prev => (prev.some(p => p.key === keyId)
+        ? prev.map(p => (p.key === keyId ? entry : p))
+        : [...prev, entry]));
+    });
+  }, []);
+
+  const dismissBudgetPrompt = useCallback(() => {
+    setBudgetPromptQueue(prev => prev.slice(1));
+  }, []);
+
   const addExpense = async (formData) => {
     try {
+      const expenseMonth = (formData.expenseDate || '').slice(0, 7);
       let newExpense;
       if (formData.groupId) {
         // Group expense
@@ -224,6 +270,11 @@ export const ExpenseProvider = ({ children }) => {
       // Instantly refresh all data to update charts, budgets, and dashboard
       fetchAll();
       bumpDataVersion();
+      // Group spend is excluded from personal budget totals, so only personal
+      // expenses can push a personal budget over.
+      if (!formData.groupId) {
+        checkBudgetCrossings(expenseMonth, newExpense?.categoryId || formData.categoryId || null);
+      }
       let msg = newExpense?.status === 'PENDING'
         ? `Payment of ₹${parseFloat(formData.amount).toFixed(2)} submitted — a group admin will verify it shortly.`
         : `Expense "₹${parseFloat(formData.amount).toFixed(2)}" added successfully!`;
@@ -418,6 +469,25 @@ export const ExpenseProvider = ({ children }) => {
   // Legacy alias
   const updateCategoryBudget = (catId, limitAmount) => updatePersonalBudget(limitAmount, catId);
 
+  /**
+   * Raises a limit for an explicit month. The crossing prompt can fire for a
+   * month other than the one currently on screen (e.g. a receipt dated last
+   * month), so it cannot reuse `updatePersonalBudget`, which always writes to the
+   * active filter month.
+   */
+  const raiseBudgetLimit = async (month, categoryId, newLimit) => {
+    const payload = { budgetLimit: Number(newLimit) };
+    if (categoryId) payload.categoryId = categoryId;
+    await budgetsApi.set(month, payload);
+    if (month === activeMonth(dateFilter)) {
+      const status = await budgetsApi.getStatus({ month });
+      setPersonalBudgetStatus(status || []);
+    }
+    bumpDataVersion();
+    const label = categoryId ? 'category' : 'monthly';
+    showToast(`${label} budget for ${month} raised to ₹${Number(newLimit).toLocaleString('en-IN')}.`);
+  };
+
   // ─── Group Settlements ───────────────────────────────────────────────────────
   const calculateGroupSettlements = async (groupId) => {
     try {
@@ -573,6 +643,9 @@ export const ExpenseProvider = ({ children }) => {
       updateMemberBudgetCap,
       updatePersonalBudget,
       updateCategoryBudget,
+      raiseBudgetLimit,
+      budgetPromptQueue,
+      dismissBudgetPrompt,
       calculateGroupSettlements,
       addCategory,
       deleteCategory,
