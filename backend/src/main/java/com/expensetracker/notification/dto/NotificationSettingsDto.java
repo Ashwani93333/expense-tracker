@@ -29,23 +29,27 @@ public class NotificationSettingsDto {
     public static NotificationSettingsDto fromEntity(UserNotificationSettings s) {
         NotificationSettingsDto dto = new NotificationSettingsDto();
         dto.setUserId(s.getUser().getId());
-        dto.setInAppNotifications(s.getInAppNotifications());
-        dto.setEmailNotifications(s.getEmailNotifications());
-        dto.setOverallBudgetEnabled(s.getOverallBudgetEnabled());
+        dto.setInAppNotifications(defaultBoolean(s.getInAppNotifications(), true));
+        dto.setEmailNotifications(defaultBoolean(s.getEmailNotifications(), true));
+        dto.setOverallBudgetEnabled(defaultBoolean(s.getOverallBudgetEnabled(), true));
         dto.setOverallBudgetThresholds(s.getOverallBudgetThresholds());
         dto.setOverallBudgetThresholdType(s.getOverallBudgetThresholdType());
-        dto.setCategoryBudgetEnabled(s.getCategoryBudgetEnabled());
+        dto.setCategoryBudgetEnabled(defaultBoolean(s.getCategoryBudgetEnabled(), true));
         dto.setCategoryBudgetThresholds(s.getCategoryBudgetThresholds());
         dto.setCategoryBudgetThresholdType(s.getCategoryBudgetThresholdType());
-        dto.setTotalExpenditureEnabled(s.getTotalExpenditureEnabled());
+        dto.setTotalExpenditureEnabled(defaultBoolean(s.getTotalExpenditureEnabled(), false));
         dto.setTotalExpenditureThresholds(s.getTotalExpenditureThresholds());
         dto.setTotalExpenditureThresholdType(s.getTotalExpenditureThresholdType());
-        dto.setMonthlySummaryEnabled(s.getMonthlySummaryEnabled());
-        dto.setBudgetUpdateEnabled(s.getBudgetUpdateEnabled());
-        dto.setExpiryDateUpdateEnabled(s.getExpiryDateUpdateEnabled());
-        dto.setPaymentApprovalEnabled(s.getPaymentApprovalEnabled());
+        dto.setMonthlySummaryEnabled(defaultBoolean(s.getMonthlySummaryEnabled(), false));
+        dto.setBudgetUpdateEnabled(defaultBoolean(s.getBudgetUpdateEnabled(), true));
+        dto.setExpiryDateUpdateEnabled(defaultBoolean(s.getExpiryDateUpdateEnabled(), true));
+        dto.setPaymentApprovalEnabled(defaultBoolean(s.getPaymentApprovalEnabled(), true));
         dto.setUpdatedAt(s.getUpdatedAt());
         return dto;
+    }
+
+    private static Boolean defaultBoolean(Boolean value, boolean defaultValue) {
+        return value != null ? value : defaultValue;
     }
 
     public UUID getUserId() { return userId; }

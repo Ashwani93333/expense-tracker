@@ -26,7 +26,7 @@ public class GroupBudgetController {
         this.userRepository = userRepository;
     }
 
-    /** PUT /api/groups/{id}/budget?month=2026-08 — admin sets group total budget */
+    /** PUT /api/groups/{id}/budget?month=2026-08 — admin sets group total + member caps */
     @PutMapping("/{id}/budget")
     public ResponseEntity<GroupBudgetStatusResponse> setGroupBudget(
             @AuthenticationPrincipal UserPrincipal principal,
@@ -35,7 +35,8 @@ public class GroupBudgetController {
             @Valid @RequestBody SetBudgetRequest request) {
         User user = resolveUser(principal);
         return ResponseEntity.ok(
-                groupBudgetService.setGroupBudget(user, id, request.getBudgetLimit(), month));
+                groupBudgetService.setGroupBudget(user, id, request.getBudgetLimit(),
+                        request.getSplitType(), request.getMemberBudgets(), month));
     }
 
     /** GET /api/groups/{id}/budget/status?month=2026-08 — live group spend vs budget */

@@ -18,8 +18,10 @@ public class GroupDto {
     private OffsetDateTime createdAt;
     private long memberCount;
     private String currentUserRole; // ADMIN or MEMBER
+    private java.util.List<String> currentUserPermissions;
 
-    public static GroupDto fromEntity(ExpenseGroup g, long memberCount, String currentUserRole) {
+    public static GroupDto fromEntity(ExpenseGroup g, long memberCount, String currentUserRole,
+                                      java.util.List<String> currentUserPermissions) {
         GroupDto dto = new GroupDto();
         dto.setId(g.getId());
         dto.setName(g.getName());
@@ -33,6 +35,10 @@ public class GroupDto {
         dto.setCreatedAt(g.getCreatedAt());
         dto.setMemberCount(memberCount);
         dto.setCurrentUserRole(currentUserRole);
+        dto.setCurrentUserPermissions(
+                "ADMIN".equals(currentUserRole)
+                        ? com.expensetracker.group.GroupPermission.allKeys()
+                        : (currentUserPermissions == null ? java.util.List.of() : currentUserPermissions));
         return dto;
     }
 
@@ -60,4 +66,6 @@ public class GroupDto {
     public void setMemberCount(long memberCount) { this.memberCount = memberCount; }
     public String getCurrentUserRole() { return currentUserRole; }
     public void setCurrentUserRole(String currentUserRole) { this.currentUserRole = currentUserRole; }
+    public java.util.List<String> getCurrentUserPermissions() { return currentUserPermissions; }
+    public void setCurrentUserPermissions(java.util.List<String> currentUserPermissions) { this.currentUserPermissions = currentUserPermissions; }
 }

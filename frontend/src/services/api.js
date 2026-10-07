@@ -144,7 +144,8 @@ export const groupsApi = {
   join: (payload) => request('POST', '/api/groups/join', payload),
   leave: (id) => request('POST', `/api/groups/${id}/leave`),
   removeMember: (id, userId) => request('DELETE', `/api/groups/${id}/members/${userId}`),
-  updateMemberRole: (id, userId, payload) => request('PATCH', `/api/groups/${id}/members/${userId}/role`, payload),
+  updateMemberPermissions: (id, userId, payload) => request('PUT', `/api/groups/${id}/members/${userId}/permissions`, payload),
+  permissionsCatalog: () => request('GET', '/api/groups/permissions/catalog'),
   // Group Expenses
   listExpenses: (id, filter, status) => request('GET', `/api/groups/${id}/expenses`, null, { ...toQueryParams(filter), status }),
   createExpense: (id, payload) => request('POST', `/api/groups/${id}/expenses`, payload),

@@ -399,17 +399,20 @@ export const ExpenseProvider = ({ children }) => {
     }
   };
 
-  // ─── Update Member Role ──────────────────────────────────────────────────────
-  const updateMemberRole = async (groupId, userId, newRole) => {
+  // ─── Update Member Permissions ───────────────────────────────────────────────
+  // Admin-only: grants/revokes feature-wise access for a member.
+  const updateMemberPermissions = async (groupId, userId, permissions) => {
     try {
-      await groupsApi.updateMemberRole(groupId, userId, { role: newRole });
+      await groupsApi.updateMemberPermissions(groupId, userId, { permissions });
       // Refresh group
       const updated = await groupsApi.get(groupId);
       setGroups(prev => prev.map(g => g.id === groupId ? { ...g, ...updated.group, members: updated.members } : g));
       bumpDataVersion();
-      showToast(`Member role updated to ${newRole}.`);
+      showToast('Member permissions updated.');
+      return true;
     } catch (err) {
-      showToast(err.message || 'Failed to update role', 'error');
+      showToast(err.message || 'Failed to update permissions', 'error');
+      return false;
     }
   };
 
@@ -428,13 +431,25 @@ export const ExpenseProvider = ({ children }) => {
   };
 
   // ─── Group Budget ────────────────────────────────────────────────────────────
-  const updateGroupBudget = async (groupId, budgetLimit) => {
+  // splitType 'EQUAL' divides the total across active members; 'CUSTOM' applies
+  // the per-member amounts in memberBudgets ([{ userId, budgetLimit }]).
+  const updateGroupBudget = async (groupId, budgetLimit, splitType = 'EQUAL', memberBudgets = null) => {
     try {
-      await groupsApi.setBudget(groupId, activeMonth(dateFilter), { budgetLimit: parseFloat(budgetLimit) });
+      const payload = { budgetLimit: parseFloat(budgetLimit) };
+      if (splitType) payload.splitType = splitType;
+      if (splitType === 'CUSTOM' && Array.isArray(memberBudgets) && memberBudgets.length > 0) {
+        payload.memberBudgets = memberBudgets.map(m => ({
+          userId: m.userId,
+          budgetLimit: parseFloat(m.budgetLimit),
+        }));
+      }
+      await groupsApi.setBudget(groupId, activeMonth(dateFilter), payload);
       bumpDataVersion();
-      showToast(`Group budget updated to ₹${parseFloat(budgetLimit).toFixed(2)}.`);
+      showToast(`Group budget updated to ₹${parseFloat(budgetLimit).toFixed(2)} (${splitType === 'CUSTOM' ? 'custom' : 'equal'} split).`);
+      return true;
     } catch (err) {
       showToast(err.message || 'Failed to update group budget', 'error');
+      return false;
     }
   };
 
@@ -637,7 +652,7 @@ export const ExpenseProvider = ({ children }) => {
       joinGroup,
       leaveGroup,
       removeMember,
-      updateMemberRole,
+      updateMemberPermissions,
       updateGroupInfo,
       updateGroupBudget,
       updateMemberBudgetCap,

@@ -14,6 +14,8 @@ public class GroupMemberDto {
     private String role;
     private String status;
     private OffsetDateTime joinedAt;
+    /** Feature keys granted to this member by an admin (empty for admins — they hold all). */
+    private java.util.List<String> permissions;
 
     public static GroupMemberDto fromEntity(GroupMember gm) {
         GroupMemberDto dto = new GroupMemberDto();
@@ -25,6 +27,9 @@ public class GroupMemberDto {
         dto.setRole(gm.getRole());
         dto.setStatus(gm.getStatus());
         dto.setJoinedAt(gm.getJoinedAt());
+        dto.setPermissions("ADMIN".equals(gm.getRole())
+                ? com.expensetracker.group.GroupPermission.allKeys()
+                : gm.getPermissionList());
         return dto;
     }
 
@@ -42,6 +47,8 @@ public class GroupMemberDto {
     public void setRole(String role) { this.role = role; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public java.util.List<String> getPermissions() { return permissions; }
+    public void setPermissions(java.util.List<String> permissions) { this.permissions = permissions; }
     public OffsetDateTime getJoinedAt() { return joinedAt; }
     public void setJoinedAt(OffsetDateTime joinedAt) { this.joinedAt = joinedAt; }
 }

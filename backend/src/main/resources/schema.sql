@@ -43,9 +43,13 @@ CREATE TABLE IF NOT EXISTS group_members (
     user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     role            VARCHAR(20) NOT NULL DEFAULT 'MEMBER',
     status          VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    permissions     TEXT,
     joined_at       TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(group_id, user_id)
 );
+
+-- Backfill: existing databases created before feature-wise permissions
+ALTER TABLE group_members ADD COLUMN IF NOT EXISTS permissions TEXT;
 
 -- ================= GROUP INVITES =================
 CREATE TABLE IF NOT EXISTS group_invites (

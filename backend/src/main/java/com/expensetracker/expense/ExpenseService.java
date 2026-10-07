@@ -1,5 +1,6 @@
 package com.expensetracker.expense;
 
+import com.expensetracker.budget.MemberBudgetCapEnforcer;
 import com.expensetracker.classification.CategoryClassificationInput;
 import com.expensetracker.classification.CategoryClassificationResult;
 import com.expensetracker.classification.ClassificationSource;
@@ -49,6 +50,7 @@ public class ExpenseService {
     private final NotificationService notificationService;
     private final NotificationSettingsService notificationSettingsService;
     private final AccountPeriodPolicy periodPolicy;
+    private final MemberBudgetCapEnforcer memberBudgetCapEnforcer;
 
     public ExpenseService(
             ExpenseRepository expenseRepository,
@@ -62,7 +64,8 @@ public class ExpenseService {
             GroupRoleGuard groupRoleGuard,
             NotificationService notificationService,
             NotificationSettingsService notificationSettingsService,
-            AccountPeriodPolicy periodPolicy) {
+            AccountPeriodPolicy periodPolicy,
+            MemberBudgetCapEnforcer memberBudgetCapEnforcer) {
         this.expenseRepository = expenseRepository;
         this.groupRepository = groupRepository;
         this.groupMemberRepository = groupMemberRepository;
@@ -75,6 +78,7 @@ public class ExpenseService {
         this.notificationService = notificationService;
         this.notificationSettingsService = notificationSettingsService;
         this.periodPolicy = periodPolicy;
+        this.memberBudgetCapEnforcer = memberBudgetCapEnforcer;
     }
 
     @Transactional
@@ -112,6 +116,9 @@ public class ExpenseService {
             if (!isMember) {
                 throw new AccessDeniedException("You are not a member of this group");
             }
+            // Feature-wise gate: an admin must explicitly allow this member to add expenses.
+            groupRoleGuard.requirePermission(group.getId(), currentUser.getId(),
+                    com.expensetracker.group.GroupPermission.ADD_EXPENSE);
             expense.setGroup(group);
             expense.setSplitType(req.getSplitType());
 
@@ -129,9 +136,10 @@ public class ExpenseService {
                 expense.setPaidBy(currentUser);
             }
 
-            // Admin payments are trusted and take effect immediately; member
-            // payments stay PENDING until a group admin validates them.
-            if (groupRoleGuard.isAdmin(group.getId(), currentUser.getId())) {
+            // Admins and members granted the review permission are trusted and
+            // take effect immediately; everyone else stays PENDING until reviewed.
+            if (groupRoleGuard.hasPermission(group.getId(), currentUser.getId(),
+                    com.expensetracker.group.GroupPermission.REVIEW_EXPENSES)) {
                 expense.setStatus(STATUS_APPROVED);
                 expense.setReviewedBy(currentUser);
                 expense.setReviewedAt(OffsetDateTime.now());
@@ -145,6 +153,12 @@ public class ExpenseService {
         List<ExpenseSplit> splits = null;
         if (req.getGroupId() != null && req.getSplits() != null && !req.getSplits().isEmpty()) {
             splits = splitService.createSplits(saved, req.getSplits(), req.getSplitType());
+            // Enforce member caps up-front for every status: a member must not even
+            // be able to submit an expense whose share pushes them past their cap.
+            // Pending shares count here so stacked pending expenses can't bypass the
+            // cap; reviewExpense re-checks on approval because spend grows meanwhile.
+            memberBudgetCapEnforcer.enforceCapsAtCreation(
+                    req.getGroupId(), saved.getExpenseDate(), saved.getId(), splits);
         }
 
         // Budget threshold evaluation happens asynchronously after commit.
@@ -228,10 +242,11 @@ public class ExpenseService {
             expense.setCategorySource(ClassificationSource.USER.name());
             expense.setCategoryConfidence(1.0);
         }
-        // An edited group payment must be re-validated by an admin unless the
-        // editor is an admin themselves — otherwise approval could be bypassed.
+        // An edited group payment must be re-validated unless the editor can
+        // review payments themselves — otherwise approval could be bypassed.
         if (expense.getGroup() != null && STATUS_APPROVED.equals(expense.getStatus())
-                && !groupRoleGuard.isAdmin(expense.getGroup().getId(), user.getId())) {
+                && !groupRoleGuard.hasPermission(expense.getGroup().getId(), user.getId(),
+                        com.expensetracker.group.GroupPermission.REVIEW_EXPENSES)) {
             resetToPending(expense);
         }
         Expense saved = expenseRepository.save(expense);
@@ -308,7 +323,8 @@ public class ExpenseService {
             throw new BadRequestException("Personal expenses do not require admin approval");
         }
         UUID groupId = expense.getGroup().getId();
-        groupRoleGuard.requireAdmin(groupId, reviewer.getId());
+        groupRoleGuard.requirePermission(groupId, reviewer.getId(),
+                com.expensetracker.group.GroupPermission.REVIEW_EXPENSES);
 
         if (!STATUS_PENDING.equals(expense.getStatus())) {
             throw new BadRequestException("This expense has already been reviewed");
@@ -341,6 +357,14 @@ public class ExpenseService {
         }
 
         Expense saved = expenseRepository.save(expense);
+
+        if (approved) {
+            // Promotion to APPROVED is the moment this expense starts counting toward
+            // member caps — reject it if any participant would go over their cap.
+            memberBudgetCapEnforcer.enforceCaps(
+                    groupId, saved.getExpenseDate(), saved.getId(),
+                    splitRepository.findByExpenseId(saved.getId()));
+        }
 
         User owner = saved.getUser();
         Integer amountInt = saved.getAmount() != null ? saved.getAmount().intValue() : 0;
@@ -390,6 +414,11 @@ public class ExpenseService {
         }
         if (expense.getGroup() == null) throw new BadRequestException("This is not a group expense");
         List<ExpenseSplit> updatedSplits = splitService.updateSplits(expense, splits, expense.getSplitType());
+        if (STATUS_APPROVED.equals(expense.getStatus())) {
+            // Editing splits on an approved expense moves shares around — re-check caps.
+            memberBudgetCapEnforcer.enforceCaps(
+                    expense.getGroup().getId(), expense.getExpenseDate(), expense.getId(), updatedSplits);
+        }
         return ExpenseDto.fromEntity(expense, updatedSplits);
     }
 
@@ -397,13 +426,13 @@ public class ExpenseService {
     public ExpenseDto settleShare(User user, UUID expenseId, UUID targetUserId) {
         Expense expense = expenseRepository.findById(expenseId)
                 .orElseThrow(() -> new ResourceNotFoundException("Expense not found: " + expenseId));
-        // Allow settling own share or admin
+        // Allow settling own share or a member granted the settle permission
         if (!user.getId().equals(targetUserId)) {
             if (expense.getGroup() == null) throw new AccessDeniedException("Not authorized");
-            boolean isAdmin = groupMemberRepository.findByGroupIdAndUserId(expense.getGroup().getId(), user.getId())
-                    .map(gm -> "ADMIN".equals(gm.getRole()) && "ACTIVE".equals(gm.getStatus()))
-                    .orElse(false);
-            if (!isAdmin) throw new AccessDeniedException("Only group admins can settle other members' shares");
+            if (!groupRoleGuard.hasPermission(expense.getGroup().getId(), user.getId(),
+                    com.expensetracker.group.GroupPermission.SETTLE_OTHERS)) {
+                throw new AccessDeniedException("You do not have permission to settle other members' shares");
+            }
         }
         splitService.settleShare(expenseId, targetUserId);
         List<ExpenseSplit> splits = splitRepository.findByExpenseId(expenseId);

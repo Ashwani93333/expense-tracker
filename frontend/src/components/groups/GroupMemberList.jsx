@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { UserCheck, Shield, Trash2, UserPlus, ShieldAlert } from 'lucide-react';
+import { Trash2, UserPlus } from 'lucide-react';
 import { GroupRoleBadge } from './GroupRoleBadge';
 import { useExpense } from '../../context/ExpenseContext';
 import { RemoveMemberConfirmModal } from './RemoveMemberConfirmModal';
 
 export const GroupMemberList = ({ groupId, onOpenInvite }) => {
-  const { groups, currentUser, updateMemberRole, removeMember } = useExpense();
+  const { groups, currentUser, removeMember } = useExpense();
   const grp = groups.find(g => g.id === groupId);
 
   const [selectedMemberToRemove, setSelectedMemberToRemove] = useState(null);
@@ -85,27 +85,15 @@ export const GroupMemberList = ({ groupId, onOpenInvite }) => {
 
               {/* Admin Actions */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {isAdmin && !isSelf && (
-                  <>
-                    <button 
-                      className="btn btn-ghost btn-sm"
-                      onClick={() => updateMemberRole(groupId, member.userId, member.role === 'ADMIN' ? 'MEMBER' : 'ADMIN')}
-                      title={member.role === 'ADMIN' ? 'Demote to Member' : 'Promote to Admin'}
-                      style={{ fontSize: '0.75rem' }}
-                    >
-                      <Shield size={13} />
-                      <span>{member.role === 'ADMIN' ? 'Demote' : 'Promote'}</span>
-                    </button>
-
-                    <button 
-                      className="btn btn-ghost btn-icon btn-sm"
-                      onClick={() => setSelectedMemberToRemove(member)}
-                      title="Remove Member"
-                      style={{ color: '#ef4444' }}
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </>
+                {isAdmin && !isSelf && member.role !== 'ADMIN' && (
+                  <button 
+                    className="btn btn-ghost btn-icon btn-sm"
+                    onClick={() => setSelectedMemberToRemove(member)}
+                    title="Remove Member"
+                    style={{ color: '#ef4444' }}
+                  >
+                    <Trash2 size={15} />
+                  </button>
                 )}
               </div>
             </div>

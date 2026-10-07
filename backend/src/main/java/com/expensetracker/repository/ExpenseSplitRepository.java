@@ -32,6 +32,44 @@ public interface ExpenseSplitRepository extends JpaRepository<ExpenseSplit, UUID
             @Param("start") LocalDate start,
             @Param("end") LocalDate end);
 
+    /**
+     * Sum of a member's share in a group for a month, ignoring one expense.
+     * Used by cap enforcement to project spend *after* a specific (not yet
+     * committed) expense, without that expense's own splits leaking in.
+     */
+    @Query("SELECT COALESCE(SUM(es.shareAmount), 0) FROM ExpenseSplit es " +
+           "JOIN es.expense e " +
+           "WHERE es.user.id = :userId " +
+           "AND e.group.id = :groupId " +
+           "AND e.status = 'APPROVED' " +
+           "AND e.id <> :excludeExpenseId " +
+           "AND e.expenseDate BETWEEN :start AND :end")
+    BigDecimal sumMemberShareInGroupForMonthExcluding(
+            @Param("userId") UUID userId,
+            @Param("groupId") UUID groupId,
+            @Param("excludeExpenseId") UUID excludeExpenseId,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end);
+
+    /**
+     * Same as {@link #sumMemberShareInGroupForMonthExcluding} but also counts PENDING
+     * shares. Used at creation time so stacked pending expenses cannot slip past a
+     * member's cap before an admin ever reviews them.
+     */
+    @Query("SELECT COALESCE(SUM(es.shareAmount), 0) FROM ExpenseSplit es " +
+           "JOIN es.expense e " +
+           "WHERE es.user.id = :userId " +
+           "AND e.group.id = :groupId " +
+           "AND e.status IN ('APPROVED', 'PENDING') " +
+           "AND e.id <> :excludeExpenseId " +
+           "AND e.expenseDate BETWEEN :start AND :end")
+    BigDecimal sumMemberShareInGroupForMonthExcludingCommitted(
+            @Param("userId") UUID userId,
+            @Param("groupId") UUID groupId,
+            @Param("excludeExpenseId") UUID excludeExpenseId,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end);
+
     /** All splits for a group's expenses in a month (APPROVED only, for settlement calculation) */
     @Query("SELECT es FROM ExpenseSplit es JOIN es.expense e " +
            "WHERE e.group.id = :groupId " +

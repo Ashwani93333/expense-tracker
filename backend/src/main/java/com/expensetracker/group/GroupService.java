@@ -82,7 +82,7 @@ public class GroupService {
         adminMember.setStatus("ACTIVE");
         memberRepository.save(adminMember);
 
-        return GroupDto.fromEntity(saved, 1L, "ADMIN");
+        return GroupDto.fromEntity(saved, 1L, "ADMIN", GroupPermission.allKeys());
     }
 
     @Transactional(readOnly = true)
@@ -90,9 +90,10 @@ public class GroupService {
         return groupRepository.findGroupsByUserId(user.getId()).stream()
                 .map(g -> {
                     long count = memberRepository.countByGroupIdAndStatus(g.getId(), "ACTIVE");
-                    String role = memberRepository.findByGroupIdAndUserId(g.getId(), user.getId())
-                            .map(GroupMember::getRole).orElse("MEMBER");
-                    return GroupDto.fromEntity(g, count, role);
+                    GroupMember gm = memberRepository.findByGroupIdAndUserId(g.getId(), user.getId()).orElse(null);
+                    String role = gm != null ? gm.getRole() : "MEMBER";
+                    List<String> permissions = gm != null ? gm.getPermissionList() : List.of();
+                    return GroupDto.fromEntity(g, count, role, permissions);
                 })
                 .collect(Collectors.toList());
     }
@@ -101,12 +102,10 @@ public class GroupService {
     public Map<String, Object> getGroupDetail(User user, UUID groupId) {
         ExpenseGroup group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new ResourceNotFoundException("Group not found: " + groupId));
-        roleGuard.requireMember(groupId, user.getId());
+        GroupMember me = roleGuard.requireMember(groupId, user.getId());
 
         long count = memberRepository.countByGroupIdAndStatus(groupId, "ACTIVE");
-        String role = memberRepository.findByGroupIdAndUserId(groupId, user.getId())
-                .map(GroupMember::getRole).orElse("MEMBER");
-        GroupDto groupDto = GroupDto.fromEntity(group, count, role);
+        GroupDto groupDto = GroupDto.fromEntity(group, count, me.getRole(), me.getPermissionList());
 
         List<GroupMemberDto> members = memberRepository.findByGroupIdAndStatus(groupId, "ACTIVE")
                 .stream().map(GroupMemberDto::fromEntity).collect(Collectors.toList());
@@ -116,12 +115,25 @@ public class GroupService {
 
     @Transactional
     public GroupDto updateGroup(User user, UUID groupId, UpdateGroupRequest req) {
-        roleGuard.requireAdmin(groupId, user.getId());
+        GroupMember caller = roleGuard.requireMember(groupId, user.getId());
         ExpenseGroup group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new ResourceNotFoundException("Group not found: " + groupId));
-        
-        boolean expiryDateChanged = req.getExpiresAt() != null && !req.getExpiresAt().equals(group.getExpiresAt());
-        
+
+        boolean touchesExpiry = req.getExpiresAt() != null;
+        boolean touchesDetails = req.getName() != null || req.getDescription() != null;
+        if (!touchesExpiry && !touchesDetails) {
+            throw new BadRequestException("No updatable fields supplied");
+        }
+        // Feature-wise gate: expiry and name/description are separate grants.
+        if (touchesExpiry) {
+            roleGuard.requirePermission(groupId, user.getId(), GroupPermission.UPDATE_EXPIRY);
+        }
+        if (touchesDetails) {
+            roleGuard.requirePermission(groupId, user.getId(), GroupPermission.EDIT_GROUP_DETAILS);
+        }
+
+        boolean expiryDateChanged = touchesExpiry && !req.getExpiresAt().equals(group.getExpiresAt());
+
         if (req.getName() != null) group.setName(req.getName().trim());
         if (req.getDescription() != null) group.setDescription(req.getDescription());
         if (req.getExpiresAt() != null) group.setExpiresAt(req.getExpiresAt());
@@ -146,7 +158,7 @@ public class GroupService {
             });
         }
         
-        return GroupDto.fromEntity(saved, count, "ADMIN");
+        return GroupDto.fromEntity(saved, count, caller.getRole(), caller.getPermissionList());
     }
 
     @Transactional
@@ -160,7 +172,7 @@ public class GroupService {
 
     @Transactional
     public Map<String, Object> createInvite(User user, UUID groupId, CreateInviteRequest req) {
-        roleGuard.requireMember(groupId, user.getId());
+        roleGuard.requirePermission(groupId, user.getId(), GroupPermission.INVITE_MEMBERS);
         ExpenseGroup group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new ResourceNotFoundException("Group not found: " + groupId));
 
@@ -202,7 +214,7 @@ public class GroupService {
 
     @Transactional
     public Map<String, Object> resendInvite(User user, UUID groupId, UUID inviteId) {
-        roleGuard.requireMember(groupId, user.getId());
+        roleGuard.requirePermission(groupId, user.getId(), GroupPermission.INVITE_MEMBERS);
         GroupInvite invite = inviteRepository.findById(inviteId)
                 .orElseThrow(() -> new ResourceNotFoundException("Invite not found: " + inviteId));
         if (!invite.getGroup().getId().equals(groupId)) {
@@ -300,9 +312,10 @@ public class GroupService {
             if ("ACTIVE".equals(gm.getStatus())) {
                 throw new BadRequestException("You are already a member of this group");
             }
-            // Re-join
+            // Re-join — feature grants are reset; an admin must re-allow them.
             gm.setStatus("ACTIVE");
             gm.setRole("MEMBER");
+            gm.setPermissionList(List.of());
             memberRepository.save(gm);
         } else {
             GroupMember gm = new GroupMember();
@@ -326,12 +339,12 @@ public class GroupService {
                         groupRefId, "GROUP"));
 
         long count = memberRepository.countByGroupIdAndStatus(group.getId(), "ACTIVE");
-        return GroupDto.fromEntity(group, count, "MEMBER");
+        return GroupDto.fromEntity(group, count, "MEMBER", List.of());
     }
 
     @Transactional
     public void removeMember(User admin, UUID groupId, UUID targetUserId) {
-        roleGuard.requireAdmin(groupId, admin.getId());
+        roleGuard.requirePermission(groupId, admin.getId(), GroupPermission.REMOVE_MEMBERS);
         if (admin.getId().equals(targetUserId)) {
             throw new BadRequestException("You cannot remove yourself; use leave-group instead");
         }
@@ -356,18 +369,39 @@ public class GroupService {
         memberRepository.save(gm);
     }
 
+    /**
+     * Only group admins may hand out feature grants. Promoting members to ADMIN
+     * is intentionally not offered — admins are the group owners and every other
+     * member receives access feature-by-feature through this method.
+     */
     @Transactional
-    public GroupMemberDto updateMemberRole(User admin, UUID groupId, UUID targetUserId, String newRole) {
+    public GroupMemberDto updateMemberPermissions(User admin, UUID groupId, UUID targetUserId,
+                                                  List<String> permissions) {
         roleGuard.requireAdmin(groupId, admin.getId());
-        if (!List.of("ADMIN", "MEMBER").contains(newRole)) {
-            throw new BadRequestException("Role must be ADMIN or MEMBER");
-        }
         GroupMember target = memberRepository.findByGroupIdAndUserId(groupId, targetUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("Member not found in this group"));
         if (!"ACTIVE".equals(target.getStatus())) {
-            throw new BadRequestException("Cannot change role of an inactive member");
+            throw new BadRequestException("Cannot change permissions of an inactive member");
         }
-        target.setRole(newRole);
+        if ("ADMIN".equals(target.getRole())) {
+            throw new BadRequestException("Group admins already have every permission");
+        }
+
+        List<String> cleaned = permissions == null ? List.of() : permissions.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .distinct()
+                .collect(Collectors.toList());
+        for (String key : cleaned) {
+            try {
+                GroupPermission.fromKey(key);
+            } catch (IllegalArgumentException ex) {
+                throw new BadRequestException("Unknown permission: " + key);
+            }
+        }
+
+        target.setPermissionList(cleaned);
         return GroupMemberDto.fromEntity(memberRepository.save(target));
     }
 

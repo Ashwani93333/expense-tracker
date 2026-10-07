@@ -2,13 +2,16 @@ import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft, Share2, Users, Plus, Target, PieChart, CreditCard,
   LogOut, Key, CheckCircle2, DollarSign, AlertTriangle, TrendingUp,
-  RefreshCw, Loader2, Clock, CalendarClock, Ban, XCircle, ShieldCheck
+  RefreshCw, Loader2, Clock, CalendarClock, Ban, XCircle, ShieldCheck,
+  SlidersHorizontal
 } from 'lucide-react';
 import { useExpense } from '../context/ExpenseContext';
 import { useAuth } from '../context/AuthContext';
 import { groupsApi, expensesApi } from '../services/api';
 import { InviteMemberModal } from '../components/groups/InviteMemberModal';
+import { MemberPermissionsModal } from '../components/groups/MemberPermissionsModal';
 import { GroupRoleBadge } from '../components/groups/GroupRoleBadge';
+import { permissionMeta } from '../constants/groupPermissions';
 import { DateFilterBar } from '../components/layout/DateFilterBar';
 import { describeFilter } from '../utils/dateFilter';
 
@@ -57,7 +60,7 @@ export const GroupDetailPage = () => {
   const {
     groups, activeGroupId, setActiveTab,
     setIsAddModalOpen, isInviteModalOpen, setIsInviteModalOpen,
-    leaveGroup, removeMember, updateMemberRole, updateGroupInfo,
+    leaveGroup, removeMember, updateGroupInfo,
     updateGroupBudget, updateMemberBudgetCap,
     dateFilter, showToast, dataVersion,
   } = useExpense();
@@ -71,6 +74,7 @@ export const GroupDetailPage = () => {
   const [groupExpenses, setGroupExpenses] = useState([]);
   const [loading, setLoading]           = useState(true);
   const [budgetInput, setBudgetInput]   = useState('');
+  const [splitMode, setSplitMode]       = useState('EQUAL');
   const [memberCaps, setMemberCaps]     = useState({});
   const [savingCap, setSavingCap]       = useState('');
   const [expiryInput, setExpiryInput]   = useState('');
@@ -78,6 +82,7 @@ export const GroupDetailPage = () => {
   const [reviewingId, setReviewingId]   = useState('');
   const [rejectingId, setRejectingId]   = useState(null);
   const [rejectNote, setRejectNote]     = useState('');
+  const [permMember, setPermMember]     = useState(null);
 
   const grp = groups.find(g => g.id === activeGroupId) || groups[0];
 
@@ -102,6 +107,51 @@ export const GroupDetailPage = () => {
   };
 
   useEffect(() => { fetchGroupData(); }, [activeGroupId, dateFilter, dataVersion]);
+
+  // ─── Budget split helpers (EQUAL / CUSTOM) ─────────────────────────────────
+  const equalShareOf = (totalStr) => {
+    const total = parseFloat(totalStr);
+    const n = grp?.members?.length || 0;
+    if (!total || n <= 0) return 0;
+    return Math.floor((total / n) * 100) / 100;
+  };
+
+  // While typing the total in CUSTOM mode, fill blank member caps with the equal share.
+  const handleBudgetInputChange = (value) => {
+    setBudgetInput(value);
+    if (splitMode !== 'CUSTOM' || !value) return;
+    const share = equalShareOf(value);
+    if (!share) return;
+    setMemberCaps(prev => {
+      const next = { ...prev };
+      (grp?.members || []).forEach(m => {
+        if (next[m.userId] === undefined || next[m.userId] === '') next[m.userId] = String(share);
+      });
+      return next;
+    });
+  };
+
+  // Per-member caps for the CUSTOM split; blank entries fall back to equal share.
+  const buildCustomAllocations = () => {
+    const members = grp?.members || [];
+    const total = parseFloat(budgetInput);
+    if (!total || members.length === 0) return [];
+    const share = equalShareOf(budgetInput);
+    return members.map((m, i) => {
+      const entered = parseFloat(memberCaps[m.userId]);
+      const fallback = i === members.length - 1
+        ? Math.round((total - share * (members.length - 1)) * 100) / 100
+        : share;
+      return { userId: m.userId, budgetLimit: isNaN(entered) ? fallback : entered };
+    });
+  };
+
+  const handleSetGroupBudget = async () => {
+    if (!budgetInput) return;
+    const allocations = splitMode === 'CUSTOM' ? buildCustomAllocations() : null;
+    const ok = await updateGroupBudget(grp.id, budgetInput, splitMode, allocations);
+    if (ok) setBudgetInput('');
+  };
 
   const reviewExpense = async (exp, action) => {
     if (action === 'REJECT' && !rejectNote.trim()) {
@@ -134,6 +184,10 @@ export const GroupDetailPage = () => {
   const userMember = members.find(m => m.userId === currentUser?.id);
   const userRole = userMember?.role || 'MEMBER';
   const isAdmin = userRole === 'ADMIN';
+  // Feature-wise access: admins hold every permission implicitly; other members
+  // only see/use the features an admin explicitly granted them.
+  const myPermissions = userMember?.permissions || [];
+  const can = (key) => isAdmin || myPermissions.includes(key);
   const totalSpent = report?.totalSpent ?? groupExpenses.reduce((s, e) => s + (e.amount || 0), 0);
   const pendingExpenses = groupExpenses.filter(e => e.status === 'PENDING');
 
@@ -158,12 +212,16 @@ export const GroupDetailPage = () => {
           <ArrowLeft size={15} /> Back to Groups
         </button>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button className="btn btn-secondary btn-sm" onClick={() => setIsInviteModalOpen(true)}>
-            <Share2 size={14} /> Invite
-          </button>
-          <button className="btn btn-primary btn-sm" onClick={() => setIsAddModalOpen(true)}>
-            <Plus size={14} /> Add Expense
-          </button>
+          {can('INVITE_MEMBERS') && (
+            <button className="btn btn-secondary btn-sm" onClick={() => setIsInviteModalOpen(true)}>
+              <Share2 size={14} /> Invite
+            </button>
+          )}
+          {can('ADD_EXPENSE') && (
+            <button className="btn btn-primary btn-sm" onClick={() => setIsAddModalOpen(true)}>
+              <Plus size={14} /> Add Expense
+            </button>
+          )}
           <button className="btn btn-ghost btn-sm" onClick={fetchGroupData} title="Refresh">
             <RefreshCw size={14} />
           </button>
@@ -260,7 +318,7 @@ export const GroupDetailPage = () => {
             </p>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
               No new expenses or joins allowed. Expired on {new Date(grp.expiresAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}.
-              {isAdmin && ' You can extend the expiry date below.'}
+              {can('UPDATE_EXPIRY') && ' You can extend the expiry date below.'}
             </p>
           </div>
         </div>
@@ -278,14 +336,14 @@ export const GroupDetailPage = () => {
             </p>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
               Expires on {new Date(grp.expiresAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-              {isAdmin && '. You can extend the expiry date below.'}
+              {can('UPDATE_EXPIRY') && '. You can extend the expiry date below.'}
             </p>
           </div>
         </div>
       )}
 
-      {/* Pending Payment Approvals Alert (admin) */}
-      {isAdmin && pendingExpenses.length > 0 && (
+      {/* Pending Payment Approvals Alert (reviewers) */}
+      {can('REVIEW_EXPENSES') && pendingExpenses.length > 0 && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 18px',
           borderRadius: 'var(--r-lg)',
@@ -297,7 +355,7 @@ export const GroupDetailPage = () => {
               {pendingExpenses.length} payment{pendingExpenses.length !== 1 ? 's' : ''} awaiting your approval
             </p>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
-              Member payments must be verified by you before they count toward budgets, reports or settlements.
+              Member payments must be verified before they count toward budgets, reports or settlements.
             </p>
           </div>
           <button className="btn btn-primary btn-sm" onClick={() => setActiveSubTab('expenses')}>
@@ -387,8 +445,8 @@ export const GroupDetailPage = () => {
             </div>
           )}
 
-          {/* Admin Expiry Settings */}
-          {isAdmin && (
+          {/* Group Expiry Settings */}
+          {can('UPDATE_EXPIRY') && (
             <div className="card" style={{ padding: '22px' }}>
               <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <CalendarClock size={16} /> Group Expiry
@@ -446,9 +504,11 @@ export const GroupDetailPage = () => {
         <div className="card" style={{ padding: '22px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', alignItems: 'center' }}>
             <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700 }}>Group Expenses · {describeFilter(dateFilter)}</h3>
-            <button className="btn btn-primary btn-sm" onClick={() => setIsAddModalOpen(true)}>
-              <Plus size={14} /> Add Expense
-            </button>
+            {can('ADD_EXPENSE') && (
+              <button className="btn btn-primary btn-sm" onClick={() => setIsAddModalOpen(true)}>
+                <Plus size={14} /> Add Expense
+              </button>
+            )}
           </div>
           {loading ? (
             Array.from({ length: 3 }).map((_, i) => (
@@ -458,9 +518,11 @@ export const GroupDetailPage = () => {
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
               <DollarSign size={32} color="var(--text-faint)" style={{ marginBottom: '8px' }} />
               <p style={{ color: 'var(--text-muted)' }}>No group expenses in this period.</p>
-              <button className="btn btn-primary btn-sm" style={{ marginTop: '12px' }} onClick={() => setIsAddModalOpen(true)}>
-                Log First Expense
-              </button>
+              {can('ADD_EXPENSE') && (
+                <button className="btn btn-primary btn-sm" style={{ marginTop: '12px' }} onClick={() => setIsAddModalOpen(true)}>
+                  Log First Expense
+                </button>
+              )}
             </div>
           ) : (
             groupExpenses.map(exp => (
@@ -505,7 +567,7 @@ export const GroupDetailPage = () => {
                   </span>
                 </div>
 
-                {isAdmin && exp.status === 'PENDING' && rejectingId !== exp.id && (
+                {can('REVIEW_EXPENSES') && exp.status === 'PENDING' && rejectingId !== exp.id && (
                   <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed var(--border)' }}>
                     <button
                       className="btn btn-emerald btn-xs"
@@ -526,7 +588,7 @@ export const GroupDetailPage = () => {
                   </div>
                 )}
 
-                {isAdmin && exp.status === 'PENDING' && rejectingId === exp.id && (
+                {can('REVIEW_EXPENSES') && exp.status === 'PENDING' && rejectingId === exp.id && (
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed var(--border)' }}>
                     <input
                       type="text"
@@ -561,7 +623,7 @@ export const GroupDetailPage = () => {
         <div className="card" style={{ padding: '22px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', alignItems: 'center' }}>
             <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700 }}>Members ({members.length})</h3>
-            {isAdmin && (
+            {can('INVITE_MEMBERS') && (
               <button className="btn btn-secondary btn-sm" onClick={() => setIsInviteModalOpen(true)}>
                 <Share2 size={13} /> Invite
               </button>
@@ -597,22 +659,49 @@ export const GroupDetailPage = () => {
                     {m.userId === currentUser?.id && <span className="badge" style={{ fontSize: '0.63rem', background: '#050505', color: '#B7FF00' }}>You</span>}
                   </div>
                   <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{m.userEmail}</span>
+                  {/* Feature-wise access granted to this member */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '5px' }}>
+                    {m.role === 'ADMIN' ? (
+                      <span className="badge badge-violet" style={{ fontSize: '0.62rem' }}>
+                        All features
+                      </span>
+                    ) : (m.permissions || []).length === 0 ? (
+                      <span style={{ fontSize: '0.68rem', color: 'var(--text-faint)', fontStyle: 'italic' }}>
+                        No features allowed yet
+                      </span>
+                    ) : (
+                      (m.permissions || []).map(key => {
+                        const meta = permissionMeta(key);
+                        if (!meta) return null;
+                        const Icon = meta.icon;
+                        return (
+                          <span key={key} className="badge badge-lime" title={meta.description}
+                            style={{ fontSize: '0.62rem' }}>
+                            <Icon size={10} /> {meta.label}
+                          </span>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
                 {isAdmin && m.userId !== currentUser?.id && (
                   <div style={{ display: 'flex', gap: '6px' }}>
                     <button
                       className="btn btn-secondary btn-xs"
-                      onClick={() => updateMemberRole(grp.id, m.userId, m.role === 'ADMIN' ? 'MEMBER' : 'ADMIN')}
+                      onClick={() => setPermMember(m)}
+                      title="Choose which features this member can use"
                     >
-                      {m.role === 'ADMIN' ? 'Demote' : 'Promote'}
+                      <SlidersHorizontal size={12} /> Permissions
                     </button>
-                    <button
-                      className="btn btn-xs"
-                      style={{ background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 'var(--r-sm)' }}
-                      onClick={() => removeMember(grp.id, m.userId)}
-                    >
-                      Remove
-                    </button>
+                    {(m.role !== 'ADMIN') && can('REMOVE_MEMBERS') && (
+                      <button
+                        className="btn btn-xs"
+                        style={{ background: 'rgba(239,68,68,0.08)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 'var(--r-sm)' }}
+                        onClick={() => removeMember(grp.id, m.userId)}
+                      >
+                        Remove
+                      </button>
+                    )}
                   </div>
                 )}
                 {!isAdmin && m.userId === currentUser?.id && (
@@ -685,23 +774,51 @@ export const GroupDetailPage = () => {
               <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>No budget set for this period.</p>
             )}
 
-            {isAdmin && (
-              <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
-                <input
-                  type="number" placeholder="Set budget limit (₹)"
-                  value={budgetInput} onChange={e => setBudgetInput(e.target.value)}
-                  className="input-field" style={{ flex: 1, fontSize: '0.875rem' }}
-                />
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={async () => {
-                    if (!budgetInput) return;
-                    await updateGroupBudget(grp.id, budgetInput);
-                    setBudgetInput('');
-                  }}
-                >
-                  Set Budget
-                </button>
+            {can('SET_BUDGET') && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '14px' }}>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="number" placeholder="Set budget limit (₹)"
+                    value={budgetInput} onChange={e => handleBudgetInputChange(e.target.value)}
+                    className="input-field" style={{ flex: 1, fontSize: '0.875rem' }}
+                  />
+                  <button
+                    className="btn btn-primary btn-sm"
+                    disabled={!budgetInput}
+                    onClick={handleSetGroupBudget}
+                  >
+                    Set Budget
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  <div style={{
+                    display: 'inline-flex', background: '#131926',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: 'var(--radius-md)', padding: '3px'
+                  }}>
+                    {['EQUAL', 'CUSTOM'].map(mode => (
+                      <button
+                        key={mode}
+                        onClick={() => setSplitMode(mode)}
+                        style={{
+                          border: 'none', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700,
+                          padding: '6px 12px', borderRadius: 'var(--radius-sm)',
+                          background: splitMode === mode ? '#6366f1' : 'transparent',
+                          color: splitMode === mode ? '#ffffff' : 'var(--text-secondary)',
+                          transition: 'var(--t-fast)'
+                        }}
+                      >
+                        {mode === 'EQUAL' ? 'Equal Split' : 'Custom Split'}
+                      </button>
+                    ))}
+                  </div>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    {splitMode === 'EQUAL'
+                      ? `Splits the total into ${(grp.members?.length || 0)} equal member caps.`
+                      : 'Enter each member\'s cap below — blank caps get an equal share.'}
+                  </span>
+                </div>
               </div>
             )}
           </div>
@@ -723,7 +840,7 @@ export const GroupDetailPage = () => {
                     )}
                   </div>
                   {m.budgetLimit && <MiniProgress pct={m.percentUsed} status={m.status} />}
-                  {isAdmin && (
+                  {can('SET_MEMBER_CAPS') && (
                     <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
                       <div style={{ position: 'relative', flex: 1 }}>
                         <span style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)', fontSize: '0.8rem', fontWeight: 700 }}>₹</span>
@@ -760,6 +877,12 @@ export const GroupDetailPage = () => {
       )}
 
       <InviteMemberModal groupId={grp.id} inviteCode={grp.inviteCode} groupName={grp.name} />
+      <MemberPermissionsModal
+        isOpen={!!permMember}
+        onClose={() => setPermMember(null)}
+        groupId={grp.id}
+        member={permMember}
+      />
     </div>
   );
 };

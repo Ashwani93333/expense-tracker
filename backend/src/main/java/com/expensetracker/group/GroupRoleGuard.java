@@ -43,6 +43,26 @@ public class GroupRoleGuard {
         return gm;
     }
 
+    /**
+     * Feature-wise gate. ADMINs implicitly hold every permission; other members
+     * only pass if the admin granted them the matching permission key.
+     */
+    public GroupMember requirePermission(UUID groupId, UUID userId, GroupPermission permission) {
+        GroupMember gm = requireMember(groupId, userId);
+        if (!gm.hasPermission(permission.getKey())) {
+            throw new AccessDeniedException(
+                    "You do not have permission to " + permission.getLabel().toLowerCase()
+                            + " in this group. Ask a group admin to grant it.");
+        }
+        return gm;
+    }
+
+    public boolean hasPermission(UUID groupId, UUID userId, GroupPermission permission) {
+        return groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
+                .map(gm -> "ACTIVE".equals(gm.getStatus()) && gm.hasPermission(permission.getKey()))
+                .orElse(false);
+    }
+
     public boolean isAdmin(UUID groupId, UUID userId) {
         return groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
                 .map(gm -> "ADMIN".equals(gm.getRole()) && "ACTIVE".equals(gm.getStatus()))

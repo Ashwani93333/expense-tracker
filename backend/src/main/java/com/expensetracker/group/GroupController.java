@@ -130,15 +130,26 @@ public class GroupController {
         return ResponseEntity.ok(Map.of("message", "You have left the group"));
     }
 
-    @PatchMapping("/{id}/members/{userId}/role")
-    public ResponseEntity<GroupMemberDto> updateMemberRole(
+    /**
+     * Grants/revokes feature-wise permissions for a member. Admins only —
+     * members are never promoted to ADMIN, they receive individual features.
+     */
+    @PutMapping("/{id}/members/{userId}/permissions")
+    public ResponseEntity<GroupMemberDto> updateMemberPermissions(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable UUID id,
             @PathVariable UUID userId,
-            @RequestBody Map<String, String> body) {
+            @Valid @RequestBody UpdateMemberPermissionsRequest request) {
         User user = resolveUser(principal);
-        String newRole = body.get("role");
-        return ResponseEntity.ok(groupService.updateMemberRole(user, id, userId, newRole));
+        return ResponseEntity.ok(groupService.updateMemberPermissions(user, id, userId, request.getPermissions()));
+    }
+
+    /** The feature catalogue an admin can grant, for rendering the permission picker. */
+    @GetMapping("/permissions/catalog")
+    public ResponseEntity<List<Map<String, String>>> permissionCatalog() {
+        return ResponseEntity.ok(java.util.Arrays.stream(GroupPermission.values())
+                .map(p -> Map.of("key", p.getKey(), "label", p.getLabel(), "description", p.getDescription()))
+                .collect(java.util.stream.Collectors.toList()));
     }
 
     // ---- Group Expenses ----
