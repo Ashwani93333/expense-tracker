@@ -9,6 +9,8 @@ import com.expensetracker.model.*;
 import com.expensetracker.notification.NotificationService;
 import com.expensetracker.notification.NotificationSettingsService;
 import com.expensetracker.repository.*;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,6 +54,13 @@ public class GroupBudgetService {
         this.roleGuard = roleGuard;
     }
 
+    // Budget writes must be visible to the very next read: the response itself is
+    // uncached, and these evictions make the client's follow-up status refetch
+    // (triggered after the PUT) see the new figures instead of the TTL-held ones.
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "groupBudgetStatus", allEntries = true),
+            @CacheEvict(cacheNames = "groupMemberBudgets", allEntries = true)
+    })
     @Transactional
     public GroupBudgetStatusResponse setGroupBudget(User admin, UUID groupId, BigDecimal totalBudget,
                                                     String splitType, List<BudgetMemberSplit> memberBudgets,
@@ -125,6 +134,10 @@ public class GroupBudgetService {
         return budgetCache.budgetStatus(groupId, range[0], range[1]);
     }
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "groupBudgetStatus", allEntries = true),
+            @CacheEvict(cacheNames = "groupMemberBudgets", allEntries = true)
+    })
     @Transactional
     public MemberBudgetDto setMemberBudget(User admin, UUID groupId, UUID targetUserId,
                                             BigDecimal budgetLimit, String monthParam) {

@@ -153,6 +153,26 @@ export const GroupDetailPage = () => {
     if (ok) setBudgetInput('');
   };
 
+  // ─── Cap validation (mirrors the server-side rules) ─────────────────────────
+  // The staged CUSTOM allocations may never add up to more than the total.
+  const budgetTotalNum = parseFloat(budgetInput) || 0;
+  const customAllocSum = splitMode === 'CUSTOM' && budgetTotalNum
+    ? buildCustomAllocations().reduce((s, a) => s + (a.budgetLimit || 0), 0)
+    : 0;
+  const customAllocOver = customAllocSum - budgetTotalNum > 0.01;
+
+  // Editing one member's cap may not push the sum of all caps past the group budget.
+  const groupBudgetTotal = budgetStatus?.totalBudget ?? null;
+  const capTotalExcluding = (userId) => (budgetStatus?.memberBreakdown || [])
+    .filter(m => m.userId !== userId)
+    .reduce((s, m) => s + (m.budgetLimit || 0), 0);
+  const capOverBudget = (userId) => {
+    if (groupBudgetTotal == null) return false;
+    const entered = parseFloat(memberCaps[userId]);
+    if (isNaN(entered)) return false;
+    return capTotalExcluding(userId) + entered > groupBudgetTotal + 0.01;
+  };
+
   const reviewExpense = async (exp, action) => {
     if (action === 'REJECT' && !rejectNote.trim()) {
       showToast('Please add a reason for the rejection', 'error');
@@ -784,7 +804,7 @@ export const GroupDetailPage = () => {
                   />
                   <button
                     className="btn btn-primary btn-sm"
-                    disabled={!budgetInput}
+                    disabled={!budgetInput || customAllocOver}
                     onClick={handleSetGroupBudget}
                   >
                     Set Budget
@@ -793,9 +813,9 @@ export const GroupDetailPage = () => {
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                   <div style={{
-                    display: 'inline-flex', background: '#131926',
-                    border: '1px solid var(--border-subtle)',
-                    borderRadius: 'var(--radius-md)', padding: '3px'
+                    display: 'inline-flex', background: 'var(--bg-surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--r-md)', padding: '3px'
                   }}>
                     {['EQUAL', 'CUSTOM'].map(mode => (
                       <button
@@ -803,9 +823,9 @@ export const GroupDetailPage = () => {
                         onClick={() => setSplitMode(mode)}
                         style={{
                           border: 'none', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700,
-                          padding: '6px 12px', borderRadius: 'var(--radius-sm)',
-                          background: splitMode === mode ? '#6366f1' : 'transparent',
-                          color: splitMode === mode ? '#ffffff' : 'var(--text-secondary)',
+                          padding: '6px 12px', borderRadius: 'var(--r-sm)',
+                          background: splitMode === mode ? '#050505' : 'transparent',
+                          color: splitMode === mode ? '#B7FF00' : 'var(--text-muted)',
                           transition: 'var(--t-fast)'
                         }}
                       >
@@ -819,6 +839,21 @@ export const GroupDetailPage = () => {
                       : 'Enter each member\'s cap below — blank caps get an equal share.'}
                   </span>
                 </div>
+
+                {splitMode === 'CUSTOM' && budgetTotalNum > 0 && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px',
+                    background: customAllocOver ? 'var(--red-light)' : 'var(--green-light)',
+                    border: `1px solid ${customAllocOver ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.2)'}`,
+                    borderRadius: 'var(--r-sm)',
+                    color: customAllocOver ? 'var(--red-text)' : 'var(--green-text)',
+                    fontSize: '0.75rem', fontWeight: 700
+                  }}>
+                    {customAllocOver && <AlertTriangle size={13} />}
+                    Caps total ₹{customAllocSum.toFixed(2)} of ₹{budgetTotalNum.toFixed(2)} budget
+                    {customAllocOver && ' — reduce member caps so they fit within the budget.'}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -827,7 +862,9 @@ export const GroupDetailPage = () => {
           {budgetStatus?.memberBreakdown && (
             <div className="card" style={{ padding: '22px' }}>
               <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700, marginBottom: '16px' }}>Member Budget Caps</h3>
-              {budgetStatus.memberBreakdown.map(m => (
+              {budgetStatus.memberBreakdown.map(m => {
+                const overBudget = capOverBudget(m.userId);
+                return (
                 <div key={m.userId} style={{ marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid var(--border)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', flexWrap: 'wrap', gap: '6px' }}>
                     <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{m.userName}</span>
@@ -841,36 +878,44 @@ export const GroupDetailPage = () => {
                   </div>
                   {m.budgetLimit && <MiniProgress pct={m.percentUsed} status={m.status} />}
                   {can('SET_MEMBER_CAPS') && (
-                    <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-                      <div style={{ position: 'relative', flex: 1 }}>
-                        <span style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)', fontSize: '0.8rem', fontWeight: 700 }}>₹</span>
-                        <input
-                          type="number" step="100"
-                          placeholder={m.budgetLimit ? `Update cap (current: ₹${m.budgetLimit})` : 'Set spend cap (₹)'}
-                          value={memberCaps[m.userId] ?? ''}
-                          onChange={e => setMemberCaps(p => ({ ...p, [m.userId]: e.target.value }))}
-                          className="input-field" style={{ paddingLeft: '26px', fontSize: '0.83rem' }}
-                        />
+                    <div style={{ marginTop: '10px' }}>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <div style={{ position: 'relative', flex: 1 }}>
+                          <span style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)', fontSize: '0.8rem', fontWeight: 700 }}>₹</span>
+                          <input
+                            type="number" step="100"
+                            placeholder={m.budgetLimit ? `Update cap (current: ₹${m.budgetLimit})` : 'Set spend cap (₹)'}
+                            value={memberCaps[m.userId] ?? ''}
+                            onChange={e => setMemberCaps(p => ({ ...p, [m.userId]: e.target.value }))}
+                            className="input-field" style={{ paddingLeft: '26px', fontSize: '0.83rem' }}
+                          />
+                        </div>
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          disabled={savingCap === m.userId || !memberCaps[m.userId] || overBudget}
+                          style={{ flexShrink: 0 }}
+                          onClick={async () => {
+                            if (!memberCaps[m.userId]) return;
+                            setSavingCap(m.userId);
+                            await updateMemberBudgetCap(grp.id, m.userId, memberCaps[m.userId]);
+                            setMemberCaps(p => { const n = { ...p }; delete n[m.userId]; return n; });
+                            setSavingCap('');
+                          }}
+                        >
+                          {savingCap === m.userId ? <Loader2 size={14} style={{ animation: 'spin 0.7s linear infinite' }} /> : <Target size={14} />}
+                          {m.budgetLimit ? 'Update' : 'Set Cap'}
+                        </button>
                       </div>
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        disabled={savingCap === m.userId || !memberCaps[m.userId]}
-                        style={{ flexShrink: 0 }}
-                        onClick={async () => {
-                          if (!memberCaps[m.userId]) return;
-                          setSavingCap(m.userId);
-                          await updateMemberBudgetCap(grp.id, m.userId, memberCaps[m.userId]);
-                          setMemberCaps(p => { const n = { ...p }; delete n[m.userId]; return n; });
-                          setSavingCap('');
-                        }}
-                      >
-                        {savingCap === m.userId ? <Loader2 size={14} style={{ animation: 'spin 0.7s linear infinite' }} /> : <Target size={14} />}
-                        {m.budgetLimit ? 'Update' : 'Set Cap'}
-                      </button>
+                      {overBudget && (
+                        <p style={{ marginTop: '6px', fontSize: '0.72rem', fontWeight: 700, color: 'var(--red-text)' }}>
+                          Caps would total more than the ₹{groupBudgetTotal?.toFixed(2)} group budget — lower this cap.
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

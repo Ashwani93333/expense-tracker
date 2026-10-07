@@ -41,6 +41,7 @@ export const ExpenseFormModal = () => {
   const [groupMembers, setGroupMembers] = useState([]);
   const [splits, setSplits] = useState([]);
   const [membersLoading, setMembersLoading] = useState(false);
+  const [memberBudgets, setMemberBudgets] = useState([]);
 
   // `categories` is the user's onboarding-selected set, so the picker only ever
   // offers what they asked for. Uncategorized is kept last as the escape hatch.
@@ -81,6 +82,23 @@ export const ExpenseFormModal = () => {
     if (groupMembers.length > 0) buildSplits(groupMembers, parseFloat(amount) || 0, splitType);
   }, [amount, splitType, groupMembers]);
 
+  // Member caps are monthly: fetch the ones for the expense's own month so the
+  // split preview can warn before the server rejects an over-cap share.
+  const expenseMonth = (expenseDate || '').slice(0, 7);
+  useEffect(() => {
+    if (!isGroupExpense || !selectedGroupId) { setMemberBudgets([]); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await groupsApi.getMemberBudgets(selectedGroupId, { month: expenseMonth });
+        if (!cancelled) setMemberBudgets(Array.isArray(data) ? data : []);
+      } catch {
+        if (!cancelled) setMemberBudgets([]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isGroupExpense, selectedGroupId, expenseMonth]);
+
   const buildSplits = (members, totalAmount, type) => {
     if (type === 'EQUAL') {
       const share = totalAmount / (members.length || 1);
@@ -115,6 +133,33 @@ export const ExpenseFormModal = () => {
       s.userId === userId ? { ...s, sharePercent: pct, shareAmount: parseFloat(((total * pct) / 100).toFixed(2)) } : s
     ));
   };
+
+  const capsByUser = useMemo(
+    () => Object.fromEntries((memberBudgets || []).filter(b => b.budgetLimit != null).map(b => [b.userId, b])),
+    [memberBudgets]
+  );
+
+  // Shares that would push a member past their monthly cap. The server enforces
+  // this too — this keeps the user from finding out only after submitting.
+  const capViolations = useMemo(() => {
+    if (!isGroupExpense) return [];
+    const out = [];
+    splits.forEach(sp => {
+      const cap = capsByUser[sp.userId];
+      if (!cap) return;
+      const capLimit = parseFloat(cap.budgetLimit) || 0;
+      const spent = parseFloat(cap.spent) || 0;
+      const share = sp.shareAmount || 0;
+      if (capLimit > 0 && spent + share > capLimit + 0.001) {
+        out.push({ userId: sp.userId, userName: sp.userName, capLimit, spent, share });
+      }
+    });
+    return out;
+  }, [isGroupExpense, splits, capsByUser]);
+  const violationByUser = useMemo(
+    () => Object.fromEntries(capViolations.map(v => [v.userId, v])),
+    [capViolations]
+  );
 
   const reset = () => {
     setAmount(''); setDescription('');
@@ -321,10 +366,21 @@ export const ExpenseFormModal = () => {
                   </div>
                   {splits.map(sp => (
                     <div key={sp.userId} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid var(--border)' }}>
+                    <div>
                       <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 500 }}>
                         {sp.userName}
                         {sp.userId === currentUser?.id && <span className="badge" style={{ marginLeft: '6px', fontSize: '0.62rem', background: '#050505', color: '#B7FF00' }}>You</span>}
                       </span>
+                      {capsByUser[sp.userId] && (
+                        <span style={{
+                          display: 'block', fontSize: '0.67rem', marginTop: '1px', fontWeight: 700,
+                          color: violationByUser[sp.userId] ? 'var(--red-text)' : 'var(--text-muted)'
+                        }}>
+                          cap ₹{parseFloat(capsByUser[sp.userId].budgetLimit).toFixed(0)}
+                          {' · '}₹{parseFloat(capsByUser[sp.userId].spent || 0).toFixed(0)} used
+                        </span>
+                      )}
+                    </div>
                       <div style={{ textAlign: 'right' }}>
                         {splitType === 'EQUAL' ? (
                           <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>₹{sp.shareAmount.toFixed(2)}</span>
@@ -357,6 +413,24 @@ export const ExpenseFormModal = () => {
                   </div>
                 </div>
               )}
+
+              {/* Cap enforcement preview — matches the server-side rule */}
+              {capViolations.length > 0 && (
+                <div style={{
+                  display: 'flex', gap: '8px', padding: '10px 14px',
+                  background: 'var(--red-light)', border: '1px solid rgba(239,68,68,0.2)',
+                  borderRadius: 'var(--r-md)', color: 'var(--red-text)'
+                }}>
+                  <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: '1px' }} />
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    {capViolations.map(v => (
+                      <span key={v.userId}>
+                        {v.userName}: ₹{v.share.toFixed(2)} share + ₹{v.spent.toFixed(0)} already used exceeds the ₹{v.capLimit.toFixed(0)} monthly cap.
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           )}
 
@@ -368,7 +442,7 @@ export const ExpenseFormModal = () => {
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={isLoading || (isGroupExpense && splitError)}
+              disabled={isLoading || (isGroupExpense && (splitError || capViolations.length > 0))}
             >
               {isLoading
                 ? <><Loader2 size={15} style={{ animation: 'spin 0.7s linear infinite' }} /> Saving...</>
