@@ -498,6 +498,11 @@ export const ExpenseProvider = ({ children }) => {
       const status = await budgetsApi.getStatus({ month });
       setPersonalBudgetStatus(status || []);
     }
+    // The user acted on the prompt, so close it (and any queued sibling such
+    // as the monthly budget) instead of immediately showing another popup.
+    // Anything still over is visible on the dashboard and re-prompts after
+    // the next expense.
+    setBudgetPromptQueue([]);
     bumpDataVersion();
     const label = categoryId ? 'category' : 'monthly';
     showToast(`${label} budget for ${month} raised to ₹${Number(newLimit).toLocaleString('en-IN')}.`);

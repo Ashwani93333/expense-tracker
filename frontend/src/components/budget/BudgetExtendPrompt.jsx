@@ -26,9 +26,13 @@ export const BudgetExtendPrompt = () => {
 
   useEffect(() => {
     setPrompt(head);
-    setCustom('');
+    // Pre-fill with the exact top-up (limit + overshoot) so the default action
+    // raises the budget by precisely what the spend went over by.
+    setCustom(head ? String(Math.round((head.limit + Math.max(0, head.overBy)) * 100) / 100) : '');
     setSaving(false);
-  }, [head?.key]);
+    // Deps on the head object (not just its key) so a refreshed queue updates
+    // the numbers on screen instead of keeping the ones captured earlier.
+  }, [head]);
 
   // Suggest the increment that would have avoided this overshoot, so the
   // cheapest sufficient option is preselected rather than the smallest bump.
@@ -40,11 +44,16 @@ export const BudgetExtendPrompt = () => {
   const monthLabel = new Date(`${prompt.month}-01T12:00:00`)
     .toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
 
-  const suggestions = QUICK_INCREMENTS.map(step => ({ step, total: prompt.limit + step }));
-  // Only offer an exact-fit option when it is actually one of the round steps,
-  // otherwise the list turns into arbitrary numbers.
+  const exactStep = Math.round(needed * 100) / 100;
+  const exactTotal = prompt.limit + exactStep;
+  // Exact top-up first, then the rounded quick increments (minus any duplicate).
+  const suggestions = [
+    ...(exactStep > 0 ? [{ step: exactStep, total: exactTotal, exact: true }] : []),
+    ...QUICK_INCREMENTS
+      .filter(step => step !== exactStep)
+      .map(step => ({ step, total: prompt.limit + step })),
+  ];
   const exactFit = QUICK_INCREMENTS.find(step => step >= needed);
-  const exactTotal = exactFit ? prompt.limit + exactFit : prompt.limit + needed;
 
   const chosenTotal = custom !== '' ? Number(custom) : null;
   const targetTotal = chosenTotal !== null && !Number.isNaN(chosenTotal) ? chosenTotal : null;
@@ -53,8 +62,8 @@ export const BudgetExtendPrompt = () => {
     if (!Number.isFinite(total) || total <= prompt.limit) return;
     setSaving(true);
     try {
+      // On success raiseBudgetLimit clears the prompt queue → popup closes.
       await raiseBudgetLimit(prompt.month, prompt.categoryId, total);
-      dismissBudgetPrompt();
     } catch {
       setSaving(false);
     }
@@ -134,27 +143,27 @@ export const BudgetExtendPrompt = () => {
             Raise by
           </span>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '18px' }}>
-            {suggestions.map(({ step, total }) => {
+            {suggestions.map(({ step, total, exact }) => {
               const active = targetTotal === total;
               // Mark the smallest bump that would actually have covered the spend.
               const covers = step >= needed && exactFit === step;
               return (
                 <button
-                  key={step}
+                  key={exact ? 'exact' : step}
                   type="button"
                   onClick={() => setCustom(String(total))}
                   disabled={saving}
                   style={{
                     padding: '8px 12px', borderRadius: 'var(--r-md)',
-                    border: `1px solid ${active ? 'var(--border-accent)' : 'var(--border)'}`,
-                    background: active ? 'var(--accent-light)' : '#fff',
+                    border: `1px solid ${active ? 'var(--border-accent)' : exact ? 'rgba(34,197,94,0.4)' : 'var(--border)'}`,
+                    background: active ? 'var(--accent-light)' : exact ? 'rgba(34,197,94,0.08)' : '#fff',
                     color: active ? 'var(--text-primary)' : 'var(--text-secondary)',
                     fontWeight: 700, fontSize: '0.82rem', cursor: saving ? 'default' : 'pointer',
                     transition: 'var(--t-fast)', display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
                     gap: '1px', minWidth: '86px',
                   }}
                 >
-                  <span>+{inr(step)}</span>
+                  <span>+{inr(step)}{exact ? ' · exact' : ''}</span>
                   <span style={{ fontSize: '0.68rem', fontWeight: 600, color: 'var(--text-muted)' }}>
                     → {inr(total)}{covers ? ' · fits' : ''}
                   </span>
@@ -174,7 +183,7 @@ export const BudgetExtendPrompt = () => {
                 id="budget-extend-custom"
                 type="number"
                 min="0"
-                step="100"
+                step="any"
                 value={custom}
                 onChange={(e) => setCustom(e.target.value)}
                 placeholder={String(Math.round(exactTotal))}

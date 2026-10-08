@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { useExpense } from './ExpenseContext';
 import { incomesApi } from '../services/api';
@@ -8,7 +8,7 @@ const IncomeContext = createContext(null);
 
 export const IncomeProvider = ({ children }) => {
   const { currentUser, isAuthenticated } = useAuth();
-  const { dateFilter } = useExpense();
+  const { dateFilter, dataVersion } = useExpense();
 
   const [incomes, setIncomes] = useState([]);
   const [incomeSummary, setIncomeSummary] = useState(null);
@@ -53,6 +53,28 @@ export const IncomeProvider = ({ children }) => {
       setFinancialOverview(null);
     }
   }, [isAuthenticated, fetchIncomes]);
+
+  // Net balance = income − expenses, so it must also refresh when an expense
+  // (or budget) mutation bumps ExpenseContext's dataVersion — otherwise the
+  // dashboard shows stale figures until a full page reload.
+  const fetchOverview = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      const overview = await incomesApi.overview(toQueryParams(dateFilter));
+      setFinancialOverview(overview);
+    } catch (err) {
+      console.error('Failed to fetch financial overview:', err);
+    }
+  }, [isAuthenticated, dateFilter]);
+
+  const fetchOverviewRef = useRef(fetchOverview);
+  useEffect(() => { fetchOverviewRef.current = fetchOverview; }, [fetchOverview]);
+
+  const skipInitialOverviewSync = useRef(true);
+  useEffect(() => {
+    if (skipInitialOverviewSync.current) { skipInitialOverviewSync.current = false; return; }
+    fetchOverviewRef.current();
+  }, [dataVersion]);
 
   const addIncome = async (formData) => {
     try {
