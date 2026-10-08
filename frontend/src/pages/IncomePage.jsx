@@ -4,28 +4,7 @@ import { useIncome } from '../context/IncomeContext';
 import { useExpense } from '../context/ExpenseContext';
 import { DateFilterBar } from '../components/layout/DateFilterBar';
 import { SummaryCard } from '../components/ui/SummaryCard';
-
-const SOURCE_COLORS = {
-  SALARY: 'var(--accent)',
-  FREELANCE: 'var(--blue)',
-  INVESTMENTS: 'var(--amber)',
-  BUSINESS: 'var(--violet)',
-  RENTAL: '#ec4899',
-  GIFTS: 'var(--red)',
-  REFUNDS: '#06b6d4',
-  OTHER: 'var(--text-muted)',
-};
-
-const SOURCE_LABELS = {
-  SALARY: 'Salary',
-  FREELANCE: 'Freelance',
-  INVESTMENTS: 'Investments',
-  BUSINESS: 'Business',
-  RENTAL: 'Rental',
-  GIFTS: 'Gifts',
-  REFUNDS: 'Refunds',
-  OTHER: 'Other',
-};
+import { SOURCE_COLORS, SOURCE_LABELS } from '../constants/incomesources';
 
 export const IncomePage = () => {
   const { incomes, incomeSummary, isLoading, openAddIncome } = useIncome();

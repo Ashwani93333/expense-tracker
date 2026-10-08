@@ -5,9 +5,12 @@ import {
 } from 'recharts';
 import {
   TrendingUp, PieChart as PieIcon, Award, RefreshCw, Layers, Activity, Clock, Sigma, Hash,
+  Wallet, Briefcase, PiggyBank,
 } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
+import { useIncome } from '../../context/IncomeContext';
 import { expensesApi } from '../../services/api';
+import { SOURCE_COLORS, SOURCE_LABELS } from '../../constants/incomesources';
 import { PageHeader } from '../ui/PageHeader';
 import { InsightCard } from '../ui/InsightCard';
 import { SummaryCard } from '../ui/SummaryCard';
@@ -30,15 +33,15 @@ const compactInr = (n) => {
   return `₹${v.toFixed(0)}`;
 };
 
-const CustomCenterLabel = ({ viewBox, totalSpent }) => {
+const CustomCenterLabel = ({ viewBox, value, caption = 'spent' }) => {
   const { cx, cy } = viewBox;
   return (
     <g>
       <text x={cx} y={cy - 8} textAnchor="middle" dominantBaseline="central" style={{ fontSize: '1.4rem', fontWeight: 800, fill: 'var(--text-primary)', letterSpacing: '-0.03em' }}>
-        ₹{totalSpent.toLocaleString('en-IN')}
+        ₹{(Number(value) || 0).toLocaleString('en-IN')}
       </text>
       <text x={cx} y={cy + 14} textAnchor="middle" dominantBaseline="central" style={{ fontSize: '0.72rem', fontWeight: 600, fill: 'var(--text-muted)' }}>
-        spent
+        {caption}
       </text>
     </g>
   );
@@ -81,7 +84,8 @@ const EmptyChart = ({ height, message }) => (
 );
 
 export const AnalyticsCharts = () => {
-  const { expenses, dateFilter, setDateFilter, dataVersion } = useExpense();
+  const { expenses, dateFilter, setDateFilter, dataVersion, setActiveTab } = useExpense();
+  const { incomes, incomeSummary, isLoading: incomeLoading, financialOverview } = useIncome();
 
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -124,6 +128,19 @@ export const AnalyticsCharts = () => {
   const { totals, extremes, rows } = series;
   const bucketUnit = granularityLabel(granularity);
 
+  // Income bucketed with the exact same ranges as spend, so every chart can
+  // plot the two series side by side for comparison.
+  const incomeSeries = useMemo(
+    () => buildTimeSeries(incomes.map(i => ({ ...i, expenseDate: i.incomeDate })), range, granularity),
+    [incomes, range, granularity],
+  );
+
+  const incomeByKey = useMemo(() => {
+    const m = new Map();
+    incomeSeries.rows.forEach(r => m.set(r.key, r.spend));
+    return m;
+  }, [incomeSeries]);
+
   const categoryPieData = summary?.categoryBreakdown?.length > 0
     ? summary.categoryBreakdown.map((c, i) => ({ name: c.categoryName, value: Number(c.total) || 0, color: PALETTE[i % PALETTE.length] }))
     : (() => {
@@ -139,6 +156,8 @@ export const AnalyticsCharts = () => {
 
   // Chart series: spend, transaction count and the time-wise average, aligned
   // on the same bucket so the bars can be read against the average line.
+  // `income` rides along on every row so the chart can switch to a
+  // spend-vs-income comparison without re-bucketing.
   const chartData = rows.map(r => ({
     label: r.label,
     fullLabel: r.fullLabel,
@@ -147,9 +166,13 @@ export const AnalyticsCharts = () => {
     avg: r.avgPerTransaction,
     rollingAvg: r.rollingAvg,
     avgPerDay: r.avgPerDay,
+    income: incomeByKey.get(r.key) || 0,
   }));
 
-  const chartMax = Math.max(1, ...chartData.map(d => d.spend));
+  // In comparison mode the axis has to fit the taller of the two series.
+  const chartMax = compareMode === 'income'
+    ? Math.max(1, ...chartData.map(d => Math.max(d.spend, d.income)))
+    : Math.max(1, ...chartData.map(d => d.spend));
   const avgLineMax = Math.max(1, ...chartData.map(d => Math.max(d.rollingAvg, d.avg)));
   const peakLabel = extremes.biggestBucket?.label;
   const busiestLabel = extremes.busiestBucket?.label;
@@ -179,10 +202,52 @@ export const AnalyticsCharts = () => {
   const avgPerDaySpend = totals.avgPerCalendarDay;
   const topCat = categoryPieData[0];
 
+  // ─── Income analytics (same bucketing as spend so both series line up) ─────
+  const sourceBreakdown = incomeSummary?.sourceBreakdown || [];
+  const sourcePieData = sourceBreakdown.map(s => ({
+    name: SOURCE_LABELS[s.source] || s.source,
+    value: Number(s.total) || 0,
+    color: SOURCE_COLORS[s.source] || '#737373',
+  }));
+  const topSource = sourceBreakdown[0];
+
+  const summaryIncomeTotal = Number(incomeSummary?.totalIncome);
+  const totalIncome = Number.isFinite(summaryIncomeTotal)
+    ? summaryIncomeTotal
+    : incomeSeries.totals.spend;
+  const summaryIncomeCount = Number(incomeSummary?.count);
+  const incomeCount = Number.isFinite(summaryIncomeCount)
+    ? summaryIncomeCount
+    : incomeSeries.totals.count;
+
+  const netBalance = financialOverview?.netBalance != null
+    ? Number(financialOverview.netBalance)
+    : totalIncome - periodTotals.spend;
+  const savingsRate = totalIncome > 0 ? (netBalance / totalIncome) * 100 : 0;
+
+  const incomeChartData = rows.map(r => {
+    const income = incomeByKey.get(r.key) || 0;
+    return { label: r.label, fullLabel: r.fullLabel, income, spend: r.spend, net: income - r.spend };
+  });
+  const incomeChartMax = Math.max(1, ...incomeChartData.map(d => Math.max(d.income, d.spend)));
+  const peakIncomeBucket = incomeSeries.extremes.biggestBucket?.count > 0
+    ? incomeSeries.extremes.biggestBucket
+    : null;
+  const hasAnyActivity = totals.count > 0 || incomeSeries.totals.count > 0;
+
+  const topIncomeEntries = useMemo(
+    () => [...incomes].sort((a, b) => (Number(b.amount) || 0) - (Number(a.amount) || 0)).slice(0, 5),
+    [incomes],
+  );
+
   const weekdayPeak = series.weekday.reduce((m, d) => (d.count > 0 && (!m || d.count > m.count ? d : m)), null);
 
   const insightText = topCat && periodTotals.spend > 0
     ? `${topCat.name} is your top category at ${inr(topCat.value)} — ${((topCat.value / periodTotals.spend) * 100).toFixed(1)}% of ${inr(periodTotals.spend)} spent ${bucketUnit} at ${inr(avgPerBucket, 0)} per transaction.${busiestLabel ? ` You transacted most on ${busiestLabel} (${extremes.busiestBucket.count} transactions).` : ''}`
+    : null;
+
+  const incomeInsightText = totalIncome > 0
+    ? `You received ${inr(totalIncome)} across ${incomeCount} ${incomeCount === 1 ? 'entry' : 'entries'} and spent ${inr(periodTotals.spend)} — a savings rate of ${savingsRate.toFixed(1)}% (${netBalance >= 0 ? 'surplus' : 'deficit'} of ${inr(Math.abs(netBalance))}).${topSource ? ` ${SOURCE_LABELS[topSource.source] || topSource.source} contributed ${((Number(topSource.total) / totalIncome) * 100).toFixed(1)}% of your income.` : ''}`
     : null;
 
   return (
@@ -193,8 +258,8 @@ export const AnalyticsCharts = () => {
       <PageHeader
         icon={TrendingUp}
         badge="Analytics"
-        title="Spending Analytics"
-        subtitle="Averages broken down by day, week and month — not just a flat total."
+        title="Spending & Income Analytics"
+        subtitle="Averages broken down by day, week and month — spend, income and savings rate, not just a flat total."
         actions={
           <button className="btn btn-secondary btn-sm" onClick={() => setDateFilter(prev => ({ ...prev }))} title="Refresh">
             <RefreshCw size={14} />
@@ -260,12 +325,15 @@ export const AnalyticsCharts = () => {
       <div className="card" style={{ padding: '24px' }}>
         <SectionTitle
           icon={TrendingUp}
-          title={`${granularityTitle(granularity)} Spend vs Transactions vs Average`}
+          title={compareMode === 'income'
+            ? `${granularityTitle(granularity)} Spend vs Income`
+            : `${granularityTitle(granularity)} Spend vs Transactions vs Average`}
           right={
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
               <div className="pill-group">
                 <button className={`pill-item${compareMode === 'spend' ? ' active' : ''}`} onClick={() => setCompareMode('spend')}>Bars</button>
                 <button className={`pill-item${compareMode === 'split' ? ' active' : ''}`} onClick={() => setCompareMode('split')}>Stacked</button>
+                <button className={`pill-item${compareMode === 'income' ? ' active' : ''}`} onClick={() => setCompareMode('income')}>Vs Income</button>
               </div>
               <GranularityPicker value={granularity} onChange={setGranularity} />
             </div>
@@ -288,12 +356,18 @@ export const AnalyticsCharts = () => {
                   <stop offset="0%" stopColor="#3b82f6" />
                   <stop offset="100%" stopColor="#1d4ed8" />
                 </linearGradient>
+                <linearGradient id="incomeBarGradMain" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#22c55e" />
+                  <stop offset="100%" stopColor="#16a34a" />
+                </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#1a1a1a" vertical={false} />
               <XAxis dataKey="label" stroke="#525252" fontSize={11} tickLine={false} axisLine={false} interval="preserveStartEnd" />
               <YAxis yAxisId="left" stroke="#525252" fontSize={11} tickLine={false} axisLine={false} tickFormatter={compactInr} domain={[0, chartMax * 1.15]} />
-              <YAxis yAxisId="right" orientation="right" stroke="#525252" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} width={38} />
-              <YAxis yAxisId="avg" hide domain={[0, avgLineMax * 1.6]} />
+              {compareMode !== 'income' && (
+                <YAxis yAxisId="right" orientation="right" stroke="#525252" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} width={38} />
+              )}
+              {compareMode !== 'income' && <YAxis yAxisId="avg" hide domain={[0, avgLineMax * 1.6]} />}
               <Tooltip
                 contentStyle={tooltipStyle}
                 cursor={{ fill: 'rgba(183,255,0,0.04)' }}
@@ -305,7 +379,9 @@ export const AnalyticsCharts = () => {
                 }}
               />
               <Legend wrapperStyle={{ fontSize: '0.75rem', paddingTop: '8px' }} />
-              <ReferenceLine yAxisId="avg" y={avgPerDaySpend} stroke="#f59e0b" strokeDasharray="4 4" label={{ value: `avg ${bucketUnit}`, position: 'right', fill: '#f59e0b', fontSize: 10 }} />
+              {compareMode !== 'income' && (
+                <ReferenceLine yAxisId="avg" y={avgPerDaySpend} stroke="#f59e0b" strokeDasharray="4 4" label={{ value: `avg ${bucketUnit}`, position: 'right', fill: '#f59e0b', fontSize: 10 }} />
+              )}
               <Bar
                 yAxisId="left"
                 dataKey="spend"
@@ -318,10 +394,22 @@ export const AnalyticsCharts = () => {
               {compareMode === 'split' && (
                 <Bar yAxisId="left" dataKey="rollingAvg" name="Rolling avg" stackId="spendStack" fill="#22c55e" opacity={0.55} maxBarSize={46} />
               )}
-              <Bar yAxisId="right" dataKey="count" name="Transactions" fill="url(#countBarGrad)" radius={[4, 4, 0, 0]} maxBarSize={46} />
-              <Line yAxisId="avg" type="monotone" dataKey="avg" name="Avg / Txn" stroke="#f59e0b" strokeWidth={2} dot={{ r: 2.5, fill: '#f59e0b' }} activeDot={{ r: 5 }} connectNulls />
+              {compareMode === 'income' && (
+                <Bar yAxisId="left" dataKey="income" name="Income" fill="url(#incomeBarGradMain)" radius={[4, 4, 0, 0]} maxBarSize={46} />
+              )}
+              {compareMode !== 'income' && (
+                <Bar yAxisId="right" dataKey="count" name="Transactions" fill="url(#countBarGrad)" radius={[4, 4, 0, 0]} maxBarSize={46} />
+              )}
+              {compareMode !== 'income' && (
+                <Line yAxisId="avg" type="monotone" dataKey="avg" name="Avg / Txn" stroke="#f59e0b" strokeWidth={2} dot={{ r: 2.5, fill: '#f59e0b' }} activeDot={{ r: 5 }} connectNulls />
+              )}
             </ComposedChart>
           </ResponsiveContainer>
+        )}
+        {compareMode === 'income' && incomeSeries.totals.count === 0 && (
+          <p style={{ margin: '10px 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+            No income entries in this period — there is nothing to compare against yet.
+          </p>
         )}
       </div>
 
@@ -404,7 +492,7 @@ export const AnalyticsCharts = () => {
                     {categoryPieData.map((entry, i) => (
                       <Cell key={i} fill={entry.color} />
                     ))}
-                    <CustomCenterLabel totalSpent={periodTotals.spend} />
+                    <CustomCenterLabel value={periodTotals.spend} caption="spent" />
                   </Pie>
                   <Tooltip contentStyle={tooltipStyle} formatter={val => [inr(val), 'Spent']} />
                 </PieChart>
@@ -495,8 +583,189 @@ export const AnalyticsCharts = () => {
         </div>
       )}
 
+      {/* ── Income analytics ──────────────────────────────────────────────── */}
+      <div style={{
+        display: 'flex', flexDirection: 'column', gap: '20px',
+        paddingTop: '20px', borderTop: '1px solid var(--border)',
+      }}>
+        <SectionTitle icon={Wallet} title="Income Analytics" />
+
+        {/* Income summary */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '14px' }}>
+          <SummaryCard
+            label="Total Income"
+            value={inr(totalIncome)}
+            sub={`${incomeCount} ${incomeCount === 1 ? 'entry' : 'entries'} · ${incomeSeries.totals.activeDays} income days`}
+            icon={Wallet}
+            accent="#22c55e"
+            loading={incomeLoading}
+          />
+          <SummaryCard
+            label={`Avg Income ${bucketUnit}`}
+            value={inr(incomeSeries.totals.avgPerCalendarDay)}
+            sub={`Across ${incomeSeries.totals.calendarDays} calendar days`}
+            icon={Clock}
+            accent="#3b82f6"
+            loading={incomeLoading}
+          />
+          <SummaryCard
+            label="Avg / Entry"
+            value={inr(incomeSeries.totals.avgPerTransaction)}
+            sub={incomeSeries.extremes.largestTransaction
+              ? `Largest ${inr(incomeSeries.extremes.largestTransaction.amount, 0)} · ${incomeSeries.extremes.largestTransaction.label}`
+              : 'No income entries yet'}
+            icon={Hash}
+            accent="#f59e0b"
+            loading={incomeLoading}
+          />
+          <SummaryCard
+            label={`Peak ${granularityTitle(granularity).toLowerCase()}`}
+            value={peakIncomeBucket ? compactInr(peakIncomeBucket.spend) : '—'}
+            sub={peakIncomeBucket ? `${peakIncomeBucket.label} · ${peakIncomeBucket.count} entries` : 'No data'}
+            icon={TrendingUp}
+            accent="#06b6d4"
+            loading={incomeLoading}
+          />
+          <SummaryCard
+            label="Top Source"
+            value={topSource ? (SOURCE_LABELS[topSource.source] || topSource.source) : 'N/A'}
+            sub={topSource && totalIncome > 0 ? `${((Number(topSource.total) / totalIncome) * 100).toFixed(1)}% of income` : '—'}
+            icon={Briefcase}
+            accent={topSource ? (SOURCE_COLORS[topSource.source] || '#737373') : '#737373'}
+            loading={incomeLoading}
+          />
+          <SummaryCard
+            label="Savings Rate"
+            value={`${savingsRate.toFixed(1)}%`}
+            sub={`${netBalance >= 0 ? 'Surplus' : 'Deficit'} of ${inr(Math.abs(netBalance))}`}
+            icon={PiggyBank}
+            accent={netBalance >= 0 ? '#22c55e' : '#ef4444'}
+            loading={incomeLoading || loading}
+          />
+        </div>
+
+        {/* Income vs spend over time */}
+        <div className="card" style={{ padding: '24px' }}>
+          <SectionTitle
+            icon={TrendingUp}
+            title={`${granularityTitle(granularity)} Income vs Spend`}
+            right={<GranularityPicker value={granularity} onChange={setGranularity} />}
+          />
+          {loading && incomeLoading ? (
+            <div className="skeleton" style={{ height: '280px', borderRadius: 'var(--r-md)' }} />
+          ) : !hasAnyActivity ? (
+            <EmptyChart height={280} message="No data for this period." />
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <ComposedChart data={incomeChartData} margin={{ top: 10, right: 8, left: -16, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="incomeBarGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#22c55e" />
+                    <stop offset="100%" stopColor="#16a34a" />
+                  </linearGradient>
+                  <linearGradient id="spendBarGradCmp" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#B7FF00" />
+                    <stop offset="100%" stopColor="#8AB000" />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1a1a1a" vertical={false} />
+                <XAxis dataKey="label" stroke="#525252" fontSize={11} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                <YAxis stroke="#525252" fontSize={11} tickLine={false} axisLine={false} tickFormatter={compactInr} domain={[0, incomeChartMax * 1.15]} />
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  cursor={{ fill: 'rgba(183,255,0,0.04)' }}
+                  labelFormatter={(_, payload) => (payload?.[0]?.payload?.fullLabel) || ''}
+                  formatter={(val, name) => [inr(val), name]}
+                />
+                <Legend wrapperStyle={{ fontSize: '0.75rem', paddingTop: '8px' }} />
+                <Bar dataKey="income" name="Income" fill="url(#incomeBarGrad)" radius={[4, 4, 0, 0]} maxBarSize={46} />
+                <Bar dataKey="spend" name="Spend" fill="url(#spendBarGradCmp)" radius={[4, 4, 0, 0]} maxBarSize={46} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px' }}>
+          {/* Income by source donut */}
+          <div className="card" style={{ padding: '24px' }}>
+            <SectionTitle icon={PieIcon} title="Income by Source" />
+            {incomeLoading ? (
+              <div className="skeleton" style={{ height: '220px', borderRadius: '50%', width: '220px', margin: '0 auto' }} />
+            ) : sourcePieData.length === 0 ? (
+              <EmptyChart height={220} message="No income entries in this period." />
+            ) : (
+              <>
+                <ResponsiveContainer width="100%" height={240}>
+                  <PieChart>
+                    <Pie data={sourcePieData} cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={2} dataKey="value" stroke="none">
+                      {sourcePieData.map((entry, i) => (
+                        <Cell key={i} fill={entry.color} />
+                      ))}
+                      <CustomCenterLabel value={totalIncome} caption="income" />
+                    </Pie>
+                    <Tooltip contentStyle={tooltipStyle} formatter={val => [inr(val), 'Received']} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', justifyContent: 'center', marginTop: '12px' }}>
+                  {sourcePieData.map(c => (
+                    <span key={c.name} style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '5px',
+                      padding: '3px 8px', borderRadius: 'var(--r-md)', fontSize: '0.72rem', fontWeight: 600,
+                      background: `${c.color}15`, color: c.color,
+                    }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: c.color, flexShrink: 0 }} />
+                      {c.name}: ₹{c.value.toFixed(0)}
+                    </span>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Largest income entries */}
+          <div className="card" style={{ padding: '24px' }}>
+            <SectionTitle icon={Award} title="Top Income Entries" />
+            {topIncomeEntries.length === 0 ? (
+              <EmptyChart height={220} message="No income entries in this period." />
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {topIncomeEntries.map((inc, i) => (
+                  <div key={inc.id || i} style={{
+                    display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px',
+                    borderRadius: 'var(--r-lg)', background: 'var(--bg-surface)', border: '1px solid var(--border)',
+                    transition: 'var(--t-fast)',
+                  }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.85rem', color: i === 0 ? 'var(--accent)' : 'var(--text-faint)', width: '24px', flexShrink: 0 }}>
+                      #{i + 1}
+                    </span>
+                    <span style={{ flex: 1, fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {inc.description || SOURCE_LABELS[inc.source] || inc.source}
+                    </span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', flexShrink: 0 }}>
+                      {inc.incomeDate ? new Date(`${inc.incomeDate.slice(0, 10)}T12:00:00`).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : ''}
+                    </span>
+                    <span style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.95rem', flexShrink: 0 }}>
+                      {inr(inc.amount)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {insightText && (
         <InsightCard description={insightText} actionLabel="View Dashboard" />
+      )}
+
+      {incomeInsightText && (
+        <InsightCard
+          title="Income Insight"
+          description={incomeInsightText}
+          actionLabel="View Income"
+          onAction={() => setActiveTab('incomes')}
+        />
       )}
     </div>
   );
