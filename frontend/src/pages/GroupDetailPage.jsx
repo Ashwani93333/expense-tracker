@@ -75,6 +75,7 @@ export const GroupDetailPage = () => {
   const [loading, setLoading]           = useState(true);
   const [budgetInput, setBudgetInput]   = useState('');
   const [splitMode, setSplitMode]       = useState('EQUAL');
+  const [savingBudget, setSavingBudget] = useState(false);
   const [memberCaps, setMemberCaps]     = useState({});
   const [savingCap, setSavingCap]       = useState('');
   const [expiryInput, setExpiryInput]   = useState('');
@@ -147,10 +148,15 @@ export const GroupDetailPage = () => {
   };
 
   const handleSetGroupBudget = async () => {
-    if (!budgetInput) return;
-    const allocations = splitMode === 'CUSTOM' ? buildCustomAllocations() : null;
-    const ok = await updateGroupBudget(grp.id, budgetInput, splitMode, allocations);
-    if (ok) setBudgetInput('');
+    if (!budgetInput || savingBudget) return;
+    setSavingBudget(true);
+    try {
+      const allocations = splitMode === 'CUSTOM' ? buildCustomAllocations() : null;
+      const ok = await updateGroupBudget(grp.id, budgetInput, splitMode, allocations);
+      if (ok) setBudgetInput('');
+    } finally {
+      setSavingBudget(false);
+    }
   };
 
   // ─── Cap validation (mirrors the server-side rules) ─────────────────────────
@@ -804,10 +810,12 @@ export const GroupDetailPage = () => {
                   />
                   <button
                     className="btn btn-primary btn-sm"
-                    disabled={!budgetInput || customAllocOver}
+                    disabled={!budgetInput || customAllocOver || savingBudget}
                     onClick={handleSetGroupBudget}
                   >
-                    Set Budget
+                    {savingBudget
+                      ? <><Loader2 size={14} style={{ animation: 'spin 0.7s linear infinite' }} /> Setting...</>
+                      : 'Set Budget'}
                   </button>
                 </div>
 
