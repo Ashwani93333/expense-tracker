@@ -1,6 +1,6 @@
 import {
   PlusCircle, ShieldCheck, Target, Users, CalendarClock, FilePen,
-  UserPlus, UserMinus, HandCoins,
+  UserPlus, UserMinus, HandCoins, Wallet,
 } from 'lucide-react';
 
 // Feature-wise grants an admin can hand out per member (mirrors the backend
@@ -8,6 +8,7 @@ import {
 // that an admin has granted them; group admins implicitly hold all of them.
 export const GROUP_PERMISSIONS = [
   { key: 'ADD_EXPENSE',      label: 'Add expenses',      description: 'Add new expenses to the group',                       icon: PlusCircle },
+  { key: 'ADD_INCOME',       label: 'Add income',        description: 'Add income entries to the group',                     icon: Wallet },
   { key: 'REVIEW_EXPENSES',  label: 'Approve payments',  description: 'Verify or reject members\' group payments',           icon: ShieldCheck },
   { key: 'SET_BUDGET',       label: 'Set group budget',  description: 'Set or update the group\'s monthly budget',           icon: Target },
   { key: 'SET_MEMBER_CAPS',  label: 'Set member caps',   description: 'Set or update per-member budget caps',                icon: Users },

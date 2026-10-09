@@ -261,6 +261,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 CREATE TABLE IF NOT EXISTS incomes (
     id              UUID PRIMARY KEY,
     user_id         UUID NOT NULL REFERENCES users(id),
+    group_id        UUID REFERENCES groups(id) ON DELETE SET NULL,
     amount          NUMERIC(12,2) NOT NULL,
     description     TEXT,
     income_date     DATE NOT NULL,
@@ -271,6 +272,10 @@ CREATE TABLE IF NOT EXISTS incomes (
     created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Backfill: group-scoped income support for databases created before it.
+ALTER TABLE incomes ADD COLUMN IF NOT EXISTS group_id UUID REFERENCES groups(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_incomes_group_date ON incomes(group_id, income_date DESC);
 
 -- ================= BACKWARD-COMPATIBLE COLUMN ADDITIONS =================
 -- Onboarding completion flag on users.

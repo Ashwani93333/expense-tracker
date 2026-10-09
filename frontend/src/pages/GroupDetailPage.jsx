@@ -3,15 +3,17 @@ import {
   ArrowLeft, Share2, Users, Plus, Target, PieChart, CreditCard,
   LogOut, Key, CheckCircle2, DollarSign, AlertTriangle, TrendingUp,
   RefreshCw, Loader2, Clock, CalendarClock, Ban, XCircle, ShieldCheck,
-  SlidersHorizontal
+  SlidersHorizontal, Briefcase, Repeat
 } from 'lucide-react';
 import { useExpense } from '../context/ExpenseContext';
 import { useAuth } from '../context/AuthContext';
 import { groupsApi, expensesApi } from '../services/api';
 import { InviteMemberModal } from '../components/groups/InviteMemberModal';
 import { MemberPermissionsModal } from '../components/groups/MemberPermissionsModal';
+import { GroupIncomeFormModal } from '../components/groups/GroupIncomeFormModal';
 import { GroupRoleBadge } from '../components/groups/GroupRoleBadge';
 import { permissionMeta } from '../constants/groupPermissions';
+import { SOURCE_COLORS, SOURCE_LABELS } from '../constants/incomesources';
 import { DateFilterBar } from '../components/layout/DateFilterBar';
 import { describeFilter } from '../utils/dateFilter';
 
@@ -84,6 +86,9 @@ export const GroupDetailPage = () => {
   const [rejectingId, setRejectingId]   = useState(null);
   const [rejectNote, setRejectNote]     = useState('');
   const [permMember, setPermMember]     = useState(null);
+  const [groupIncomes, setGroupIncomes] = useState([]);
+  const [groupIncomeSummary, setGroupIncomeSummary] = useState(null);
+  const [isGroupIncomeModalOpen, setIsGroupIncomeModalOpen] = useState(false);
 
   const grp = groups.find(g => g.id === activeGroupId) || groups[0];
 
@@ -91,18 +96,22 @@ export const GroupDetailPage = () => {
     if (!grp?.id) return;
     setLoading(true);
     try {
-      const [detail, budget, settles, rep, exps] = await Promise.allSettled([
+      const [detail, budget, settles, rep, exps, incs, incSummary] = await Promise.allSettled([
         groupsApi.get(grp.id),
         groupsApi.getBudgetStatus(grp.id, dateFilter),
         groupsApi.getSettlements(grp.id, dateFilter),
         groupsApi.getMonthlyReport(grp.id, dateFilter),
         groupsApi.listExpenses(grp.id, dateFilter),
+        groupsApi.listIncomes(grp.id, dateFilter),
+        groupsApi.incomeSummary(grp.id, dateFilter),
       ]);
       if (detail.status   === 'fulfilled') setGroupDetail(detail.value);
       if (budget.status   === 'fulfilled') setBudgetStatus(budget.value);
       if (settles.status  === 'fulfilled') setSettlements(settles.value || []);
       if (rep.status      === 'fulfilled') setReport(rep.value);
       if (exps.status     === 'fulfilled') setGroupExpenses(exps.value || []);
+      if (incs.status     === 'fulfilled') setGroupIncomes(incs.value || []);
+      if (incSummary.status === 'fulfilled') setGroupIncomeSummary(incSummary.value);
     } catch {}
     finally { setLoading(false); }
   };
@@ -217,6 +226,11 @@ export const GroupDetailPage = () => {
   const totalSpent = report?.totalSpent ?? groupExpenses.reduce((s, e) => s + (e.amount || 0), 0);
   const pendingExpenses = groupExpenses.filter(e => e.status === 'PENDING');
 
+  const totalGroupIncome = groupIncomeSummary?.totalIncome ?? groupIncomes.reduce((s, i) => s + (i.amount || 0), 0);
+  const groupIncomeCount = groupIncomeSummary?.count ?? groupIncomes.length;
+  const groupSourceBreakdown = groupIncomeSummary?.sourceBreakdown || [];
+  const groupMemberBreakdown = groupIncomeSummary?.memberBreakdown || [];
+
   const isExpired = grp.expiresAt && new Date(grp.expiresAt) < new Date();
   const daysUntilExpiry = grp.expiresAt ? Math.ceil((new Date(grp.expiresAt) - new Date()) / (1000 * 60 * 60 * 24)) : null;
   const isExpiringSoon = !isExpired && daysUntilExpiry !== null && daysUntilExpiry <= 7;
@@ -224,6 +238,7 @@ export const GroupDetailPage = () => {
   const SUB_TABS = [
     { id: 'overview',    label: 'Overview',    icon: PieChart },
     { id: 'expenses',    label: 'Expenses',    icon: CreditCard },
+    { id: 'income',      label: 'Income',      icon: TrendingUp },
     { id: 'members',     label: 'Members',     icon: Users },
     { id: 'settlements', label: 'Settlements', icon: CheckCircle2 },
     { id: 'budget',      label: 'Budget',      icon: Target },
@@ -246,6 +261,11 @@ export const GroupDetailPage = () => {
           {can('ADD_EXPENSE') && (
             <button className="btn btn-primary btn-sm" onClick={() => setIsAddModalOpen(true)}>
               <Plus size={14} /> Add Expense
+            </button>
+          )}
+          {can('ADD_INCOME') && (
+            <button className="btn btn-secondary btn-sm" onClick={() => setIsGroupIncomeModalOpen(true)}>
+              <TrendingUp size={14} /> Add Income
             </button>
           )}
           <button className="btn btn-ghost btn-sm" onClick={fetchGroupData} title="Refresh">
@@ -644,6 +664,142 @@ export const GroupDetailPage = () => {
         </div>
       )}
 
+      {/* ── Income Tab ────────────────────────────────────────────── */}
+      {activeSubTab === 'income' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {loading ? (
+            <div className="card" style={{ padding: '22px' }}>
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="skeleton" style={{ height: '48px', marginBottom: '8px', borderRadius: 'var(--r-md)' }} />
+              ))}
+            </div>
+          ) : (
+            <>
+              {/* Summary */}
+              <div className="card" style={{ padding: '22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+                <div>
+                  <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <TrendingUp size={16} color="var(--accent)" /> Group Income · {describeFilter(dateFilter)}
+                  </h3>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '6px 0 0 0' }}>
+                    {isAdmin ? 'Income added by all members.' : 'Your group income entries.'}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#22c55e', letterSpacing: '-0.02em' }}>
+                      ₹{totalGroupIncome.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                      {groupIncomeCount} {groupIncomeCount === 1 ? 'entry' : 'entries'}
+                    </div>
+                  </div>
+                  {can('ADD_INCOME') && (
+                    <button className="btn btn-primary btn-sm" onClick={() => setIsGroupIncomeModalOpen(true)}>
+                      <Plus size={14} /> Add Income
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Source breakdown */}
+              {groupSourceBreakdown.length > 0 && (
+                <div className="card" style={{ padding: '22px' }}>
+                  <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700, marginBottom: '16px' }}>Income by Source</h3>
+                  {groupSourceBreakdown.map((item, i) => {
+                    const pct = totalGroupIncome > 0 ? (Number(item.total) / totalGroupIncome) * 100 : 0;
+                    const color = SOURCE_COLORS[item.source] || '#737373';
+                    return (
+                      <div key={item.source || i} style={{ marginBottom: '14px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                          <span style={{ fontSize: '0.83rem', color: 'var(--text-primary)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: color }} />
+                            {SOURCE_LABELS[item.source] || item.source}
+                          </span>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                            ₹{Number(item.total).toLocaleString('en-IN')} · {pct.toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="progress-track" style={{ height: '5px' }}>
+                          <div className="progress-fill" style={{ width: `${pct}%`, background: color }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Member breakdown (admin view) */}
+              {isAdmin && groupMemberBreakdown.length > 0 && (
+                <div className="card" style={{ padding: '22px' }}>
+                  <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700, marginBottom: '14px' }}>Income by Member</h3>
+                  {groupMemberBreakdown.map(m => (
+                    <div key={m.userId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 600 }}>{m.userName}</span>
+                      <span style={{ fontSize: '0.85rem', color: '#22c55e', fontWeight: 700 }}>
+                        ₹{Number(m.total).toLocaleString('en-IN', { minimumFractionDigits: 2 })} · {m.count} {m.count === 1 ? 'entry' : 'entries'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Entries */}
+              <div className="card" style={{ padding: '22px' }}>
+                <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700, marginBottom: '16px' }}>Income Entries</h3>
+                {groupIncomes.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                    <TrendingUp size={32} color="var(--text-faint)" style={{ marginBottom: '8px' }} />
+                    <p style={{ color: 'var(--text-muted)' }}>No group income in this period.</p>
+                    {can('ADD_INCOME') && (
+                      <button className="btn btn-primary btn-sm" style={{ marginTop: '12px' }} onClick={() => setIsGroupIncomeModalOpen(true)}>
+                        Add First Income
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  groupIncomes.map(inc => {
+                    const color = SOURCE_COLORS[inc.source] || '#737373';
+                    return (
+                      <div key={inc.id} style={{
+                        display: 'flex', alignItems: 'center', gap: '12px',
+                        padding: '12px 14px', borderRadius: 'var(--r-lg)', marginBottom: '8px',
+                        background: 'var(--bg-surface)', border: '1px solid var(--border)',
+                      }}>
+                        <div style={{
+                          width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0,
+                          background: `${color}15`, border: `1px solid ${color}30`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          <Briefcase size={16} color={color} />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '0.875rem', color: 'var(--text-primary)', fontWeight: 600 }}>{inc.description || 'Income'}</span>
+                            <span className="badge" style={{ fontSize: '0.62rem', background: `${color}15`, color, border: `1px solid ${color}30` }}>
+                              {inc.sourceLabel || SOURCE_LABELS[inc.source] || inc.source}
+                            </span>
+                            {inc.isRecurring && (
+                              <span className="badge" style={{ fontSize: '0.62rem' }}><Repeat size={9} /> {inc.frequency}</span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                            {inc.incomeDate} · Added by {inc.userName}
+                          </div>
+                        </div>
+                        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#22c55e' }}>
+                          +₹{(inc.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
       {/* ── Members Tab ───────────────────────────────────────────── */}
       {activeSubTab === 'members' && (
         <div className="card" style={{ padding: '22px' }}>
@@ -935,6 +1091,13 @@ export const GroupDetailPage = () => {
         onClose={() => setPermMember(null)}
         groupId={grp.id}
         member={permMember}
+      />
+      <GroupIncomeFormModal
+        isOpen={isGroupIncomeModalOpen}
+        onClose={() => setIsGroupIncomeModalOpen(false)}
+        groupId={grp.id}
+        groupName={grp.name}
+        onSaved={fetchGroupData}
       />
     </div>
   );

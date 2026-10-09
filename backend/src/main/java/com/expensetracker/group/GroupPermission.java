@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 public enum GroupPermission {
 
     ADD_EXPENSE("Add expenses", "Add new expenses to the group"),
+    ADD_INCOME("Add income", "Add income entries to the group"),
     REVIEW_EXPENSES("Approve payments", "Verify or reject members' group payments"),
     SET_BUDGET("Set group budget", "Set or update the group's monthly budget"),
     SET_MEMBER_CAPS("Set member caps", "Set or update per-member budget caps"),

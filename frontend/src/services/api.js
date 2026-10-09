@@ -149,6 +149,10 @@ export const groupsApi = {
   // Group Expenses
   listExpenses: (id, filter, status) => request('GET', `/api/groups/${id}/expenses`, null, { ...toQueryParams(filter), status }),
   createExpense: (id, payload) => request('POST', `/api/groups/${id}/expenses`, payload),
+  // Group Income
+  listIncomes: (id, filter) => request('GET', `/api/groups/${id}/incomes`, null, toQueryParams(filter)),
+  createIncome: (id, payload) => request('POST', `/api/groups/${id}/incomes`, payload),
+  incomeSummary: (id, filter) => request('GET', `/api/groups/${id}/incomes/summary`, null, toQueryParams(filter)),
   // Group Budget (setting is always monthly)
   setBudget: (id, month, payload) => request('PUT', `/api/groups/${id}/budget`, payload, { month }),
   getBudgetStatus: (id, filter) => request('GET', `/api/groups/${id}/budget/status`, null, toQueryParams(filter)),

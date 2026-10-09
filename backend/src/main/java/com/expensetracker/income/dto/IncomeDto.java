@@ -12,6 +12,8 @@ public class IncomeDto {
     private UUID id;
     private UUID userId;
     private String userName;
+    private UUID groupId;
+    private String groupName;
     private BigDecimal amount;
     private String description;
     private LocalDate incomeDate;
@@ -28,6 +30,10 @@ public class IncomeDto {
         dto.setId(i.getId());
         dto.setUserId(i.getUser().getId());
         dto.setUserName(i.getUser().getFullName());
+        if (i.getGroup() != null) {
+            dto.setGroupId(i.getGroup().getId());
+            dto.setGroupName(i.getGroup().getName());
+        }
         dto.setAmount(i.getAmount());
         dto.setDescription(i.getDescription());
         dto.setIncomeDate(i.getIncomeDate());
@@ -61,6 +67,10 @@ public class IncomeDto {
     public void setUserId(UUID userId) { this.userId = userId; }
     public String getUserName() { return userName; }
     public void setUserName(String userName) { this.userName = userName; }
+    public UUID getGroupId() { return groupId; }
+    public void setGroupId(UUID groupId) { this.groupId = groupId; }
+    public String getGroupName() { return groupName; }
+    public void setGroupName(String groupName) { this.groupName = groupName; }
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
     public String getDescription() { return description; }

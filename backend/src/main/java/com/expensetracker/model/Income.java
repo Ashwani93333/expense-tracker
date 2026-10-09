@@ -22,6 +22,14 @@ public class Income {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    /**
+     * Null for personal income; set when the entry belongs to a group's income
+     * tracker. Group income is always scoped to (and visible within) that group.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_id")
+    private ExpenseGroup group;
+
     @Column(name = "amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal amount;
 
@@ -58,6 +66,8 @@ public class Income {
     public void setId(UUID id) { this.id = id; }
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
+    public ExpenseGroup getGroup() { return group; }
+    public void setGroup(ExpenseGroup group) { this.group = group; }
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
     public String getDescription() { return description; }

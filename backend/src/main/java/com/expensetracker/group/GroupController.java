@@ -4,6 +4,9 @@ import com.expensetracker.expense.ExpenseService;
 import com.expensetracker.expense.dto.CreateExpenseRequest;
 import com.expensetracker.expense.dto.ExpenseDto;
 import com.expensetracker.group.dto.*;
+import com.expensetracker.income.IncomeService;
+import com.expensetracker.income.dto.CreateIncomeRequest;
+import com.expensetracker.income.dto.IncomeDto;
 import com.expensetracker.model.User;
 import com.expensetracker.repository.UserRepository;
 import com.expensetracker.security.UserPrincipal;
@@ -23,12 +26,14 @@ public class GroupController {
 
     private final GroupService groupService;
     private final ExpenseService expenseService;
+    private final IncomeService incomeService;
     private final UserRepository userRepository;
 
     public GroupController(GroupService groupService, ExpenseService expenseService,
-                           UserRepository userRepository) {
+                           IncomeService incomeService, UserRepository userRepository) {
         this.groupService = groupService;
         this.expenseService = expenseService;
+        this.incomeService = incomeService;
         this.userRepository = userRepository;
     }
 
@@ -174,6 +179,41 @@ public class GroupController {
             @RequestParam(required = false) String status) {
         User user = resolveUser(principal);
         return ResponseEntity.ok(expenseService.getGroupExpenses(user, id, month, year, dateFrom, dateTo, status));
+    }
+
+    // ---- Group Income ----
+
+    @PostMapping("/{id}/incomes")
+    public ResponseEntity<IncomeDto> createGroupIncome(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable UUID id,
+            @Valid @RequestBody CreateIncomeRequest request) {
+        User user = resolveUser(principal);
+        return ResponseEntity.status(HttpStatus.CREATED).body(incomeService.createGroupIncome(user, id, request));
+    }
+
+    @GetMapping("/{id}/incomes")
+    public ResponseEntity<List<IncomeDto>> getGroupIncomes(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable UUID id,
+            @RequestParam(required = false) String month,
+            @RequestParam(required = false) String year,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo) {
+        User user = resolveUser(principal);
+        return ResponseEntity.ok(incomeService.getGroupIncomes(user, id, month, year, dateFrom, dateTo));
+    }
+
+    @GetMapping("/{id}/incomes/summary")
+    public ResponseEntity<Map<String, Object>> getGroupIncomeSummary(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable UUID id,
+            @RequestParam(required = false) String month,
+            @RequestParam(required = false) String year,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo) {
+        User user = resolveUser(principal);
+        return ResponseEntity.ok(incomeService.getGroupIncomeSummary(user, id, month, year, dateFrom, dateTo));
     }
 
     private User resolveUser(UserPrincipal principal) {
