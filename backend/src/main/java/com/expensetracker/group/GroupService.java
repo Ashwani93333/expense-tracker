@@ -69,6 +69,9 @@ public class GroupService {
         group.setCreatedBy(creator);
         group.setInviteCode(inviteCode);
         group.setIsActive(true);
+        group.setManagementMode(req.getManagementMode() != null
+                ? req.getManagementMode()
+                : GroupManagementMode.BUDGET);
         if (req.getExpiresAt() != null) {
             group.setExpiresAt(req.getExpiresAt());
         }

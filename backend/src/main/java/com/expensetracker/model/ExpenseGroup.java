@@ -1,5 +1,6 @@
 package com.expensetracker.model;
 
+import com.expensetracker.group.GroupManagementMode;
 import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -40,6 +41,14 @@ public class ExpenseGroup {
     @Column(name = "expires_at")
     private OffsetDateTime expiresAt;
 
+    /**
+     * Whether the group is managed by member income or by budgets. Legacy rows
+     * default to {@link GroupManagementMode#BUDGET}.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "management_mode", length = 20)
+    private GroupManagementMode managementMode = GroupManagementMode.BUDGET;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private OffsetDateTime createdAt;
@@ -68,6 +77,8 @@ public class ExpenseGroup {
     public void setIsActive(Boolean isActive) { this.isActive = isActive; }
     public OffsetDateTime getExpiresAt() { return expiresAt; }
     public void setExpiresAt(OffsetDateTime expiresAt) { this.expiresAt = expiresAt; }
+    public GroupManagementMode getManagementMode() { return managementMode; }
+    public void setManagementMode(GroupManagementMode managementMode) { this.managementMode = managementMode; }
     public OffsetDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
     public OffsetDateTime getUpdatedAt() { return updatedAt; }

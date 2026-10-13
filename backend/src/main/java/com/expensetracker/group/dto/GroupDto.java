@@ -15,6 +15,7 @@ public class GroupDto {
     private String inviteCode;
     private Boolean isActive;
     private OffsetDateTime expiresAt;
+    private String managementMode;
     private OffsetDateTime createdAt;
     private long memberCount;
     private String currentUserRole; // ADMIN or MEMBER
@@ -32,6 +33,9 @@ public class GroupDto {
         dto.setInviteCode(g.getInviteCode());
         dto.setIsActive(g.getIsActive());
         dto.setExpiresAt(g.getExpiresAt());
+        dto.setManagementMode(g.getManagementMode() != null
+                ? g.getManagementMode().name()
+                : "BUDGET");
         dto.setCreatedAt(g.getCreatedAt());
         dto.setMemberCount(memberCount);
         dto.setCurrentUserRole(currentUserRole);
@@ -60,6 +64,8 @@ public class GroupDto {
     public void setIsActive(Boolean isActive) { this.isActive = isActive; }
     public OffsetDateTime getExpiresAt() { return expiresAt; }
     public void setExpiresAt(OffsetDateTime expiresAt) { this.expiresAt = expiresAt; }
+    public String getManagementMode() { return managementMode; }
+    public void setManagementMode(String managementMode) { this.managementMode = managementMode; }
     public OffsetDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
     public long getMemberCount() { return memberCount; }

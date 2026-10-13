@@ -4,6 +4,7 @@ import com.expensetracker.common.DateRangeResolver;
 import com.expensetracker.exception.AccessDeniedException;
 import com.expensetracker.exception.BadRequestException;
 import com.expensetracker.exception.ResourceNotFoundException;
+import com.expensetracker.group.GroupManagementMode;
 import com.expensetracker.group.GroupPermission;
 import com.expensetracker.group.GroupRoleGuard;
 import com.expensetracker.income.dto.CreateIncomeRequest;
@@ -82,6 +83,9 @@ public class IncomeService {
         }
         if (group.getExpiresAt() != null && group.getExpiresAt().isBefore(OffsetDateTime.now())) {
             throw new BadRequestException("This group has expired and no longer accepts income entries");
+        }
+        if (!GroupManagementMode.INCOME.equals(group.getManagementMode())) {
+            throw new BadRequestException("This group is managed by budget; income tracking is not available.");
         }
         // Active membership + the admin-granted ADD_INCOME feature.
         roleGuard.requirePermission(groupId, user.getId(), GroupPermission.ADD_INCOME);

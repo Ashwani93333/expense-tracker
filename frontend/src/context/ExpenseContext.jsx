@@ -332,6 +332,7 @@ export const ExpenseProvider = ({ children }) => {
         name: groupData.name,
         description: groupData.description || '',
         currencyCode: groupData.currencyCode || 'INR',
+        managementMode: groupData.managementMode || 'BUDGET',
       };
       const newGroup = await groupsApi.create(payload);
       setGroups(prev => [...prev, newGroup]);

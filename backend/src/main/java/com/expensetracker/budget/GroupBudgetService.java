@@ -2,6 +2,7 @@ package com.expensetracker.budget;
 
 import com.expensetracker.budget.dto.*;
 import com.expensetracker.common.DateRangeResolver;
+import com.expensetracker.group.GroupManagementMode;
 import com.expensetracker.exception.AccessDeniedException;
 import com.expensetracker.exception.BadRequestException;
 import com.expensetracker.exception.ResourceNotFoundException;
@@ -70,6 +71,7 @@ public class GroupBudgetService {
 
         ExpenseGroup group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new ResourceNotFoundException("Group not found: " + groupId));
+        requireBudgetManaged(group);
         LocalDate month = BudgetService.parseMonth(monthParam);
 
         // Caps are slices of the group total: a custom split may never add up to
@@ -146,6 +148,7 @@ public class GroupBudgetService {
 
         ExpenseGroup group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new ResourceNotFoundException("Group not found: " + groupId));
+        requireBudgetManaged(group);
         User targetUser = userRepository.findById(targetUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + targetUserId));
 
@@ -262,5 +265,13 @@ public class GroupBudgetService {
     private void requireMember(UUID groupId, UUID userId) {
         boolean isMember = groupMemberRepository.existsByGroupIdAndUserIdAndStatus(groupId, userId, "ACTIVE");
         if (!isMember) throw new AccessDeniedException("You are not a member of this group");
+    }
+
+    /** Income-managed groups never expose the budgeting flow. */
+    private void requireBudgetManaged(ExpenseGroup group) {
+        if (GroupManagementMode.INCOME.equals(group.getManagementMode())) {
+            throw new BadRequestException(
+                    "This group is managed by income; budget features are not available.");
+        }
     }
 }

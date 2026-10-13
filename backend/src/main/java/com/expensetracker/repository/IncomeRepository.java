@@ -64,6 +64,16 @@ public interface IncomeRepository extends JpaRepository<Income, UUID> {
             @Param("start") LocalDate start,
             @Param("end") LocalDate end);
 
+    @Query("SELECT COALESCE(SUM(i.amount), 0) FROM Income i " +
+           "WHERE i.group.id = :groupId " +
+           "AND i.user.id = :userId " +
+           "AND i.incomeDate BETWEEN :start AND :end")
+    BigDecimal sumGroupIncomeForMemberForMonth(
+            @Param("groupId") UUID groupId,
+            @Param("userId") UUID userId,
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end);
+
     @Query("SELECT COUNT(i) FROM Income i " +
            "WHERE i.group.id = :groupId " +
            "AND i.incomeDate BETWEEN :start AND :end")

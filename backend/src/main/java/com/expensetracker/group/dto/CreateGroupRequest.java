@@ -1,5 +1,6 @@
 package com.expensetracker.group.dto;
 
+import com.expensetracker.group.GroupManagementMode;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -18,6 +19,12 @@ public class CreateGroupRequest {
 
     private OffsetDateTime expiresAt;
 
+    /**
+     * How spending is managed: INCOME or BUDGET. Defaults to BUDGET when omitted
+     * so legacy clients keep the existing behaviour.
+     */
+    private GroupManagementMode managementMode;
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public String getDescription() { return description; }
@@ -26,4 +33,6 @@ public class CreateGroupRequest {
     public void setCurrencyCode(String currencyCode) { this.currencyCode = currencyCode; }
     public OffsetDateTime getExpiresAt() { return expiresAt; }
     public void setExpiresAt(OffsetDateTime expiresAt) { this.expiresAt = expiresAt; }
+    public GroupManagementMode getManagementMode() { return managementMode; }
+    public void setManagementMode(GroupManagementMode managementMode) { this.managementMode = managementMode; }
 }

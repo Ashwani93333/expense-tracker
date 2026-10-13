@@ -32,9 +32,13 @@ CREATE TABLE IF NOT EXISTS groups (
     invite_expires_at TIMESTAMP WITH TIME ZONE,
     expires_at      TIMESTAMP WITH TIME ZONE,
     is_active       BOOLEAN DEFAULT TRUE,
+    management_mode VARCHAR(20) NOT NULL DEFAULT 'BUDGET',
     created_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Backfill: existing databases created before group management modes
+ALTER TABLE groups ADD COLUMN IF NOT EXISTS management_mode VARCHAR(20) NOT NULL DEFAULT 'BUDGET';
 
 -- ================= GROUP MEMBERS =================
 CREATE TABLE IF NOT EXISTS group_members (

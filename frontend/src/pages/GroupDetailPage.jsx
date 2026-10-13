@@ -92,26 +92,43 @@ export const GroupDetailPage = () => {
 
   const grp = groups.find(g => g.id === activeGroupId) || groups[0];
 
+  // Groups are either managed by member income or by budgets; the mode is fixed
+  // at creation. Only the matching feature set is shown.
+  const managementMode = grp?.managementMode || 'BUDGET';
+  const isIncomeMode = managementMode === 'INCOME';
+
   const fetchGroupData = async () => {
     if (!grp?.id) return;
     setLoading(true);
     try {
-      const [detail, budget, settles, rep, exps, incs, incSummary] = await Promise.allSettled([
+      const calls = [
         groupsApi.get(grp.id),
-        groupsApi.getBudgetStatus(grp.id, dateFilter),
         groupsApi.getSettlements(grp.id, dateFilter),
         groupsApi.getMonthlyReport(grp.id, dateFilter),
         groupsApi.listExpenses(grp.id, dateFilter),
-        groupsApi.listIncomes(grp.id, dateFilter),
-        groupsApi.incomeSummary(grp.id, dateFilter),
-      ]);
-      if (detail.status   === 'fulfilled') setGroupDetail(detail.value);
-      if (budget.status   === 'fulfilled') setBudgetStatus(budget.value);
-      if (settles.status  === 'fulfilled') setSettlements(settles.value || []);
-      if (rep.status      === 'fulfilled') setReport(rep.value);
-      if (exps.status     === 'fulfilled') setGroupExpenses(exps.value || []);
-      if (incs.status     === 'fulfilled') setGroupIncomes(incs.value || []);
-      if (incSummary.status === 'fulfilled') setGroupIncomeSummary(incSummary.value);
+      ];
+      // Only fetch the feature set that matches the group's management mode.
+      if (isIncomeMode) {
+        calls.push(
+          groupsApi.listIncomes(grp.id, dateFilter),
+          groupsApi.incomeSummary(grp.id, dateFilter),
+        );
+      } else {
+        calls.push(groupsApi.getBudgetStatus(grp.id, dateFilter));
+      }
+      const results = await Promise.allSettled(calls);
+      const [detail, settles, rep, exps, ...rest] = results;
+      if (detail.status  === 'fulfilled') setGroupDetail(detail.value);
+      if (settles.status === 'fulfilled') setSettlements(settles.value || []);
+      if (rep.status     === 'fulfilled') setReport(rep.value);
+      if (exps.status    === 'fulfilled') setGroupExpenses(exps.value || []);
+      if (isIncomeMode) {
+        const [incs, incSummary] = rest;
+        if (incs.status       === 'fulfilled') setGroupIncomes(incs.value || []);
+        if (incSummary.status === 'fulfilled') setGroupIncomeSummary(incSummary.value);
+      } else if (rest[0]?.status === 'fulfilled') {
+        setBudgetStatus(rest[0].value);
+      }
     } catch {}
     finally { setLoading(false); }
   };
@@ -238,11 +255,11 @@ export const GroupDetailPage = () => {
   const SUB_TABS = [
     { id: 'overview',    label: 'Overview',    icon: PieChart },
     { id: 'expenses',    label: 'Expenses',    icon: CreditCard },
-    { id: 'income',      label: 'Income',      icon: TrendingUp },
+    ...(isIncomeMode ? [{ id: 'income', label: 'Income', icon: TrendingUp }] : []),
     { id: 'members',     label: 'Members',     icon: Users },
     { id: 'settlements', label: 'Settlements', icon: CheckCircle2 },
-    { id: 'budget',      label: 'Budget',      icon: Target },
-  ];
+    ...(!isIncomeMode ? [{ id: 'budget', label: 'Budget', icon: Target }] : []),
+  ].filter(Boolean);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -263,7 +280,7 @@ export const GroupDetailPage = () => {
               <Plus size={14} /> Add Expense
             </button>
           )}
-          {can('ADD_INCOME') && (
+          {isIncomeMode && can('ADD_INCOME') && (
             <button className="btn btn-secondary btn-sm" onClick={() => setIsGroupIncomeModalOpen(true)}>
               <TrendingUp size={14} /> Add Income
             </button>
@@ -290,9 +307,18 @@ export const GroupDetailPage = () => {
               {grp.name?.charAt(0)}
             </div>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
                 <h2 style={{ fontSize: '1.3rem', color: 'var(--text-primary)', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>{grp.name}</h2>
                 <GroupRoleBadge role={userRole} />
+                <span className="badge" style={{
+                  fontSize: '0.63rem', flexShrink: 0,
+                  background: isIncomeMode ? 'rgba(34,197,94,0.08)' : 'rgba(147,51,234,0.08)',
+                  color: isIncomeMode ? '#16a34a' : '#7c3aed',
+                  border: `1px solid ${isIncomeMode ? 'rgba(34,197,94,0.2)' : 'rgba(147,51,234,0.2)'}`,
+                }}>
+                  {isIncomeMode ? <TrendingUp size={10} /> : <Target size={10} />}
+                  {isIncomeMode ? 'Income managed' : 'Budget managed'}
+                </span>
               </div>
               <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>{grp.description}</p>
             </div>
@@ -331,7 +357,7 @@ export const GroupDetailPage = () => {
       </div>
 
       {/* Budget Alert */}
-      {budgetStatus && (budgetStatus.status === 'WARNING' || budgetStatus.status === 'EXCEEDED') && (
+      {!isIncomeMode && budgetStatus && (budgetStatus.status === 'WARNING' || budgetStatus.status === 'EXCEEDED') && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 18px',
           borderRadius: 'var(--r-lg)',
@@ -473,6 +499,41 @@ export const GroupDetailPage = () => {
                   No expenses logged for this period.
                 </p>
               )}
+            </div>
+          )}
+
+          {/* Income-managed groups: surface income vs spend so members see how
+              much they can still spend without budget features. */}
+          {isIncomeMode && (
+            <div className="card" style={{ padding: '22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+              <div>
+                <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)', fontWeight: 700, margin: 0 }}>
+                  Income vs Spend · {describeFilter(dateFilter)}
+                </h3>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '6px 0 0 0' }}>
+                  Members can spend up to the income they record in this group.
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '22px', textAlign: 'right', flexWrap: 'wrap' }}>
+                <div>
+                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#22c55e', letterSpacing: '-0.02em' }}>
+                    ₹{(totalGroupIncome || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 600 }}>Income</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#ef4444', letterSpacing: '-0.02em' }}>
+                    ₹{(totalSpent || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 600 }}>Spent</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: (totalGroupIncome - totalSpent) < 0 ? '#ef4444' : 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+                    ₹{((totalGroupIncome || 0) - (totalSpent || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 600 }}>Remaining</div>
+                </div>
+              </div>
             </div>
           )}
 

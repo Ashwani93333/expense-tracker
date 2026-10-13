@@ -13,7 +13,9 @@ import com.expensetracker.expense.dto.CreateExpenseRequest;
 import com.expensetracker.expense.dto.ExpenseDto;
 import com.expensetracker.expense.dto.SplitRequest;
 import com.expensetracker.expense.dto.UpdateExpenseRequest;
+import com.expensetracker.group.GroupManagementMode;
 import com.expensetracker.group.GroupRoleGuard;
+import com.expensetracker.income.MemberIncomeEnforcer;
 import com.expensetracker.model.*;
 import com.expensetracker.notification.NotificationService;
 import com.expensetracker.period.AccountPeriodPolicy;
@@ -51,6 +53,7 @@ public class ExpenseService {
     private final NotificationSettingsService notificationSettingsService;
     private final AccountPeriodPolicy periodPolicy;
     private final MemberBudgetCapEnforcer memberBudgetCapEnforcer;
+    private final MemberIncomeEnforcer memberIncomeEnforcer;
 
     public ExpenseService(
             ExpenseRepository expenseRepository,
@@ -65,7 +68,8 @@ public class ExpenseService {
             NotificationService notificationService,
             NotificationSettingsService notificationSettingsService,
             AccountPeriodPolicy periodPolicy,
-            MemberBudgetCapEnforcer memberBudgetCapEnforcer) {
+            MemberBudgetCapEnforcer memberBudgetCapEnforcer,
+            MemberIncomeEnforcer memberIncomeEnforcer) {
         this.expenseRepository = expenseRepository;
         this.groupRepository = groupRepository;
         this.groupMemberRepository = groupMemberRepository;
@@ -79,6 +83,7 @@ public class ExpenseService {
         this.notificationSettingsService = notificationSettingsService;
         this.periodPolicy = periodPolicy;
         this.memberBudgetCapEnforcer = memberBudgetCapEnforcer;
+        this.memberIncomeEnforcer = memberIncomeEnforcer;
     }
 
     @Transactional
@@ -105,9 +110,11 @@ public class ExpenseService {
 
         applyCategoryClassification(expense, currentUser, req);
 
+        ExpenseGroup expenseGroup = null;
         if (req.getGroupId() != null) {
             ExpenseGroup group = groupRepository.findById(req.getGroupId())
                     .orElseThrow(() -> new ResourceNotFoundException("Group not found: " + req.getGroupId()));
+            expenseGroup = group;
             if (group.getExpiresAt() != null && group.getExpiresAt().isBefore(java.time.OffsetDateTime.now())) {
                 throw new BadRequestException("This group has expired and no longer accepts expenses");
             }
@@ -153,12 +160,12 @@ public class ExpenseService {
         List<ExpenseSplit> splits = null;
         if (req.getGroupId() != null && req.getSplits() != null && !req.getSplits().isEmpty()) {
             splits = splitService.createSplits(saved, req.getSplits(), req.getSplitType());
-            // Enforce member caps up-front for every status: a member must not even
-            // be able to submit an expense whose share pushes them past their cap.
-            // Pending shares count here so stacked pending expenses can't bypass the
-            // cap; reviewExpense re-checks on approval because spend grows meanwhile.
-            memberBudgetCapEnforcer.enforceCapsAtCreation(
-                    req.getGroupId(), saved.getExpenseDate(), saved.getId(), splits);
+            // Enforce the member spend limit up-front for every status: a member must
+            // not even be able to submit an expense whose share pushes them past their
+            // cap (budget groups) or income (income groups). Pending shares count here
+            // so stacked pending expenses can't bypass the limit; reviewExpense
+            // re-checks on approval because spend grows meanwhile.
+            enforceSpendLimit(expenseGroup, saved.getExpenseDate(), saved.getId(), splits, true);
         }
 
         // Budget threshold evaluation happens asynchronously after commit.
@@ -360,10 +367,10 @@ public class ExpenseService {
 
         if (approved) {
             // Promotion to APPROVED is the moment this expense starts counting toward
-            // member caps — reject it if any participant would go over their cap.
-            memberBudgetCapEnforcer.enforceCaps(
-                    groupId, saved.getExpenseDate(), saved.getId(),
-                    splitRepository.findByExpenseId(saved.getId()));
+            // member caps/income — reject it if any participant would go over their limit.
+            enforceSpendLimit(
+                    saved.getGroup(), saved.getExpenseDate(), saved.getId(),
+                    splitRepository.findByExpenseId(saved.getId()), false);
         }
 
         User owner = saved.getUser();
@@ -415,9 +422,9 @@ public class ExpenseService {
         if (expense.getGroup() == null) throw new BadRequestException("This is not a group expense");
         List<ExpenseSplit> updatedSplits = splitService.updateSplits(expense, splits, expense.getSplitType());
         if (STATUS_APPROVED.equals(expense.getStatus())) {
-            // Editing splits on an approved expense moves shares around — re-check caps.
-            memberBudgetCapEnforcer.enforceCaps(
-                    expense.getGroup().getId(), expense.getExpenseDate(), expense.getId(), updatedSplits);
+            // Editing splits on an approved expense moves shares around — re-check limits.
+            enforceSpendLimit(
+                    expense.getGroup(), expense.getExpenseDate(), expense.getId(), updatedSplits, false);
         }
         return ExpenseDto.fromEntity(expense, updatedSplits);
     }
@@ -440,6 +447,36 @@ public class ExpenseService {
     }
 
     // ---- helpers ----
+
+    /**
+     * Applies the group's spending limit to a set of split shares: per-member
+     * budget caps for BUDGET groups, per-member income for INCOME groups.
+     */
+    private void enforceSpendLimit(ExpenseGroup group, LocalDate expenseDate, UUID excludeExpenseId,
+                                   List<ExpenseSplit> splits, boolean includePending) {
+        if (group == null || splits == null || splits.isEmpty()) {
+            return;
+        }
+        boolean incomeManaged = GroupManagementMode.INCOME.equals(group.getManagementMode());
+        if (includePending) {
+            if (incomeManaged) {
+                memberIncomeEnforcer.enforceIncomeAtCreation(
+                        group.getId(), expenseDate, excludeExpenseId, splits);
+            } else {
+                memberBudgetCapEnforcer.enforceCapsAtCreation(
+                        group.getId(), expenseDate, excludeExpenseId, splits);
+            }
+        } else {
+            if (incomeManaged) {
+                memberIncomeEnforcer.enforceIncome(
+                        group.getId(), expenseDate, excludeExpenseId, splits);
+            } else {
+                memberBudgetCapEnforcer.enforceCaps(
+                        group.getId(), expenseDate, excludeExpenseId, splits);
+            }
+        }
+    }
+
     @Deprecated
     public static LocalDate[] parseMonthRange(String month) {
         return DateRangeResolver.parseMonthRange(month);

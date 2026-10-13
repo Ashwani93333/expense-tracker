@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Key, ArrowRight, ShieldCheck, Clock, AlertTriangle } from 'lucide-react';
+import { Users, Key, ArrowRight, ShieldCheck, Clock, AlertTriangle, TrendingUp, Target } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 import { useAuth } from '../../context/AuthContext';
 
@@ -9,6 +9,7 @@ export const GroupCard = ({ group, onSelect }) => {
 
   const userRole = group.currentUserRole || 'MEMBER';
   const memberCount = group.memberCount ?? (group.members?.length ?? 0);
+  const isIncomeMode = (group.managementMode || 'BUDGET') === 'INCOME';
 
   const isExpired = group.expiresAt && new Date(group.expiresAt) < new Date();
   const daysUntilExpiry = group.expiresAt ? Math.ceil((new Date(group.expiresAt) - new Date()) / (1000 * 60 * 60 * 24)) : null;
@@ -56,9 +57,18 @@ export const GroupCard = ({ group, onSelect }) => {
                   <Clock size={10} /> {daysUntilExpiry}d left
                 </span>
               )}
+              <span className="badge" style={{
+                fontSize: '0.63rem', flexShrink: 0,
+                background: isIncomeMode ? 'rgba(34,197,94,0.08)' : 'rgba(147,51,234,0.08)',
+                color: isIncomeMode ? '#16a34a' : '#7c3aed',
+                border: `1px solid ${isIncomeMode ? 'rgba(34,197,94,0.2)' : 'rgba(147,51,234,0.2)'}`,
+              }}>
+                {isIncomeMode ? <TrendingUp size={10} /> : <Target size={10} />}
+                {isIncomeMode ? 'Income' : 'Budget'}
+              </span>
             </div>
             <p style={{ fontSize: '0.775rem', color: 'var(--text-muted)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {group.description || 'Shared group expenses & budgets'}
+              {group.description || (isIncomeMode ? 'Shared expenses limited by member income' : 'Shared group expenses & budgets')}
             </p>
           </div>
         </div>

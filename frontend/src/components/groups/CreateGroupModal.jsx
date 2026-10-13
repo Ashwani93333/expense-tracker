@@ -1,6 +1,21 @@
 import React, { useState } from 'react';
-import { Users, X, Loader2, Globe, CalendarClock } from 'lucide-react';
+import { Users, X, Loader2, Globe, CalendarClock, TrendingUp, Target } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
+
+const MODES = [
+  {
+    value: 'BUDGET',
+    icon: Target,
+    title: 'By Budget',
+    desc: 'Set a group budget and per-member caps. Income tracking is hidden.',
+  },
+  {
+    value: 'INCOME',
+    icon: TrendingUp,
+    title: 'By Income',
+    desc: 'Spending is limited by each member\u2019s income. Budget features are hidden.',
+  },
+];
 
 export const CreateGroupModal = ({ isOpen, onClose }) => {
   const { createGroup } = useExpense();
@@ -8,6 +23,7 @@ export const CreateGroupModal = ({ isOpen, onClose }) => {
   const [description, setDescription] = useState('');
   const [currencyCode, setCurrencyCode] = useState('INR');
   const [expiresAt, setExpiresAt] = useState('');
+  const [managementMode, setManagementMode] = useState('BUDGET');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -15,12 +31,12 @@ export const CreateGroupModal = ({ isOpen, onClose }) => {
     if (!name.trim()) return;
     setIsLoading(true);
     try {
-      const payload = { name: name.trim(), description: description.trim(), currencyCode };
+      const payload = { name: name.trim(), description: description.trim(), currencyCode, managementMode };
       if (expiresAt) {
         payload.expiresAt = new Date(expiresAt).toISOString();
       }
       await createGroup(payload);
-      setName(''); setDescription(''); setCurrencyCode('INR'); setExpiresAt('');
+      setName(''); setDescription(''); setCurrencyCode('INR'); setExpiresAt(''); setManagementMode('BUDGET');
       onClose();
     } catch {}
     finally { setIsLoading(false); }
@@ -76,6 +92,35 @@ export const CreateGroupModal = ({ isOpen, onClose }) => {
               <option value="EUR">EUR — Euro €</option>
               <option value="GBP">GBP — British Pound £</option>
             </select>
+          </div>
+          <div className="input-group" style={{ margin: 0 }}>
+            <label className="input-label">How to manage this group?</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              {MODES.map(mode => {
+                const Icon = mode.icon;
+                const active = managementMode === mode.value;
+                return (
+                  <button
+                    key={mode.value}
+                    type="button"
+                    onClick={() => setManagementMode(mode.value)}
+                    style={{
+                      flex: 1, padding: '14px 12px', textAlign: 'left', cursor: 'pointer',
+                      fontFamily: 'var(--font)', borderRadius: 'var(--r-lg)',
+                      border: `1.5px solid ${active ? '#050505' : 'var(--border)'}`,
+                      background: active ? 'rgba(183,255,0,0.06)' : '#fff',
+                      transition: 'var(--t-fast)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px' }}>
+                      <Icon size={16} color={active ? '#050505' : 'var(--text-muted)'} />
+                      <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>{mode.title}</span>
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>{mode.desc}</div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div className="input-group" style={{ margin: 0 }}>
             <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
