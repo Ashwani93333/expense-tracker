@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle, Loader2, DollarSign, CalendarDays, AlignLeft, Repeat, StickyNote, Briefcase } from 'lucide-react';
+import { X, CheckCircle, Loader2, IndianRupee, CalendarDays, AlignLeft, Repeat, StickyNote, Briefcase } from 'lucide-react';
 import { useIncome } from '../../context/IncomeContext';
 
 const INCOME_SOURCES = [
@@ -116,11 +116,11 @@ export const IncomeFormModal = () => {
 
           {/* Amount */}
           <div className="input-group" style={{ margin: 0 }}>
-            <label className="input-label" style={{ fontSize: '0.82rem' }}><DollarSign size={12} /> Amount *</label>
+            <label className="input-label" style={{ fontSize: '0.82rem' }}><IndianRupee size={12} /> Amount *</label>
             <div style={{ position: 'relative' }}>
               <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)', fontWeight: 700, fontSize: '1.3rem' }}>₹</span>
               <input
-                type="number" step="1" placeholder="0.00" required
+                type="number" step="0.01" placeholder="0.00" required
                 value={amount} onChange={e => setAmount(e.target.value)}
                 className="input-field"
                 style={{ paddingLeft: '32px', fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', height: '60px' }}
@@ -173,7 +173,7 @@ export const IncomeFormModal = () => {
                   <Repeat size={13} /> Recurring Income
                 </div>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '1px' }}>
-                  Mark this as a repeating income source
+                  Mark this as a recurring income source
                 </div>
               </div>
             </label>

@@ -2,13 +2,13 @@
 
 A full-stack expense management platform for **personal finance** and **shared group spending** — with split settlements, budgets, an admin-verified payment workflow, smart categorization, receipt OCR, and a multi-channel notification system.
 
-| Layer    | Technology                                                                 |
-|----------|----------------------------------------------------------------------------|
+| Layer    | Technology                                                                 
+|----------|----------------------------------------------------------------------------
 | Frontend | React 18 · Vite 5 · Recharts · lucide-react · Context API · plain CSS (design tokens) |
 | Backend  | Java 21 · Spring Boot 3.3 (Web, Security, Data JPA, Validation, Mail, Thymeleaf, WebFlux) |
-| Security | JWT (jjwt 0.12) · BCrypt · Stateless sessions                              |
-| Database | PostgreSQL (dev/prod) · H2 (in-memory test profile)                        |
-| AI       | Google Gemini API (receipt OCR + category suggestion)                      |
+| Security | JWT (jjwt 0.12) · BCrypt · Stateless sessions                              
+| Database | PostgreSQL (dev/prod) · H2 (in-memory test profile)                        
+| AI       | Google Gemini API (receipt OCR + category suggestion)                      
 
 > Deep dives: [`Backend.md`](./Backend.md) · [`Frontend.md`](./Frontend.md)
 

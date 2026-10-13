@@ -88,7 +88,7 @@ export const IncomePage = () => {
         <SummaryCard
           label="Total Income"
           value={`₹${totalIncome.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
-          sub={`${count} entries`}
+          sub={`${count} ${count === 1 ? 'entry' : 'entries'}`}
           icon={TrendingUp}
           accent="var(--accent)"
           loading={isLoading}
@@ -96,7 +96,7 @@ export const IncomePage = () => {
         <SummaryCard
           label="Recurring"
           value={`${recurringCount}`}
-          sub={`of ${count} entries`}
+          sub={`of ${count} ${count === 1 ? 'entry' : 'entries'}`}
           icon={Repeat}
           accent="#3b82f6"
           loading={isLoading}
@@ -105,7 +105,7 @@ export const IncomePage = () => {
           <SummaryCard
             label="Top Source"
             value={SOURCE_LABELS[sourceBreakdown[0].source] || sourceBreakdown[0].source}
-            sub={`₹${Number(sourceBreakdown[0].total).toLocaleString('en-IN')}`}
+            sub={`₹${Number(sourceBreakdown[0].total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
             icon={Briefcase}
             accent={SOURCE_COLORS[sourceBreakdown[0].source] || '#737373'}
             loading={isLoading}
@@ -133,7 +133,7 @@ export const IncomePage = () => {
                   </span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                      ₹{Number(item.total).toLocaleString('en-IN')}
+                      ₹{Number(item.total).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </span>
                     <span style={{ fontSize: '0.7rem', color: 'var(--text-faint)' }}>
                       {pct.toFixed(0)}%

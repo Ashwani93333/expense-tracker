@@ -64,10 +64,10 @@ export const BudgetAlertBanner = ({ groupId = null, onDismiss }) => {
     <div style={{
       display: 'flex',
       alignItems: 'center',
-      justify: 'space-between',
+      justifyContent: 'space-between',
       gap: '16px',
       padding: '14px 18px',
-      borderRadius: 'var(--radius-md)',
+      borderRadius: 'var(--r-md)',
       background: isExceeded ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)',
       border: `1px solid ${accentColor}44`,
       borderLeft: `4px solid ${accentColor}`,
@@ -81,7 +81,7 @@ export const BudgetAlertBanner = ({ groupId = null, onDismiss }) => {
           color: accentColor,
           display: 'flex',
           alignItems: 'center',
-          justify: 'center'
+          justifyContent: 'center'
         }}>
           <Icon size={20} />
         </div>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  DollarSign, TrendingUp, Plus, Calendar, ArrowUpRight,
+  TrendingUp, Plus, Calendar, ArrowUpRight,
   Users, Target, Wallet, AlertTriangle, ScanLine, CreditCard,
   ArrowDownRight, TrendingDown, ChevronRight, Sparkles, PieChart as PieIcon,
 } from 'lucide-react';
@@ -165,7 +165,7 @@ export const DashboardPage = () => {
             textAlign: 'right',
           }}>
             <p style={{ fontSize: '0.72rem', color: '#737373', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
-              Total Spending
+              Spent This Period
             </p>
             <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.03em', lineHeight: 1 }}>
               {summaryLoading ? (
@@ -196,7 +196,7 @@ export const DashboardPage = () => {
         <SummaryCard
           label="Total Spending"
           value={`₹${totalSpent.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
-          sub={summaryLoading ? 'Loading...' : `${summary?.categoryBreakdown?.length || 0} categories`}
+          sub={summaryLoading ? 'Loading...' : `${summary?.categoryBreakdown?.length || 0} categor${(summary?.categoryBreakdown?.length || 0) === 1 ? 'y' : 'ies'}`}
           icon={Wallet}
           accent="#B7FF00"
           loading={summaryLoading}
@@ -242,7 +242,7 @@ export const DashboardPage = () => {
             <SummaryCard
               label="Total Income"
               value={`₹${(financialOverview.totalIncome || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
-              sub={`${periodLabel}`}
+              sub={`in ${periodLabel}`}
               icon={TrendingUp}
               accent="#22c55e"
               loading={false}
@@ -280,7 +280,7 @@ export const DashboardPage = () => {
               {personalBudget.status === 'EXCEEDED' ? 'Budget Exceeded' : 'Budget Warning'}
             </p>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-              ₹{personalBudget.spent?.toFixed(2)} spent of ₹{personalBudget.overallLimit?.toFixed(2)} ({personalBudget.percentUsed?.toFixed(1)}% used)
+              ₹{(personalBudget.spent || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })} spent of ₹{(personalBudget.overallLimit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })} ({(personalBudget.percentUsed || 0).toFixed(1)}% used)
             </p>
           </div>
           <button className="btn btn-secondary btn-sm" onClick={() => setActiveTab('budget-settings')}>
@@ -305,7 +305,7 @@ export const DashboardPage = () => {
         <div className="card" style={{ padding: '22px' }}>
           <div className="section-header">
             <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <PieIcon size={16} color="var(--accent)" /> Where your money goes
+              <PieIcon size={16} color="var(--accent)" /> Where Your Money Goes
             </h3>
           </div>
           {summaryLoading ? (
@@ -407,7 +407,7 @@ export const DashboardPage = () => {
                     {exp.description || 'Expense'}
                   </div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '1px' }}>
-                    {exp.expenseDate || exp.date} · {exp.categoryName || 'Uncategorized'}
+                    {new Date((exp.expenseDate || exp.date) + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} · {exp.categoryName || 'Uncategorized'}
                     {exp.groupName && <span className="badge badge-lime" style={{ marginLeft: '6px', fontSize: '0.63rem' }}>{exp.groupName}</span>}
                   </div>
                 </div>
@@ -457,7 +457,7 @@ export const DashboardPage = () => {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span className="badge" style={{ fontSize: '0.65rem' }}>
-                    <Users size={10} /> {grp.memberCount || '?'} members
+                    <Users size={10} /> {grp.memberCount ?? 0} {(grp.memberCount ?? 0) === 1 ? 'member' : 'members'}
                   </span>
                   {grp.currentUserRole === 'ADMIN' && (
                     <span className="badge badge-lime" style={{ fontSize: '0.65rem' }}>Admin</span>

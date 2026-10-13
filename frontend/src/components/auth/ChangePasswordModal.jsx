@@ -167,7 +167,7 @@ export const ChangePasswordModal = () => {
               icon={<ShieldCheck size={12} color="var(--accent)" />}
               type={show.next ? 'text' : 'password'}
               autoComplete="new-password"
-              placeholder="Min 8 characters"
+              placeholder="Min 8 chars, 1 uppercase, 1 symbol"
               value={form.newPassword}
               onChange={e => setField('newPassword', e.target.value)}
               onToggleShow={() => toggleShow('next')}

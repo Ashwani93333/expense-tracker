@@ -6,6 +6,8 @@ import { CategoryIcon } from '../categories/categoryIcons';
 import { PageHeader } from '../ui/PageHeader';
 import { EmptyState } from '../ui/EmptyState';
 
+const SPLIT_LABELS = { EQUAL: 'Equal', PERCENT: 'Percent', CUSTOM: 'Custom' };
+
 export const ExpenseTable = () => {
   const { expenses, deleteExpense, categories, settleSplitShare, isLoading, setIsAddModalOpen, setActiveTab } = useExpense();
   const { currentUser } = useAuth();
@@ -45,7 +47,7 @@ export const ExpenseTable = () => {
         icon={FileText}
         badge="Expenses"
         title="Recent Expenses"
-        subtitle={`${filteredExpenses.length} transactions · Total ₹${totalFiltered.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+        subtitle={`${filteredExpenses.length} ${filteredExpenses.length === 1 ? 'transaction' : 'transactions'} · Total ₹${totalFiltered.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
         actions={
           <>
             <button className="btn btn-secondary btn-sm" onClick={() => setActiveTab('scan')}>
@@ -224,7 +226,7 @@ export const ExpenseTable = () => {
                           <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
                             {exp.categoryName || 'Uncategorized'}
                             {exp.paidByName && ` · Paid by ${exp.paidByName}`}
-                            {exp.splitType && ` · ${exp.splitType} split`}
+                            {exp.splitType && ` · ${SPLIT_LABELS[exp.splitType] || exp.splitType} split`}
                           </p>
                         </div>
 

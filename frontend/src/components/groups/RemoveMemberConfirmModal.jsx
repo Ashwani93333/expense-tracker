@@ -13,7 +13,7 @@ export const RemoveMemberConfirmModal = ({ isOpen, onClose, onConfirm, memberNam
           width: '100%',
           maxWidth: '400px',
           padding: '24px',
-          borderRadius: 'var(--radius-lg)',
+          borderRadius: 'var(--r-lg)',
           background: '#0d131f',
           border: '1px solid #ef444455'
         }}

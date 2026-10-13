@@ -77,7 +77,7 @@ export const ExpenseSplitSelector = ({
       flexDirection: 'column',
       gap: '14px',
       padding: '16px',
-      borderRadius: 'var(--radius-md)',
+      borderRadius: 'var(--r-md)',
       background: '#131a27',
       border: '1px solid #1e293b'
     }}>
@@ -141,8 +141,8 @@ export const ExpenseSplitSelector = ({
               display: 'flex',
               background: '#0d131f',
               padding: '3px',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border-subtle)'
+              borderRadius: 'var(--r-md)',
+              border: '1px solid var(--border)'
             }}>
               {[
                 { id: 'EQUAL', label: 'Equal (=)' },
@@ -156,7 +156,7 @@ export const ExpenseSplitSelector = ({
                   style={{
                     flex: 1,
                     padding: '6px 10px',
-                    borderRadius: 'var(--radius-sm)',
+                    borderRadius: 'var(--r-sm)',
                     fontSize: '0.78rem',
                     fontWeight: 700,
                     border: 'none',
@@ -187,11 +187,11 @@ export const ExpenseSplitSelector = ({
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        justify: 'space-between',
+                        justifyContent: 'space-between',
                         padding: '8px 12px',
                         background: '#0b1019',
-                        borderRadius: 'var(--radius-sm)',
-                        border: '1px solid var(--border-subtle)',
+                        borderRadius: 'var(--r-sm)',
+                        border: '1px solid var(--border)',
                         cursor: 'pointer'
                       }}
                     >
@@ -242,11 +242,11 @@ export const ExpenseSplitSelector = ({
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        justify: 'space-between',
+                        justifyContent: 'space-between',
                         padding: '6px 12px',
                         background: '#0b1019',
-                        borderRadius: 'var(--radius-sm)',
-                        border: '1px solid var(--border-subtle)'
+                        borderRadius: 'var(--r-sm)',
+                        border: '1px solid var(--border)'
                       }}
                     >
                       <span style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: 600 }}>{m.name}</span>
@@ -291,11 +291,11 @@ export const ExpenseSplitSelector = ({
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        justify: 'space-between',
+                        justifyContent: 'space-between',
                         padding: '6px 12px',
                         background: '#0b1019',
-                        borderRadius: 'var(--radius-sm)',
-                        border: '1px solid var(--border-subtle)'
+                        borderRadius: 'var(--r-sm)',
+                        border: '1px solid var(--border)'
                       }}
                     >
                       <span style={{ fontSize: '0.85rem', color: '#ffffff', fontWeight: 600 }}>{m.name}</span>

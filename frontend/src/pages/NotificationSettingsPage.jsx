@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Loader2, RefreshCw, Save, AlertTriangle, Wallet, Target, BarChart3, Mail, Inbox, Tag, X, Plus, DollarSign, Calendar, CheckCircle } from 'lucide-react';
+import { Bell, Loader2, RefreshCw, Save, AlertTriangle, Wallet, Target, BarChart3, Mail, Inbox, Tag, X, Plus, Calendar, CheckCircle } from 'lucide-react';
 import { useExpense } from '../context/ExpenseContext';
 import { usersApi, categoryLimitsApi, categoriesApi } from '../services/api';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -180,7 +180,7 @@ export const NotificationSettingsPage = () => {
               transition: 'var(--t-fast)',
             }}
           >
-            {t === 'PERCENTAGE' ? '% Percentage' : '₹ Amount'}
+            {t === 'PERCENTAGE' ? 'Percentage' : '₹ Amount'}
           </button>
         ))}
       </div>

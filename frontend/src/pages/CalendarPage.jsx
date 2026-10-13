@@ -316,6 +316,7 @@ export const CalendarPage = () => {
                   onClick={() => setSelectedDate(null)}
                   className="btn btn-ghost btn-icon"
                   style={{ padding: '4px' }}
+                  aria-label="Close details"
                 >
                   <X size={16} />
                 </button>
@@ -453,7 +454,7 @@ export const CalendarPage = () => {
                     fontSize: '0.9rem', fontWeight: 800,
                     color: (selectedTotalIncome - selectedTotalExpense) >= 0 ? 'var(--green)' : 'var(--red)',
                   }}>
-                    {(selectedTotalIncome - selectedTotalExpense) >= 0 ? '+' : ''}{formatCurrency(selectedTotalIncome - selectedTotalExpense)}
+                    {(selectedTotalIncome - selectedTotalExpense) >= 0 ? '+' : '-'}{formatCurrency(Math.abs(selectedTotalIncome - selectedTotalExpense))}
                   </span>
                 </div>
               )}

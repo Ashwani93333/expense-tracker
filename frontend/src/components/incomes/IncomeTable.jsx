@@ -3,28 +3,9 @@ import { Trash2, Search, Plus, Calendar, Pencil, Repeat, Briefcase } from 'lucid
 import { useIncome } from '../../context/IncomeContext';
 import { PageHeader } from '../ui/PageHeader';
 import { EmptyState } from '../ui/EmptyState';
+import { SOURCE_COLORS, SOURCE_LABELS } from '../../constants/incomesources';
 
-const SOURCE_COLORS = {
-  SALARY: '#22c55e',
-  FREELANCE: '#3b82f6',
-  INVESTMENTS: '#f59e0b',
-  BUSINESS: '#8b5cf6',
-  RENTAL: '#ec4899',
-  GIFTS: '#ef4444',
-  REFUNDS: '#06b6d4',
-  OTHER: '#737373',
-};
-
-const SOURCE_LABELS = {
-  SALARY: 'Salary',
-  FREELANCE: 'Freelance',
-  INVESTMENTS: 'Investments',
-  BUSINESS: 'Business',
-  RENTAL: 'Rental',
-  GIFTS: 'Gifts',
-  REFUNDS: 'Refunds',
-  OTHER: 'Other',
-};
+const FREQUENCY_LABELS = { MONTHLY: 'Monthly', YEARLY: 'Yearly' };
 
 export const IncomeTable = () => {
   const { incomes, deleteIncome, openAddIncome, openEditIncome, isLoading } = useIncome();
@@ -57,7 +38,7 @@ export const IncomeTable = () => {
         icon={Briefcase}
         badge="Income"
         title="Income Records"
-        subtitle={`${filtered.length} entries · Total ₹${totalFiltered.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
+        subtitle={`${filtered.length} ${filtered.length === 1 ? 'entry' : 'entries'} · Total ₹${totalFiltered.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
         actions={
           <button className="btn btn-primary btn-sm" onClick={openAddIncome}>
             <Plus size={13} /> Add Income
@@ -205,7 +186,7 @@ export const IncomeTable = () => {
                           </span>
                           {inc.isRecurring && (
                             <span className="badge" style={{ fontSize: '0.63rem' }}>
-                              <Repeat size={9} /> {inc.frequency}
+                              <Repeat size={9} /> {FREQUENCY_LABELS[inc.frequency] || inc.frequency}
                             </span>
                           )}
                         </div>

@@ -156,7 +156,7 @@ export const BudgetSettingsPage = () => {
           <div style={{ position: 'relative', flex: 1 }}>
             <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)', fontSize: '0.9rem', fontWeight: 700 }}>₹</span>
             <input
-              type="number" step="100" placeholder={overallBudget ? `Update limit (current: ₹${overallBudget.budgetLimit})` : 'Enter monthly limit...'}
+              type="number" step="100" placeholder={overallBudget ? `Update limit (current: ₹${(overallBudget.budgetLimit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })})` : 'Enter monthly limit...'}
               value={overallInput} onChange={e => setOverallInput(e.target.value)}
               className="input-field" style={{ paddingLeft: '28px', fontSize: '0.875rem' }}
             />
@@ -222,8 +222,8 @@ export const BudgetSettingsPage = () => {
                 {catBudget && (
                   <>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                      <span>₹{(catBudget.spent || 0).toFixed(2)} spent</span>
-                      <span>of ₹{catBudget.budgetLimit?.toFixed(2)}</span>
+                      <span>₹{(catBudget.spent || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })} spent</span>
+                      <span>of ₹{(catBudget.budgetLimit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                     </div>
                     <div className="progress-track" style={{ height: '6px', marginBottom: '10px' }}>
                       <div className="progress-fill" style={{ width: `${Math.min(pct, 100)}%`, background: statusColor(catBudget.status), borderRadius: 'var(--r-full)' }} />
@@ -234,7 +234,7 @@ export const BudgetSettingsPage = () => {
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <input
                     type="number" step="100"
-                    placeholder={catBudget ? `Update: ₹${catBudget.budgetLimit}` : 'Set category limit (₹)'}
+                    placeholder={catBudget ? `Update: ₹${(catBudget.budgetLimit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : 'Set category limit (₹)'}
                     value={catInputs[cat.id] || ''}
                     onChange={e => setCatInputs(p => ({ ...p, [cat.id]: e.target.value }))}
                     className="input-field"

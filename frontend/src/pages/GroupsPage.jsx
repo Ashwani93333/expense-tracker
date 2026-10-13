@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, Plus, UserPlus, Search, ShieldCheck, DollarSign, Key, Loader2 } from 'lucide-react';
+import { Users, Plus, UserPlus, Search, ShieldCheck, Key } from 'lucide-react';
 import { useExpense } from '../context/ExpenseContext';
 import { GroupCard } from '../components/groups/GroupCard';
 import { CreateGroupModal } from '../components/groups/CreateGroupModal';
@@ -56,7 +56,7 @@ export const GroupsPage = () => {
         {[
           { label: 'Joined Groups', value: isLoading ? '—' : `${groups.length}`, icon: Users, sub: 'Active memberships' },
           { label: 'Total Members', value: isLoading ? '—' : `${totalMembers}`, icon: UserPlus, sub: 'Across all groups' },
-          { label: 'Admin Of',      value: isLoading ? '—' : `${groups.filter(g => g.currentUserRole === 'ADMIN').length}`, icon: ShieldCheck, sub: 'Groups you manage' },
+          { label: 'Admin of',     value: isLoading ? '—' : `${groups.filter(g => g.currentUserRole === 'ADMIN').length}`, icon: ShieldCheck, sub: 'Groups you manage' },
         ].map(card => (
           <div key={card.label} className="card" style={{ padding: '18px 20px' }}>
             {isLoading ? (

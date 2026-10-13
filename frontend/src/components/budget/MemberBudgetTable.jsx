@@ -27,7 +27,7 @@ export const MemberBudgetTable = ({ groupId }) => {
   };
 
   return (
-    <div className="glass-card" style={{ padding: '20px', borderRadius: 'var(--radius-lg)' }}>
+    <div className="glass-card" style={{ padding: '20px', borderRadius: 'var(--r-lg)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
         <div>
           <h3 style={{ fontSize: '1.05rem', color: '#ffffff', margin: 0 }}>
@@ -62,8 +62,8 @@ export const MemberBudgetTable = ({ groupId }) => {
                 gap: '10px',
                 padding: '14px 16px',
                 background: '#131926',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border-subtle)'
+                borderRadius: 'var(--r-md)',
+                border: '1px solid var(--border)'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -76,7 +76,7 @@ export const MemberBudgetTable = ({ groupId }) => {
                     border: '1px solid #334155',
                     display: 'flex',
                     alignItems: 'center',
-                    justify: 'center',
+                    justifyContent: 'center',
                     color: '#ffffff',
                     fontWeight: 700,
                     fontSize: '0.85rem'

@@ -50,7 +50,7 @@ export const OnboardingProgress = ({ step }) => {
       {/* Mobile indicator */}
       <div className="mobile-only" style={{ textAlign: 'center' }}>
         <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#B7FF00', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-          Step {step} of 2
+          Step {step} of 3
         </span>
       </div>
     </>

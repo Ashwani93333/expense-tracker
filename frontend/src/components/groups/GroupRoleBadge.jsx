@@ -16,9 +16,9 @@ export const GroupRoleBadge = ({ role = 'MEMBER' }) => {
       letterSpacing: '0.04em',
       background: isAdmin ? 'rgba(99, 102, 241, 0.15)' : 'rgba(113, 113, 122, 0.15)',
       border: `1px solid ${isAdmin ? 'rgba(99, 102, 241, 0.3)' : 'rgba(113, 113, 122, 0.3)'}`,
-      color: isAdmin ? '#a5b4fc' : '#d4d4d8'
+      color: isAdmin ? '#4338ca' : '#52525b'
     }}>
-      {isAdmin ? <ShieldCheck size={12} color="#a5b4fc" /> : <User size={12} color="#d4d4d8" />}
+      {isAdmin ? <ShieldCheck size={12} color="#4338ca" /> : <User size={12} color="#52525b" />}
       <span>{role}</span>
     </span>
   );

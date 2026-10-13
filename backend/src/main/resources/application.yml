@@ -58,7 +58,7 @@ gemini:
 
 app:
   cors:
-    allowed-origins: "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173"
+    allowed-origins: "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173, https://nl6ld9qg-5173.inc1.devtunnels.ms"
   frontend:
     # Base URL used to build invite links rendered inside emails.
     base-url: ${APP_FRONTEND_BASE_URL:http://localhost:5173}

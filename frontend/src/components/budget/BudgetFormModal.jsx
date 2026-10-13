@@ -51,9 +51,9 @@ export const BudgetFormModal = ({ isOpen, onClose, groupId = null }) => {
           width: '100%',
           maxWidth: '520px',
           padding: '24px',
-          borderRadius: 'var(--radius-lg)',
+          borderRadius: 'var(--r-lg)',
           background: '#0e1420',
-          border: '1px solid var(--border-subtle)',
+          border: '1px solid var(--border)',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)'
         }}
       >
@@ -62,7 +62,7 @@ export const BudgetFormModal = ({ isOpen, onClose, groupId = null }) => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
               padding: '8px',
-              borderRadius: 'var(--radius-md)',
+              borderRadius: 'var(--r-md)',
               background: '#18181b',
               border: '1px solid #3f3f46',
               color: '#ffffff'
@@ -119,11 +119,11 @@ export const BudgetFormModal = ({ isOpen, onClose, groupId = null }) => {
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      justify: 'space-between',
+                      justifyContent: 'space-between',
                       padding: '8px 12px',
                       background: '#151b26',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--border-subtle)'
+                      borderRadius: 'var(--r-md)',
+                      border: '1px solid var(--border)'
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

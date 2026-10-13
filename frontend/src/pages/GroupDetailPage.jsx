@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft, Share2, Users, Plus, Target, PieChart, CreditCard,
-  LogOut, Key, CheckCircle2, DollarSign, AlertTriangle, TrendingUp,
+  LogOut, Key, CheckCircle2, IndianRupee, AlertTriangle, TrendingUp,
   RefreshCw, Loader2, Clock, CalendarClock, Ban, XCircle, ShieldCheck,
   SlidersHorizontal, Briefcase, Repeat
 } from 'lucide-react';
@@ -18,6 +18,10 @@ import { DateFilterBar } from '../components/layout/DateFilterBar';
 import { describeFilter } from '../utils/dateFilter';
 
 const statusColor = (s) => ({ OK: '#22c55e', WARNING: '#f59e0b', EXCEEDED: '#ef4444' }[s] || '#737373');
+
+const SPLIT_LABELS = { EQUAL: 'Equal', PERCENT: 'Percent', CUSTOM: 'Custom' };
+const FREQUENCY_LABELS = { MONTHLY: 'Monthly', YEARLY: 'Yearly' };
+const formatDate = (d) => (d ? new Date(d + 'T12:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
 
 const EXPENSE_STATUS_STYLES = {
   PENDING:  { background: 'rgba(245,158,11,0.08)', color: '#f59e0b', border: 'rgba(245,158,11,0.2)', label: 'Pending Approval' },
@@ -51,7 +55,7 @@ const SettlementRow = ({ from, to, amount }) => (
   }}>
     <div style={{ flex: 1 }}>
       <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#ef4444' }}>{from}</span>
-      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0 8px' }}>→ owes</span>
+      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0 8px' }}>owes</span>
       <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#22c55e' }}>{to}</span>
     </div>
     <span style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>₹{amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
@@ -317,7 +321,7 @@ export const GroupDetailPage = () => {
                   border: `1px solid ${isIncomeMode ? 'rgba(34,197,94,0.2)' : 'rgba(147,51,234,0.2)'}`,
                 }}>
                   {isIncomeMode ? <TrendingUp size={10} /> : <Target size={10} />}
-                  {isIncomeMode ? 'Income managed' : 'Budget managed'}
+                  {isIncomeMode ? 'Income' : 'Budget'}
                 </span>
               </div>
               <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: 0 }}>{grp.description}</p>
@@ -327,7 +331,7 @@ export const GroupDetailPage = () => {
           <div style={{ display: 'flex', gap: '20px' }}>
             {[
               { label: 'Members',  value: grp.memberCount || members.length, color: '#B7FF00' },
-              { label: 'Spent',    value: `₹${totalSpent.toLocaleString('en-IN')}`, color: '#ef4444' },
+              { label: 'Spent',    value: `₹${totalSpent.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, color: '#ef4444' },
               { label: 'Currency', value: grp.currencyCode || 'INR', color: '#22c55e' },
             ].map(s => (
               <div key={s.label} style={{ textAlign: 'center' }}>
@@ -370,7 +374,7 @@ export const GroupDetailPage = () => {
               Group budget {budgetStatus.status === 'EXCEEDED' ? 'exceeded!' : `at ${budgetStatus.percentUsed?.toFixed(0)}%`}
             </p>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
-              ₹{budgetStatus.totalSpent?.toFixed(2)} of ₹{budgetStatus.totalBudget?.toFixed(2)} used
+              ₹{(budgetStatus.totalSpent || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })} of ₹{(budgetStatus.totalBudget || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })} used
             </p>
           </div>
         </div>
@@ -414,7 +418,7 @@ export const GroupDetailPage = () => {
         </div>
       )}
 
-      {/* Pending Payment Approvals Alert (reviewers) */}
+      {/* Pending Expense Approvals Alert (reviewers) */}
       {can('REVIEW_EXPENSES') && pendingExpenses.length > 0 && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 18px',
@@ -424,10 +428,10 @@ export const GroupDetailPage = () => {
           <ShieldCheck size={18} color="#f59e0b" />
           <div style={{ flex: 1 }}>
             <p style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-              {pendingExpenses.length} payment{pendingExpenses.length !== 1 ? 's' : ''} awaiting your approval
+              {pendingExpenses.length} expens{pendingExpenses.length !== 1 ? 'es' : 'e'} awaiting your approval
             </p>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '2px 0 0 0' }}>
-              Member payments must be verified before they count toward budgets, reports or settlements.
+              Member expenses must be verified before they count toward budgets, reports or settlements.
             </p>
           </div>
           <button className="btn btn-primary btn-sm" onClick={() => setActiveSubTab('expenses')}>
@@ -623,7 +627,7 @@ export const GroupDetailPage = () => {
             ))
           ) : groupExpenses.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
-              <DollarSign size={32} color="var(--text-faint)" style={{ marginBottom: '8px' }} />
+              <IndianRupee size={32} color="var(--text-faint)" style={{ marginBottom: '8px' }} />
               <p style={{ color: 'var(--text-muted)' }}>No group expenses in this period.</p>
               {can('ADD_EXPENSE') && (
                 <button className="btn btn-primary btn-sm" style={{ marginTop: '12px' }} onClick={() => setIsAddModalOpen(true)}>
@@ -651,8 +655,8 @@ export const GroupDetailPage = () => {
                       <ExpenseStatusBadge status={exp.status} />
                     </div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                      {exp.expenseDate || exp.date} · {exp.categoryName} · Paid by {exp.paidByName}
-                      {exp.splitType && ` · ${exp.splitType} split`}
+                      {formatDate(exp.expenseDate || exp.date)} · {exp.categoryName} · Paid by {exp.paidByName}
+                      {exp.splitType && ` · ${SPLIT_LABELS[exp.splitType] || exp.splitType} split`}
                     </div>
                     {exp.status === 'REJECTED' && exp.reviewNote && (
                       <div style={{ fontSize: '0.72rem', color: '#ef4444', marginTop: '4px' }}>
@@ -841,11 +845,11 @@ export const GroupDetailPage = () => {
                               {inc.sourceLabel || SOURCE_LABELS[inc.source] || inc.source}
                             </span>
                             {inc.isRecurring && (
-                              <span className="badge" style={{ fontSize: '0.62rem' }}><Repeat size={9} /> {inc.frequency}</span>
+                              <span className="badge" style={{ fontSize: '0.62rem' }}><Repeat size={9} /> {FREQUENCY_LABELS[inc.frequency] || inc.frequency}</span>
                             )}
                           </div>
                           <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                            {inc.incomeDate} · Added by {inc.userName}
+                            {formatDate(inc.incomeDate)} · Added by {inc.userName}
                           </div>
                         </div>
                         <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#22c55e' }}>
@@ -1003,7 +1007,7 @@ export const GroupDetailPage = () => {
               <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                    ₹{budgetStatus.totalSpent?.toFixed(2)} spent of ₹{budgetStatus.totalBudget?.toFixed(2)}
+                    ₹{(budgetStatus.totalSpent || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })} spent of ₹{(budgetStatus.totalBudget || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </span>
                   <span style={{ fontSize: '0.85rem', fontWeight: 700, color: statusColor(budgetStatus.status) }}>
                     {budgetStatus.percentUsed?.toFixed(1)}% · {budgetStatus.status}
@@ -1075,7 +1079,7 @@ export const GroupDetailPage = () => {
                     fontSize: '0.75rem', fontWeight: 700
                   }}>
                     {customAllocOver && <AlertTriangle size={13} />}
-                    Caps total ₹{customAllocSum.toFixed(2)} of ₹{budgetTotalNum.toFixed(2)} budget
+                    Caps total ₹{customAllocSum.toLocaleString('en-IN', { minimumFractionDigits: 2 })} of ₹{budgetTotalNum.toLocaleString('en-IN', { minimumFractionDigits: 2 })} budget
                     {customAllocOver && ' — reduce member caps so they fit within the budget.'}
                   </div>
                 )}
@@ -1095,10 +1099,10 @@ export const GroupDetailPage = () => {
                     <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{m.userName}</span>
                     {m.budgetLimit ? (
                       <span style={{ fontSize: '0.8rem', color: statusColor(m.status), fontWeight: 700 }}>
-                        ₹{m.spent?.toFixed(2)} / ₹{m.budgetLimit?.toFixed(2)} · {m.percentUsed?.toFixed(0)}%
+                        ₹{(m.spent || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })} / ₹{(m.budgetLimit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })} · {m.percentUsed?.toFixed(0)}%
                       </span>
                     ) : (
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>₹{m.spent?.toFixed(2)} spent · No cap</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>₹{(m.spent || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })} spent · No cap</span>
                     )}
                   </div>
                   {m.budgetLimit && <MiniProgress pct={m.percentUsed} status={m.status} />}
@@ -1109,7 +1113,7 @@ export const GroupDetailPage = () => {
                           <span style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)', fontSize: '0.8rem', fontWeight: 700 }}>₹</span>
                           <input
                             type="number" step="100"
-                            placeholder={m.budgetLimit ? `Update cap (current: ₹${m.budgetLimit})` : 'Set spend cap (₹)'}
+                            placeholder={m.budgetLimit ? `Update cap (current: ₹${Number(m.budgetLimit).toLocaleString('en-IN')})` : 'Set spend cap (₹)'}
                             value={memberCaps[m.userId] ?? ''}
                             onChange={e => setMemberCaps(p => ({ ...p, [m.userId]: e.target.value }))}
                             className="input-field" style={{ paddingLeft: '26px', fontSize: '0.83rem' }}
@@ -1133,7 +1137,7 @@ export const GroupDetailPage = () => {
                       </div>
                       {overBudget && (
                         <p style={{ marginTop: '6px', fontSize: '0.72rem', fontWeight: 700, color: 'var(--red-text)' }}>
-                          Caps would total more than the ₹{groupBudgetTotal?.toFixed(2)} group budget — lower this cap.
+                          Caps would total more than the ₹{(groupBudgetTotal || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })} group budget — lower this cap.
                         </p>
                       )}
                     </div>

@@ -65,7 +65,7 @@ export const BudgetProgressBar = ({
             alignItems: 'center',
             gap: '5px',
             padding: '3px 8px',
-            borderRadius: 'var(--radius-sm)',
+            borderRadius: 'var(--r-sm)',
             background: statusBg,
             border: `1px solid ${statusBorder}`,
             color: statusColor,
@@ -86,7 +86,7 @@ export const BudgetProgressBar = ({
         background: '#18181b',
         borderRadius: '99px',
         overflow: 'hidden',
-        border: '1px solid var(--border-subtle)',
+        border: '1px solid var(--border)',
         position: 'relative'
       }}>
         <div style={{

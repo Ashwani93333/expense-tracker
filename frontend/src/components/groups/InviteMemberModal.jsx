@@ -47,7 +47,8 @@ export const InviteMemberModal = ({ groupId, inviteCode, groupName }) => {
 
   if (!isInviteModalOpen || !groupId) return null;
 
-  const inviteLink = generated?.inviteLink || `${window.location.origin}/join?code=${inviteCode || ''}`;
+  const rawInviteLink = generated?.inviteLink || `/join?code=${inviteCode || ''}`;
+  const inviteLink = rawInviteLink.startsWith('http') ? rawInviteLink : `${window.location.origin}${rawInviteLink.startsWith('/') ? '' : '/'}${rawInviteLink}`;
   const displayCode = generated?.inviteCode || inviteCode || 'N/A';
   const inviteText = `Join my "${groupName || 'expense'}" group on ExpenseTracker! Use invite code ${displayCode} or open this link: ${inviteLink}`;
 

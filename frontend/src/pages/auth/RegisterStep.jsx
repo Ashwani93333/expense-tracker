@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import {
-  Wallet, ArrowRight, ArrowLeft, Eye, EyeOff, Loader2, AlertCircle,
+  Wallet, ArrowRight, Eye, EyeOff, Loader2, AlertCircle,
   Mail, Lock, User, CheckCircle2, X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useOnboardingWizard } from '../../context/OnboardingWizardContext';
 import { PASSWORD_REQUIREMENTS } from '../../utils/passwordPolicy';
+import { OnboardingProgress } from './components/OnboardingProgress';
 
 export const RegisterStep = () => {
   const { signup, isAuthenticated } = useAuth();
@@ -91,7 +92,7 @@ export const RegisterStep = () => {
               color: '#a1a1aa', fontWeight: 700, fontSize: '0.82rem', fontFamily: 'var(--font)',
             }}
           >
-            <ArrowLeft size={14} /> Preferences
+            <ArrowRight size={14} /> Preferences
           </button>
         ) : (
           !isAuthenticated && (
@@ -118,6 +119,7 @@ export const RegisterStep = () => {
         boxShadow: '0 24px 60px -16px rgba(0,0,0,0.5)',
         border: '1px solid #e2e8f0',
       }}>
+        <OnboardingProgress step={1} />
         <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#111827', marginBottom: '6px' }}>
           {wizard.registered ? 'Your details' : 'Create your account'}
         </h2>

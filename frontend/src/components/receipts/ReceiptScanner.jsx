@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   UploadCloud, ScanLine, Loader2, CheckCircle2, ShieldCheck, Tag,
-  X, Edit3, DollarSign, Calendar, FileText, Zap, AlertCircle, AlertTriangle,
+  X, Edit3, IndianRupee, Calendar, FileText, Zap, AlertCircle, AlertTriangle,
   ShoppingCart, Smartphone, UtensilsCrossed, Sparkles, Users, Scale, Percent, PenLine
 } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
@@ -323,7 +323,7 @@ export const ReceiptScanner = () => {
       {/* Header */}
       <PageHeader
         icon={ScanLine}
-        badge="AI Receipt Scanner"
+        badge="AI Powered"
         title="AI Receipt Scanner"
         subtitle="Turn a receipt into an expense in seconds."
         actions={
@@ -476,7 +476,7 @@ export const ReceiptScanner = () => {
                           style={{ fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                         >
                           <DemoIcon size={13} /> {t.description.split(' ')[0]} ·{' '}
-                          ₹{t.amount.toLocaleString('en-IN')}
+                          ₹{t.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                         </button>
                       );
                     })}
@@ -553,7 +553,7 @@ export const ReceiptScanner = () => {
 
             {/* Amount */}
             <div className="input-group" style={{ margin: 0 }}>
-              <label className="input-label"><DollarSign size={12} /> Amount (₹) *</label>
+              <label className="input-label"><IndianRupee size={12} /> Amount (₹) *</label>
               <div style={{ position: 'relative' }}>
                 <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)', fontWeight: 700 }}>₹</span>
                 <input
@@ -658,7 +658,7 @@ export const ReceiptScanner = () => {
                   <label className="input-label" style={{ marginBottom: '8px', display: 'block' }}>Split Method</label>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     <SplitTypeBtn value="EQUAL"   current={splitType} label="Equal"    icon={Scale}   onClick={setSplitType} />
-                    <SplitTypeBtn value="PERCENT" current={splitType} label="% Percent" icon={Percent} onClick={setSplitType} />
+                    <SplitTypeBtn value="PERCENT" current={splitType} label="Percent" icon={Percent} onClick={setSplitType} />
                     <SplitTypeBtn value="CUSTOM"  current={splitType} label="Custom"   icon={PenLine} onClick={setSplitType} />
                   </div>
                 </div>

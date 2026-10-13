@@ -3,6 +3,8 @@ import { Users, Key, ArrowRight, ShieldCheck, Clock, AlertTriangle, TrendingUp, 
 import { useExpense } from '../../context/ExpenseContext';
 import { useAuth } from '../../context/AuthContext';
 
+const ROLE_LABELS = { ADMIN: 'Admin', MEMBER: 'Member' };
+
 export const GroupCard = ({ group, onSelect }) => {
   const { currentMonth } = useExpense();
   const { currentUser } = useAuth();
@@ -94,7 +96,7 @@ export const GroupCard = ({ group, onSelect }) => {
         {[
           { label: 'Members', value: memberCount },
           { label: 'Currency', value: group.currencyCode || 'INR' },
-          { label: 'Role', value: userRole },
+          { label: 'Role', value: ROLE_LABELS[userRole] || userRole },
         ].map(s => (
           <div key={s.label} style={{ textAlign: 'center' }}>
             <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>{s.value}</div>

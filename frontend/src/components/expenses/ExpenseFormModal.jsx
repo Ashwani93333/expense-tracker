@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { X, CheckCircle, Loader2, Users, DollarSign, CalendarDays, Tag, AlignLeft, ScanLine, Scale, PenLine, Percent, AlertTriangle } from 'lucide-react';
+import { X, CheckCircle, Loader2, Users, IndianRupee, CalendarDays, Tag, AlignLeft, ScanLine, Scale, PenLine, Percent, AlertTriangle } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 import { useAuth } from '../../context/AuthContext';
 import { groupsApi } from '../../services/api';
@@ -246,7 +246,7 @@ export const ExpenseFormModal = () => {
 
           {/* Amount — large hero input */}
           <div className="input-group" style={{ margin: 0 }}>
-            <label className="input-label" style={{ fontSize: '0.82rem' }}><DollarSign size={12} /> Amount *</label>
+            <label className="input-label" style={{ fontSize: '0.82rem' }}><IndianRupee size={12} /> Amount *</label>
             <div style={{ position: 'relative' }}>
               <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)', fontWeight: 700, fontSize: '1.3rem' }}>₹</span>
               <input
@@ -278,7 +278,7 @@ export const ExpenseFormModal = () => {
                 />
                 {dateBeforeFloor && (
                   <p style={{ marginTop: '5px', fontSize: '0.72rem', color: 'var(--danger, #ef4444)' }}>
-                    Expenses cannot be dated before your account started ({earliestMonth}).
+                    Expenses cannot be dated before your account started ({new Date(earliestMonth + '-01').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}).
                   </p>
                 )}
               </div>
@@ -348,7 +348,7 @@ export const ExpenseFormModal = () => {
                 <label className="input-label" style={{ marginBottom: '8px', display: 'block' }}>Split Method</label>
                 <div style={{ display: 'flex', gap: '6px' }}>
                   <SplitTypeBtn value="EQUAL"   current={splitType} label="Equal"    icon={Scale}   onClick={setSplitType} />
-                  <SplitTypeBtn value="PERCENT" current={splitType} label="% Percent" icon={Percent} onClick={setSplitType} />
+                  <SplitTypeBtn value="PERCENT" current={splitType} label="Percent" icon={Percent} onClick={setSplitType} />
                   <SplitTypeBtn value="CUSTOM"  current={splitType} label="Custom"   icon={PenLine} onClick={setSplitType} />
                 </div>
               </div>
@@ -361,8 +361,8 @@ export const ExpenseFormModal = () => {
               ) : splits.length > 0 && (
                 <div style={{ background: 'var(--bg-surface)', borderRadius: 'var(--r-lg)', overflow: 'hidden', border: '1px solid var(--border)' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', padding: '8px 14px', borderBottom: '1px solid var(--border)', background: '#050505' }}>
-                    <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#525252', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Member</span>
-                    <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#525252', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Share</span>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#a3a3a3', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Member</span>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#a3a3a3', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'right' }}>Share</span>
                   </div>
                   {splits.map(sp => (
                     <div key={sp.userId} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', alignItems: 'center', padding: '10px 14px', borderBottom: '1px solid var(--border)' }}>

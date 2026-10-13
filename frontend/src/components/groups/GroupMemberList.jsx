@@ -16,7 +16,7 @@ export const GroupMemberList = ({ groupId, onOpenInvite }) => {
   const isAdmin = currentMember?.role === 'ADMIN';
 
   return (
-    <div className="glass-card" style={{ padding: '20px', borderRadius: 'var(--radius-lg)' }}>
+    <div className="glass-card" style={{ padding: '20px', borderRadius: 'var(--r-lg)' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
         <div>
@@ -43,11 +43,11 @@ export const GroupMemberList = ({ groupId, onOpenInvite }) => {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                justify: 'space-between',
+                justifyContent: 'space-between',
                 padding: '12px 14px',
-                borderRadius: 'var(--radius-md)',
+                borderRadius: 'var(--r-md)',
                 background: '#131926',
-                border: '1px solid var(--border-subtle)'
+                border: '1px solid var(--border)'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

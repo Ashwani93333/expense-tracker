@@ -3,7 +3,7 @@ import {
   ArrowRight, Eye, EyeOff, CheckCircle2, Sparkles, Star,
   Users, PieChart, Receipt, Zap, Shield, TrendingUp, BarChart3,
   Loader2, AlertCircle, Mail, Lock, User, Wallet, ScanLine,
-  Smartphone, ChevronDown, Target, CreditCard, Bell, Link2, Share2,
+  Smartphone, ChevronDown, Target, CreditCard, Bell, FileText,
   Heart, HelpCircle, IndianRupee,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -150,7 +150,7 @@ const BudgetDemo = () => {
       </div>
       <div style={{ padding: '24px', background: '#f8fafc', minHeight: '280px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#111827' }}>Monthly Budget · August 2026</span>
+          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#111827' }}>Monthly Budget · {new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}</span>
           <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '4px 10px', borderRadius: '99px', background: '#fef3c7', color: '#92400e' }}>82% · Warning</span>
         </div>
         <div style={{ marginBottom: '6px', display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem' }}>
@@ -163,7 +163,7 @@ const BudgetDemo = () => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginTop: '18px' }}>
           {[
             { label: 'Food', pct: 64, color: '#050505' },
-            { label: 'Travel', pct: 91, color: '#d97706' },
+            { label: 'Transport', pct: 91, color: '#d97706' },
             { label: 'Shopping', pct: 47, color: '#1a1a1a' },
           ].map(c => (
             <div key={c.label} style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 'var(--r-md)', padding: '12px' }}>
@@ -208,7 +208,7 @@ const ExpenseDemo = () => {
       <div style={{ padding: '20px', background: '#f8fafc', minHeight: '280px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#111827' }}>Recent Transactions</span>
-          <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '4px 10px', borderRadius: '99px', background: '#050505', color: '#B7FF00' }}>4 today</span>
+          <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '4px 10px', borderRadius: '99px', background: '#050505', color: '#B7FF00' }}>4 total</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {rows.map((r, i) => (
@@ -236,9 +236,9 @@ const ExpenseDemo = () => {
 
 const SplitDemo = () => {
   const members = [
-    { name: 'Alex (You, paid)', amt: '+₹1,800', ow: 'Owed' },
-    { name: 'Sarah', amt: '-₹600', ow: 'Owes' },
-    { name: 'Marcus', amt: '-₹600', ow: 'Owes' },
+    { name: 'Alex (You, paid)', amt: '+₹1,600', ow: 'Owed' },
+    { name: 'Sarah', amt: '-₹800', ow: 'Owes' },
+    { name: 'Marcus', amt: '-₹800', ow: 'Owes' },
   ];
   return (
     <div style={{ borderRadius: 'var(--r-xl)', overflow: 'hidden', border: '1px solid var(--border)', boxShadow: '0 24px 48px -12px rgba(0,0,0,0.25)' }}>
@@ -309,7 +309,7 @@ const AnalyticsDemo = () => {
           ))}
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '0.62rem', color: '#94a3b8', fontWeight: 600 }}>
-          <span>May</span><span>Jun</span><span>Jul</span><span>Aug</span>
+          <span>10w ago</span><span>6w ago</span><span>2w ago</span><span>Now</span>
         </div>
       </div>
     </div>
@@ -395,7 +395,7 @@ const FeatureShowcase = () => {
             Watch it work, <span style={{ color: '#B7FF00', textShadow: '0 0 20px rgba(183,255,0,0.3)' }}>before you sign up</span>
           </h2>
           <p style={{ fontSize: '1.05rem', color: '#6b7280', maxWidth: '620px', margin: '0 auto' }}>
-            Click through the tabs — these are real interactions you\u2019ll use every day.
+            Click through the tabs — these are real interactions you’ll use every day.
           </p>
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '26px' }}>
@@ -496,7 +496,7 @@ const Testimonials = () => (
     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
       <SectionHeading
         badge={<><Heart size={12} /> Loved by real users</>}
-        title="Don\u2019t take our word for it"
+        title="Don’t take our word for it"
         sub="Thousands of individuals and teams already manage money smarter with ExpenseTracker."
       />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '22px' }}>
@@ -505,7 +505,7 @@ const Testimonials = () => (
             <div style={{ display: 'flex', gap: '3px' }}>
               {Array.from({ length: 5 }).map((_, s) => <Star key={s} size={15} color="#B7FF00" fill="#B7FF00" />)}
             </div>
-            <p style={{ fontSize: '0.95rem', color: '#374151', lineHeight: 1.7, fontStyle: 'italic' }}>\u201c{t.quote}\u201d</p>
+            <p style={{ fontSize: '0.95rem', color: '#374151', lineHeight: 1.7, fontStyle: 'italic' }}>“{t.quote}”</p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: 'auto' }}>
               <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: t.color, color: t.color === '#B7FF00' ? '#050505' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.78rem', fontWeight: 800 }}>{t.initials}</div>
               <div>
@@ -524,7 +524,7 @@ const faqs = [
   { q: 'Is my financial data secure?', a: 'Yes. Your data is encrypted in transit and at rest. We only use your credentials to authenticate, and your expenses are stored in a secure, isolated database tied to your account.' },
   { q: 'Can I split an expense unevenly?', a: 'Absolutely. Choose Equal, Percentage, or Custom splits. The system validates that percentages total 100% and custom amounts match the bill, so the math is always right.' },
   { q: 'Does the AI receipt scanner really work?', a: 'It extracts merchant, date, amount and category from common receipt photos in under a second. You always get a chance to review and edit before the expense is saved.' },
-  { q: 'How do group invites work?', a: 'Share your invite code, a WhatsApp message, an email, or a direct link. Anyone with the code can join instantly — no account juggling required.' },
+  { q: 'How do group invites work?', a: 'Share your invite code via a WhatsApp message, an email, or a direct link. Anyone with the code can join instantly — no account juggling required.' },
   { q: 'Can I use it on my phone?', a: 'Yes. It\u2019s fully responsive and works great on mobile browsers, so you can track expenses on the go from any device.' },
 ];
 
@@ -1098,7 +1098,7 @@ export const OnboardingPage = () => {
             <span style={{ fontWeight: 800, color: '#fff', fontSize: '1.05rem' }}>ExpenseTracker</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '16px', flexWrap: 'wrap' }}>
-            {[{ icon: Link2, label: 'Privacy' }, { icon: Share2, label: 'Terms' }, { icon: Shield, label: 'Security' }].map((l, i) => {
+            {[{ icon: Shield, label: 'Privacy' }, { icon: FileText, label: 'Terms' }, { icon: Lock, label: 'Security' }].map((l, i) => {
               const Icon = l.icon;
               return (
                 <span key={i} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.82rem', color: '#737373', cursor: 'pointer', fontWeight: 600 }}>
@@ -1107,9 +1107,6 @@ export const OnboardingPage = () => {
               );
             })}
           </div>
-          <p style={{ fontSize: '0.85rem', color: '#737373', margin: 0 }}>
-            Finance Suite API Backend: <code style={{ color: '#B7FF00', background: 'rgba(183,255,0,0.08)', padding: '2px 8px', borderRadius: '6px' }}>http://localhost:8080</code>
-          </p>
           <p style={{ fontSize: '0.75rem', color: '#525252', marginTop: '12px' }}>
             © {new Date().getFullYear()} ExpenseTracker. Made for smarter money.
           </p>

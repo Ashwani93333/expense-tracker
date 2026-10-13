@@ -1,9 +1,9 @@
 import React from 'react';
-import { Bell, CheckCheck, X, AlertTriangle, Users, DollarSign, TrendingUp, Info, Calendar, CheckCircle, XCircle } from 'lucide-react';
+import { Bell, CheckCheck, X, AlertTriangle, Users, IndianRupee, TrendingUp, Info, Calendar, CheckCircle, XCircle } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 
 const notifIconMap = {
-  EXPENSE_SPLIT_ASSIGNED:           { icon: DollarSign,    bg: 'rgba(183,255,0,0.08)', color: '#B7FF00' },
+  EXPENSE_SPLIT_ASSIGNED:           { icon: IndianRupee,   bg: 'rgba(183,255,0,0.08)', color: '#B7FF00' },
   GROUP_JOIN_REQUEST:               { icon: Users,         bg: 'rgba(183,255,0,0.08)', color: '#B7FF00' },
   GROUP_BUDGET_SET:                 { icon: TrendingUp,    bg: 'rgba(34,197,94,0.08)', color: '#22c55e' },
   BUDGET_THRESHOLD_REACHED:         { icon: AlertTriangle, bg: 'rgba(245,158,11,0.08)', color: '#f59e0b' },

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Tag, Plus, Check } from 'lucide-react';
+import { Tag, Plus, Check, X } from 'lucide-react';
 import { CategoryIcon } from './categoryIcons';
 
 export const CategorySearchSelect = ({ categories, value, onChange, addCategory }) => {
@@ -127,12 +127,12 @@ export const CategorySearchSelect = ({ categories, value, onChange, addCategory 
             onClick={(e) => { e.stopPropagation(); onChange(''); setQuery(''); }}
             style={{
               background: 'none', border: 'none', cursor: 'pointer',
-              color: 'var(--text-muted)', padding: '2px', display: 'flex',
-              fontSize: '0.8rem',
-            }}
-          >
-            x
-          </button>
+               color: 'var(--text-muted)', padding: '2px', display: 'flex',
+               fontSize: '0.8rem',
+             }}
+           >
+             <X size={13} />
+           </button>
         )}
       </div>
 

@@ -561,8 +561,8 @@ export const ExportModal = ({ isOpen, onClose, exportType = 'personal', initialG
         title: isGroup ? `Group Expense Report — ${group?.name || 'Group'}` : 'Personal Expense Report',
         period: periodLabel,
         stats: isGroup
-          ? { 'Total Expenses': INR(total), 'Transactions': expenses.length, 'Members': group?.members?.length || 1, 'Avg / Person': INR(total / (group?.members?.length || 1)) }
-          : { 'Total Expenses': INR(total), 'Transactions': expenses.length, 'Categories': cats.length, 'Avg / Transaction': INR(expenses.length ? total / expenses.length : 0) },
+          ? { 'Total Spent': INR(total), 'Transactions': expenses.length, 'Members': group?.members?.length || 1, 'Avg / Person': INR(total / (group?.members?.length || 1)) }
+          : { 'Total Spent': INR(total), 'Transactions': expenses.length, 'Categories': cats.length, 'Avg / Transaction': INR(expenses.length ? total / expenses.length : 0) },
         isGroup,
       });
       return;
@@ -571,13 +571,13 @@ export const ExportModal = ({ isOpen, onClose, exportType = 'personal', initialG
     const memberCount = isGroup ? (group?.members?.length || 1) : 0;
     const stats = isGroup
       ? [
-          ['Total Expenses', INR(total)],
+          ['Total Spent', INR(total)],
           ['Transactions', expenses.length],
           ['Members', memberCount],
           ['Avg / Person', INR(total / (memberCount || 1))],
         ]
       : [
-          ['Total Expenses', INR(total)],
+          ['Total Spent', INR(total)],
           ['Transactions', expenses.length],
           ['Categories', cats.length],
           ['Avg / Transaction', INR(expenses.length ? total / expenses.length : 0)],

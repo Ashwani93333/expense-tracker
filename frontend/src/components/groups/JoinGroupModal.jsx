@@ -6,7 +6,7 @@ import { groupsApi } from '../../services/api';
 const extractToken = (input) => {
   try {
     const url = new URL(input.trim());
-    return url.searchParams.get('token') || '';
+    return url.searchParams.get('token') || url.searchParams.get('code') || '';
   } catch {
     return input.trim();
   }

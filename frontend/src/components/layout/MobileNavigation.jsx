@@ -3,7 +3,7 @@ import { LayoutDashboard, ReceiptText, ScanLine, TrendingUp, MoreHorizontal, Plu
 import { useExpense } from '../../context/ExpenseContext';
 
 const NAV_ITEMS = [
-  { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'expenses', label: 'Expenses', icon: ReceiptText },
   { id: 'scan', label: 'Scan', icon: ScanLine, isCenter: true },
   { id: 'analytics', label: 'Analytics', icon: TrendingUp },

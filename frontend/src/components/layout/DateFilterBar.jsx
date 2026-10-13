@@ -200,17 +200,19 @@ export const DateFilterBar = () => {
         )}
       </div>
 
-      {/* Period label pill */}
-      <span style={{
-        marginLeft: 'auto',
-        fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)',
-        padding: '4px 10px', borderRadius: 'var(--r-full)',
-        background: 'var(--bg-elevated, var(--bg-surface))',
-        border: '1px dashed var(--border)',
-        whiteSpace: 'nowrap',
-      }}>
-        {describeFilter(dateFilter)}
-      </span>
+      {/* Period label pill (custom range only — month/year already show the period) */}
+      {dateFilter.mode === 'custom' && (
+        <span style={{
+          marginLeft: 'auto',
+          fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)',
+          padding: '4px 10px', borderRadius: 'var(--r-full)',
+          background: 'var(--bg-surface)',
+          border: '1px dashed var(--border)',
+          whiteSpace: 'nowrap',
+        }}>
+          {describeFilter(dateFilter)}
+        </span>
+      )}
     </div>
   );
 };

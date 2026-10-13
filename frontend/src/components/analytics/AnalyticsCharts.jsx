@@ -146,7 +146,7 @@ export const AnalyticsCharts = () => {
     : (() => {
         const m = {};
         expenses.forEach(exp => {
-          const n = exp.categoryName || 'Uncategorised';
+          const n = exp.categoryName || 'Uncategorized';
           if (!m[n]) m[n] = { name: n, value: 0 };
           m[n].value += Number(exp.amount) || 0;
         });
@@ -278,11 +278,9 @@ export const AnalyticsCharts = () => {
           loading={loading}
         />
         <SummaryCard
-          label={`Avg Spend ${bucketUnit}`}
+          label="Avg Spend / Day"
           value={inr(avgPerDaySpend)}
-          sub={granularity === 'day'
-            ? `Across ${totals.calendarDays} calendar days`
-            : `Rolling ${granularityTitle(granularity).toLowerCase()} average`}
+          sub={`Across ${totals.calendarDays} calendar days`}
           icon={Clock}
           accent="#3b82f6"
           loading={loading}
@@ -380,7 +378,7 @@ export const AnalyticsCharts = () => {
               />
               <Legend wrapperStyle={{ fontSize: '0.75rem', paddingTop: '8px' }} />
               {compareMode !== 'income' && (
-                <ReferenceLine yAxisId="avg" y={avgPerDaySpend} stroke="#f59e0b" strokeDasharray="4 4" label={{ value: `avg ${bucketUnit}`, position: 'right', fill: '#f59e0b', fontSize: 10 }} />
+                <ReferenceLine yAxisId="avg" y={avgPerDaySpend} stroke="#f59e0b" strokeDasharray="4 4" label={{ value: 'avg / day', position: 'right', fill: '#f59e0b', fontSize: 10 }} />
               )}
               <Bar
                 yAxisId="left"
@@ -505,7 +503,7 @@ export const AnalyticsCharts = () => {
                     background: `${c.color}15`, color: c.color,
                   }}>
                     <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: c.color, flexShrink: 0 }} />
-                    {c.name}: ₹{c.value.toFixed(0)}
+                    {c.name}: {inr(c.value, 0)}
                   </span>
                 ))}
               </div>
@@ -601,7 +599,7 @@ export const AnalyticsCharts = () => {
             loading={incomeLoading}
           />
           <SummaryCard
-            label={`Avg Income ${bucketUnit}`}
+            label="Avg Income / Day"
             value={inr(incomeSeries.totals.avgPerCalendarDay)}
             sub={`Across ${incomeSeries.totals.calendarDays} calendar days`}
             icon={Clock}
@@ -714,7 +712,7 @@ export const AnalyticsCharts = () => {
                       background: `${c.color}15`, color: c.color,
                     }}>
                       <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: c.color, flexShrink: 0 }} />
-                      {c.name}: ₹{c.value.toFixed(0)}
+                      {c.name}: {inr(c.value, 0)}
                     </span>
                   ))}
                 </div>

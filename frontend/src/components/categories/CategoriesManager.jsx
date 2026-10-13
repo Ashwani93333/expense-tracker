@@ -47,7 +47,7 @@ export const CategoriesManager = () => {
         icon={Tag}
         badge="Categories"
         title="Your Categories"
-        subtitle={`${categories.length} categories · These are the ones shown when adding expenses`}
+        subtitle={`${categories.length} ${categories.length === 1 ? 'category' : 'categories'} · These are the ones shown when adding expenses`}
         actions={
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <button className="btn btn-secondary" onClick={() => setActiveTab('preferences')}>
