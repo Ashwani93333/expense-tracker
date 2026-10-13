@@ -1,0 +1,67 @@
+# ------------------------------------------------------------------
+# Production profile. Activate with SPRING_PROFILES_ACTIVE=prod.
+#
+# Secrets are NOT stored here. Every value comes from the environment
+# (see .env.example). Placeholders without a default are intentionally
+# required so the app fails fast if the platform misconfigured a secret.
+# ------------------------------------------------------------------
+
+server:
+  port: ${PORT:8080}
+  # Let the platform/proxy decide when to stop; finish in-flight requests first.
+  shutdown: graceful
+  # Honour X-Forwarded-* headers from the load balancer / reverse proxy.
+  forward-headers-strategy: framework
+  compression:
+    enabled: true
+    mime-types: application/json,text/html,text/plain,text/css,application/javascript
+    min-response-size: 1024
+
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: expense-tracker-pool
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:10}
+      minimum-idle: ${DB_POOL_MIN_IDLE:2}
+      connection-timeout: ${DB_CONNECTION_TIMEOUT_MS:30000}
+      max-lifetime: ${DB_MAX_LIFETIME_MS:1800000}
+
+  jpa:
+    hibernate:
+      # schema.sql (CREATE TABLE IF NOT EXISTS) bootstraps fresh databases;
+      # `update` evolves existing ones. Set JPA_DDL_AUTO=validate once the
+      # schema is stable and managed by migrations.
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+
+logging:
+  level:
+    root: INFO
+    com.expensetracker: INFO
+    org.hibernate.SQL: WARN
+
+app:
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS}
+  frontend:
+    base-url: ${APP_FRONTEND_BASE_URL}
+  cache:
+    enabled: ${APP_CACHE_ENABLED:true}
+    ttl-seconds: ${APP_CACHE_TTL_SECONDS:30}
+    max-entries: ${APP_CACHE_MAX_ENTRIES:1000}

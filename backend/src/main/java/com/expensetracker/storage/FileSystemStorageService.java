@@ -1,5 +1,6 @@
 package com.expensetracker.storage;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
@@ -22,8 +23,8 @@ public class FileSystemStorageService implements StorageService {
 
     private final Path rootLocation;
 
-    public FileSystemStorageService() {
-        this.rootLocation = Paths.get("uploads");
+    public FileSystemStorageService(@Value("${app.storage.location:uploads}") String location) {
+        this.rootLocation = Paths.get(location).toAbsolutePath().normalize();
     }
 
     @Override
@@ -89,7 +90,7 @@ public class FileSystemStorageService implements StorageService {
         try {
             Path file = load(filename);
             Resource resource = new UrlResource(file.toUri());
-            if (resource.exists() || resource.isReadable()) {
+            if (resource.exists() && resource.isReadable()) {
                 return resource;
             }
             else {

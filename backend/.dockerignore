@@ -1,0 +1,19 @@
+target/
+.mvn/
+uploads/
+.idea/
+.vscode/
+*.iml
+.git/
+.github/
+
+# Never bake secrets into the image
+.env
+.env.*
+!.env.example
+
+# Dev-only profile (contains local credentials) must not enter the image
+src/main/resources/application-dev.yml
+
+# Docs
+*.md
