@@ -6,6 +6,10 @@ server:
 spring:
   application:
     name: expense-tracker-backend
+  config:
+    # Optional, git-ignored local secrets file (KEY=VALUE). OS environment
+    # variables take precedence, so platform-provided vars always win.
+    import: optional:file:./.env[.properties]
   profiles:
     # Override at deploy time with SPRING_PROFILES_ACTIVE=prod.
     active: ${SPRING_PROFILES_ACTIVE:dev}

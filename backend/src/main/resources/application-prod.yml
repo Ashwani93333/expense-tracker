@@ -1,16 +1,17 @@
 # ------------------------------------------------------------------
 # Production profile. Activate with SPRING_PROFILES_ACTIVE=prod.
 #
-# Secrets are NOT stored here. Every value comes from the environment
-# (see .env.example). Placeholders without a default are intentionally
-# required so the app fails fast if the platform misconfigured a secret.
+# No secrets live in this file — every value is read from the
+# environment (see .env.example). Placeholders WITHOUT a default are
+# intentionally required, so a misconfigured deploy fails fast instead
+# of silently falling back to dev/localhost values.
 # ------------------------------------------------------------------
 
 server:
   port: ${PORT:8080}
-  # Let the platform/proxy decide when to stop; finish in-flight requests first.
+  # Drain in-flight requests before exiting.
   shutdown: graceful
-  # Honour X-Forwarded-* headers from the load balancer / reverse proxy.
+  # Honour X-Forwarded-* from the platform load balancer / reverse proxy.
   forward-headers-strategy: framework
   compression:
     enabled: true
@@ -21,6 +22,7 @@ spring:
   lifecycle:
     timeout-per-shutdown-phase: 30s
 
+  # --- Database (Neon / PostgreSQL) ---
   datasource:
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
@@ -35,9 +37,9 @@ spring:
 
   jpa:
     hibernate:
-      # schema.sql (CREATE TABLE IF NOT EXISTS) bootstraps fresh databases;
-      # `update` evolves existing ones. Set JPA_DDL_AUTO=validate once the
-      # schema is stable and managed by migrations.
+      # schema.sql (CREATE TABLE IF NOT EXISTS) bootstraps a fresh database;
+      # `update` evolves an existing one. Set JPA_DDL_AUTO=validate once the
+      # schema is stable and owned by migrations.
       ddl-auto: ${JPA_DDL_AUTO:update}
     show-sql: false
     properties:
@@ -50,18 +52,67 @@ spring:
       mode: always
       schema-locations: classpath:schema.sql
 
+  servlet:
+    multipart:
+      # Receipt-image / OCR uploads.
+      max-file-size: ${MAX_FILE_SIZE:10MB}
+      max-request-size: ${MAX_REQUEST_SIZE:10MB}
+
+  # --- Email (group invites, budget alerts, monthly summaries) ---
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    protocol: ${MAIL_PROTOCOL:smtp}
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${MAIL_STARTTLS_ENABLE:true}
+          connectiontimeout: ${MAIL_SMTP_CONNECTION_TIMEOUT:10000}
+          timeout: ${MAIL_SMTP_TIMEOUT:10000}
+          writetimeout: ${MAIL_SMTP_WRITE_TIMEOUT:10000}
+
+# --- JWT auth (required: startup fails if unset) ---
+jwt:
+  secret: ${JWT_SECRET}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+# --- Gemini AI (receipt OCR + category suggestion) ---
+gemini:
+  api:
+    key: ${GEMINI_API_KEY:}
+  model: ${GEMINI_MODEL:gemini-3.1-flash-lite}
+
+app:
+  cors:
+    # Comma-separated list of allowed frontend origins (no trailing slash).
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS}
+  frontend:
+    # Base URL used to build invite links and email CTA buttons.
+    base-url: ${APP_FRONTEND_BASE_URL}
+  storage:
+    # Receipt upload directory. Mount a persistent volume here in production.
+    location: ${APP_STORAGE_LOCATION:/app/uploads}
+  mail:
+    from: ${MAIL_FROM:no-reply@example.com}
+    from-name: ${MAIL_FROM_NAME:Expense Tracker}
+  scheduler:
+    monthly-summary-cron: ${MONTHLY_SUMMARY_CRON:0 0 2 1 * *}
+  classification:
+    auto-assign-threshold: ${CLASSIFICATION_AUTO_ASSIGN_THRESHOLD:0.75}
+    warn-threshold: ${CLASSIFICATION_WARN_THRESHOLD:0.50}
+    fallback-category: ${CLASSIFICATION_FALLBACK_CATEGORY:Uncategorized}
+  cache:
+    enabled: ${APP_CACHE_ENABLED:true}
+    ttl-seconds: ${APP_CACHE_TTL_SECONDS:30}
+    max-entries: ${APP_CACHE_MAX_ENTRIES:1000}
+
 logging:
   level:
     root: INFO
     com.expensetracker: INFO
     org.hibernate.SQL: WARN
-
-app:
-  cors:
-    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS}
-  frontend:
-    base-url: ${APP_FRONTEND_BASE_URL}
-  cache:
-    enabled: ${APP_CACHE_ENABLED:true}
-    ttl-seconds: ${APP_CACHE_TTL_SECONDS:30}
-    max-entries: ${APP_CACHE_MAX_ENTRIES:1000}
