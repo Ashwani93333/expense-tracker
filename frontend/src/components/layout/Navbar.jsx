@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Bell, Search, Wallet, LogOut, User, ChevronDown, ScanLine, Briefcase, KeyRound, SlidersHorizontal } from 'lucide-react';
+import { Plus, Bell, Wallet, LogOut, User, ChevronDown, ScanLine, Briefcase, KeyRound, SlidersHorizontal } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
 import { useAuth } from '../../context/AuthContext';
 import { useIncome } from '../../context/IncomeContext';
@@ -59,20 +59,6 @@ export const Navbar = () => {
               Expense<span style={{ color: 'var(--accent)' }}>Tracker</span>
             </div>
           </div>
-        </div>
-
-        {/* Search */}
-        <div className="navbar-search" style={{ flex: 1, maxWidth: '400px', position: 'relative' }}>
-          <Search size={14} style={{
-            position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)',
-            color: 'var(--text-faint)',
-          }} />
-          <input
-            type="text"
-            placeholder="Search expenses, groups..."
-            className="input-field"
-            style={{ paddingLeft: '34px', fontSize: '0.83rem', borderRadius: 'var(--r-full)', height: '38px', padding: '0 14px 0 34px', background: 'var(--bg-surface)' }}
-          />
         </div>
 
         {/* Right actions */}
