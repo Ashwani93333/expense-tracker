@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   SlidersHorizontal,
   Loader2,
   Save,
-  RefreshCw,
   CheckCircle2,
   IndianRupee,
   Sparkles,
@@ -51,6 +50,10 @@ export const PreferencesPage = () => {
     }
   };
 
+  useEffect(() => {
+    load();
+  }, []);
+
   const toggleCategory = (id) => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
   };
@@ -92,9 +95,6 @@ export const PreferencesPage = () => {
         subtitle="Tell us about your income and spending style so we can tailor budgets, alerts and suggestions."
         actions={
           <>
-            <button className="btn btn-secondary btn-sm" onClick={load} title="Refresh">
-              <RefreshCw size={14} />
-            </button>
             <button className="btn btn-primary btn-sm" onClick={save} disabled={saving || loading}>
               {saving ? <Loader2 size={15} style={{ animation: 'spin 0.7s linear infinite' }} /> : <Save size={15} />}
               Save Changes
